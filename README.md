@@ -6,8 +6,11 @@
 </p>
 
 <div align="center">
-    <a href="Registry.lua">
-        <img src="https://img.shields.io/badge/Source%20Code-blue?style=for-the-badge&logo=github&logoColor=white">
+    <a href="https://github.com/Kooraseru-Hub/Registry">
+        <img src="https://img.shields.io/badge/Github%20Page-00A2FF?style=for-the-badge&logo=github&logoColor=white">
+    </a>
+    <a href="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/Registry.lua">
+        <img src="https://img.shields.io/badge/Source%20Code-E60012?style=for-the-badge&logo=luau&logoColor=white">
     </a>
 </div>
 
