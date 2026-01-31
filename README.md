@@ -6,17 +6,18 @@
 </p>
 
 <div align="center">
-    <a href="https://github.com/Kooraseru-Hub/Registry">
-        <img src="https://img.shields.io/badge/Github%20Page-00A2FF?style=for-the-badge&logo=github&logoColor=white">
+    <a href="Source Code">
+        <img src="https://img.shields.io/badge/Source%20Code-00A2FF?style=for-the-badge&logo=github&logoColor=white">
     </a>
-    <a href="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/Registry.lua">
-        <img src="https://img.shields.io/badge/Source%20Code-E60012?style=for-the-badge&logo=luau&logoColor=white">
+    <a href="https://create.roblox.com/store/asset/83203149398671/Registry">
+        <img src="https://img.shields.io/badge/Download-000000?style=for-the-badge&logo=luau&logoColor=white">
     </a>
 </div>
 
 ---
 
 ## Table of Contents
+
 - [Why Registry?](#why-registry)
 - [Features](#features)
 - [Installation](#installation)
@@ -30,6 +31,7 @@
 ## Why Registry?
 
 Traditional module management in Roblox involves scattered `require()` calls throughout your codebase, leading to:
+
 - **Circular dependency nightmares**
 - **Tight coupling** between modules
 - **No control over initialization order**
@@ -49,6 +51,7 @@ Traditional module management in Roblox involves scattered `require()` calls thr
 - ✅ **Dependency injection** through the registry pattern
 - ✅ **Context-aware** (Server/Client/Shared)
 - ✅ **Zero circular dependencies** - modules get references through registry
+- ✅ **Instance-based registration** - register and retrieve modules by name or Instance reference
 - ✅ **Clean architecture** with separation of concerns
 
 ---
@@ -119,9 +122,11 @@ return DataService
 ### Constructor
 
 #### `Registry.new(context: RegistryContext): Registry`
+
 Creates a new registry instance.
 
 **Parameters:**
+
 - `context`: `"Server"` | `"Client"` | `"Shared"`
 
 **Returns:** Registry instance
@@ -134,36 +139,51 @@ local registry = Registry.new("Server")
 
 ### Methods
 
-#### `registry:Register(name: string, module: ModuleScript | Module, category?: string)`
+#### `registry:Register(name: string | Instance, module: ModuleScript | Module, category?: string)`
+
 Registers a module with a unique name and optional category.
 
 **Parameters:**
-- `name`: Unique identifier for the module
+
+- `name`: Unique identifier for the module (string) or Instance (name will be extracted from `Instance.Name`)
 - `module`: ModuleScript instance or module table
 - `category`: Optional category for ordered starting
 
 ```lua
+-- Register by name string
 registry:Register("DataService", script.Services.DataService, "Core")
+
+-- Register by Instance (uses Instance.Name automatically)
+local dataService = script.Services.DataService
+registry:Register(dataService, dataService, "Core")
 ```
 
 ---
 
-#### `registry:Get(name: string): Module`
-Retrieves a registered module by name.
+#### `registry:Get(nameOrInstance: string | Instance): Module`
+
+Retrieves a registered module by name or Instance reference.
 
 **Parameters:**
-- `name`: Module identifier
+
+- `nameOrInstance`: Module identifier (string) or Instance reference
 
 **Returns:** Module table
 
 ```lua
+-- Get by name string
 local dataService = registry:Get("DataService")
+dataService:SavePlayer(player)
+
+-- Get by Instance reference
+local dataService = registry:Get(script.Services.DataService)
 dataService:SavePlayer(player)
 ```
 
 ---
 
 #### `registry:InitAll()`
+
 Calls `Init(registry, name)` on all registered modules that have an Init method.
 
 ```lua
@@ -173,6 +193,7 @@ registry:InitAll()
 ---
 
 #### `registry:StartAll()`
+
 Calls `Start()` on all registered modules in arbitrary order.
 
 ```lua
@@ -182,9 +203,11 @@ registry:StartAll()
 ---
 
 #### `registry:StartOrdered(startOrder: {string})`
+
 Starts modules by category in a specific order.
 
 **Parameters:**
+
 - `startOrder`: Array of category names defining execution order
 
 ```lua
@@ -206,8 +229,9 @@ local registry = Registry.new("Server")
 registry:Register("DataStore", script.Parent.Core.DataStore, "Core")
 registry:Register("NetworkManager", script.Parent.Core.NetworkManager, "Core")
 
--- Services layer
-registry:Register("PlayerService", script.Parent.Services.PlayerService, "Services")
+-- Services layer (can use Instance-based registration)
+local playerService = script.Parent.Services.PlayerService
+registry:Register(playerService, playerService, "Services")  -- Uses Instance.Name
 registry:Register("InventoryService", script.Parent.Services.InventoryService, "Services")
 registry:Register("ShopService", script.Parent.Services.ShopService, "Services")
 
@@ -356,6 +380,7 @@ return ShopService
 ```
 
 **Problems:**
+
 - 🔴 Hard-coded paths break when restructuring
 - 🔴 Circular dependencies cause runtime errors
 - 🔴 No control over initialization order
@@ -386,6 +411,7 @@ return ShopService
 ```
 
 **Advantages:**
+
 - ✅ No hard-coded paths - reference by name
 - ✅ Zero circular dependencies - Init happens after all modules are registered
 - ✅ Controlled initialization order with categories
@@ -415,6 +441,7 @@ return ShopService
 ## Architecture Benefits
 
 ### Separation of Concerns
+
 ```
 Main Script          → Registration & Orchestration
 Registry             → Lifecycle Management
@@ -422,6 +449,7 @@ Modules              → Business Logic Only
 ```
 
 ### Dependency Graph Clarity
+
 ```lua
 -- In your main script, you can SEE the entire module structure:
 registry:Register("Core", coreModule, "Core")
@@ -443,6 +471,7 @@ registry:StartOrdered({"Core", "Services", "Systems"})
 4. **Get dependencies in Init, use them in Start** - Clean separation of setup and execution
 5. **One registry per context** - Separate registries for Server, Client, and Shared
 6. **Store registry reference** - Keep the registry in a global or module scope if needed
+7. **Instance-based registration** - You can register modules using Instance references instead of strings for more dynamic registration patterns
 
 ---
 
