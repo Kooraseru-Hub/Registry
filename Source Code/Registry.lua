@@ -35,12 +35,21 @@ Registry.__index = Registry
 _G.Registry = Registry
 
 -- Creates a new Registry instance for a specific context.
-function Registry.new(Context: RegistryContext): Registry
+function Registry.new(Context: RegistryContext?): Registry
 	local self = setmetatable({}, Registry) :: Registry
 	self.Modules = {}
 	self.ModulesByPath = {}
 	self.Categories = setmetatable({}, { __mode = "k" })
-	self.Context = Context
+	if not Context then
+		if game:GetService("RunService"):IsClient() then
+			Context = "Client"
+		else
+			Context = "Server"
+		end
+		self.Context = Context
+	else
+		self.Context = Context
+	end
 	return self
 end
 
@@ -50,7 +59,7 @@ function Registry:Register(name: string | Instance, module: ModuleScript | Modul
 
 	local moduleName: string
 	local modulePath: string?
-	
+
 	-- Handle Instance parameter for name
 	if typeof(name) == "Instance" then
 		moduleName = name.Name
@@ -64,7 +73,15 @@ function Registry:Register(name: string | Instance, module: ModuleScript | Modul
 		if not modulePath then
 			modulePath = module:GetFullName()
 		end
-		module = require(module) :: Module
+		local result,rModule = xpcall(function()
+			return require(module)
+		end, function(E)
+			warn('Failed requiring',modulePath, 'with error:',E, 'skipping . . .')
+			return nil
+		end)
+		module = rModule
+	
+		--module = require(module) :: Module
 	end
 
 	if self.Modules[moduleName] then
@@ -73,12 +90,12 @@ function Registry:Register(name: string | Instance, module: ModuleScript | Modul
 
 	-- Direct module storage without wrapper (name only)
 	self.Modules[moduleName] = module :: Module
-	
+
 	-- Store path as separate index
 	if modulePath then
 		self.ModulesByPath[modulePath] = module :: Module
 	end
-	
+
 	-- Store metadata in parallel table
 	if category then
 		self.Categories[module :: Module] = category
@@ -115,35 +132,47 @@ function Registry:InitAll()
 		end
 
 		if module.Init and type(module.Init) == "function" then
-			module:Init(self, name)
+			local result,rModule = xpcall(function()
+				module:Init(self, name)
+				return true
+			end, function(E)
+				warn('Failed initialising',name, 'with error:',E, 'skipping . . .')
+				return nil
+			end)
 		end
 	end
 end
 
 -- Starts a single module by calling its Start method if it exists.
-function Registry:StartModule(module: Module)
+function Registry:StartModule(module: Module, name : string)
 	if type(module) == "function" then
 		return
 	end
 
 	if module.Start and type(module.Start) == "function" then
-		module:Start()
+		local result,rModule = xpcall(function()
+			module:Start()
+			return true
+		end, function(E)
+			warn('Failed starting', name, 'with error:',E, 'skipping . . .')
+			return nil
+		end)
 	end
 end
 
 -- Starts all registered modules in arbitrary order.
 function Registry:StartAll()
-	for _, module in pairs(self.Modules) do
-		self:StartModule(module)
+	for name, module in pairs(self.Modules) do
+		self:StartModule(module, name)
 	end
 end
 
 -- Starts modules in a specific category order, processing all modules in each category before moving to the next.
 function Registry:StartOrdered(startOrder: {string})
 	for _, category in ipairs(startOrder) do
-		for _, module in pairs(self.Modules) do
+		for name, module in pairs(self.Modules) do
 			if self.Categories[module] == category then
-				self:StartModule(module)
+				self:StartModule(module, name)
 			end
 		end
 	end
