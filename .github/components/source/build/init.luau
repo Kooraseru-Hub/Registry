@@ -1,7 +1,6 @@
 -- .github/components/source/build/init.luau
 --!strict
 
-local Fs = require("@std/fs")
 local Process = require("@lute/process")
 
 local Component = {}
@@ -14,16 +13,7 @@ function Component.new(): Component
 end
 
 function Component.Run(_self: Component, _context: { event: string }): ()
-	Fs.createDirectory("build/artifacts", { makeParents = true })
-	local result = Process.run({
-		"git",
-		"archive",
-		"--format=zip",
-		"--output=build/artifacts/Registry.zip",
-		"HEAD",
-		"source/Registry",
-		"LICENSE",
-	})
+	local result = Process.run({ "bash", ".github/components/source/build/archive.sh" })
 	if not result.ok then
 		error(`Unable to archive Registry: {result.stderr}`, 0)
 	end

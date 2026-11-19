@@ -11,8 +11,8 @@ branch_prefix = "ci/run-"
 releases = true
 branches = true
 packages = false
-pages = false
-milestones = false
+pages = true
+milestones = true
 
 [github.previews]
 enabled = false

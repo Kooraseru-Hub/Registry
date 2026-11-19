@@ -1,26 +1,39 @@
-# Declarative repository labels. GitHub does NOT read this file natively.
-# The discovered Luau sync-labels component creates/updates these on source pushes.
-# This is the COMPLETE allowed set. Every unlisted repository label is deleted.
-# Deleting a label also removes it from existing issues/PRs. Declared labels keep their IDs.
+# Managed GitHub labels. Keep existing labels in this catalog to preserve issue history.
+
 [[labels]]
 name = "bug"
 color = "d73a4a"
-description = "Something is not working as intended."
-
-[[labels]]
-name = "enhancement"
-color = "a2eeef"
-description = "A proposed feature or improvement."
-
-[[labels]]
-name = "question"
-color = "d876e3"
-description = "Help or clarification is needed."
+description = "Something isn't working"
 
 [[labels]]
 name = "documentation"
 color = "0075ca"
-description = "Documentation improvements or corrections."
+description = "Improvements or additions to documentation"
+
+[[labels]]
+name = "duplicate"
+color = "cfd3d7"
+description = "This issue or pull request already exists"
+
+[[labels]]
+name = "enhancement"
+color = "a2eeef"
+description = "New feature or request"
+
+[[labels]]
+name = "good first issue"
+color = "7057ff"
+description = "Good for newcomers"
+
+[[labels]]
+name = "help wanted"
+color = "008672"
+description = "Extra attention is needed"
+
+[[labels]]
+name = "invalid"
+color = "e4e669"
+description = "This doesn't seem right"
 
 [[labels]]
 name = "needs triage"
@@ -28,6 +41,11 @@ color = "fbca04"
 description = "Awaiting initial review and classification."
 
 [[labels]]
-name = "roadmap"
-color = "0e8a16"
-description = "Approved for the public release roadmap view."
+name = "question"
+color = "d876e3"
+description = "Further information is requested"
+
+[[labels]]
+name = "wontfix"
+color = "ffffff"
+description = "This will not be worked on"

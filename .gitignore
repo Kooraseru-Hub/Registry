@@ -25,11 +25,12 @@
 /.actrc
 
 # Starlight's local prerender staging tree.
-/ci/components/documentation/pages/build/starlight/dist/
+/.github/components/documentation/pages/build/starlight/dist/
 
 # Documentation content and project CSS staged for the Starlight renderer.
-/ci/components/documentation/pages/build/starlight/src/content/docs/
-/ci/components/documentation/pages/build/starlight/src/styles/project.css
+/.github/components/documentation/pages/build/starlight/src/content/docs/
+/.github/components/documentation/pages/build/starlight/src/styles/project.css
 
 # Favicon staged into Starlight's public assets for Astro.
-/ci/components/documentation/pages/build/starlight/public/images/favicon.png
+/.github/components/documentation/pages/build/starlight/public/images/favicon.png
+/.github/components/documentation/pages/build/starlight/.astro/

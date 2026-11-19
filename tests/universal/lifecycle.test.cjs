@@ -43,7 +43,10 @@ test('merge validation has a single event owner and no engine work on closure', 
   assert.match(push,/\n  push:/);
   assert.match(push,/if: github\.event\.deleted != true/);
   assert.match(push,/current.*object\.sha/);
-  assert.match(push,/"\$current" != "\$REQUEST_SHA"/);
+  assert.match(push,/"\$current" != "\$GITHUB_SHA"/);
+  assert.match(push, /gh workflow run manual\.yml/);
+  assert.match(push, /-f operation=publish -f publish=true -f expected_sha="\$GITHUB_SHA"/);
+  assert.match(read('manual'), /"\$EXPECTED_SHA" != "\$GITHUB_SHA"/);
   assert.doesNotMatch(pull,/types: \[[^\]]*closed/);
   const dir=path.join(root,'.github/workflows');
   const mergeDispatchers=fs.readdirSync(dir).filter(name=>name.endsWith('.yml')).filter(name=>{

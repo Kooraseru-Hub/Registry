@@ -2,34 +2,46 @@ name: Push
 
 on:
   push:
-    branches:
-      - source
+    branches: [source]
 
 permissions: {}
 jobs:
-  dispatch:
-    name: Request CI
-    if: github.event.deleted != true
+  publish:
+    name: Request publication
+    if: github.event.deleted != true && github.ref_name == github.event.repository.default_branch
     concurrency:
-      group: ci-starter-push-${{ github.ref }}
+      group: registry-publish-request
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: write
+      actions: write
+      contents: read
     steps:
-      - name: Submit immutable request
+      - name: Dispatch publication for this revision
         env:
           GH_TOKEN: ${{ github.token }}
-          CI_OPERATION: validation
         run: |
           set -euo pipefail
-          REQUEST_REF="$GITHUB_REF"
-          REQUEST_SHA="$GITHUB_SHA"
-          # A merge into the default branch is handled here, exactly like a direct push.
-          branch="${GITHUB_REF#refs/heads/}"
-          encoded=$(jq -nr --arg ref "$branch" '$ref | split("/") | map(@uri) | join("/")')
-          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded" --jq .object.sha)
-          if [[ "$current" != "$REQUEST_SHA" ]]; then echo "A newer revision owns this branch"; exit 0; fi
-          if [[ -z "${REQUEST_INPUTS:-}" ]]; then REQUEST_INPUTS='{}'; fi
-          jq -n --arg event 'push' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$GITHUB_REF_NAME" --jq .object.sha)
+          if [[ "$current" != "$GITHUB_SHA" ]]; then exit 0; fi
+          gh workflow run manual.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f operation=publish -f publish=true -f expected_sha="$GITHUB_SHA"
+
+  attest:
+    name: Attest Registry source archive
+    if: github.event.deleted != true && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash .github/components/source/build/archive.sh
+      - uses: actions/attest@v4.2.2
+        with:
+          subject-path: build/artifacts/Registry.zip

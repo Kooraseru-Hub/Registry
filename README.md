@@ -1,24 +1,44 @@
 # Registry
 
-Registry is a Roblox Luau module manager with path-based registration, dependency ordering, and a lifecycle for setup, initialization, startup, and cleanup.
+**Path-based module management for Roblox Luau.**
+
+[![Latest release](https://shieldcn.dev/github/release/Kooraseru-Hub/Registry.svg)](https://github.com/Kooraseru-Hub/Registry/releases/latest)
+[![GitHub Actions](https://shieldcn.dev/github/ci/Kooraseru-Hub/Registry.svg)](https://github.com/Kooraseru-Hub/Registry/actions)
+[![CC0 1.0](https://shieldcn.dev/badge/license-CC0%201.0-blue.svg)](LICENSE)
 
 ## Install
 
-Download `Registry.zip` from [GitHub Releases](https://github.com/Kooraseru-Hub/Registry/releases) or import `source/Registry` from [main](https://github.com/Kooraseru-Hub/Registry/tree/main). Import the directory as a ModuleScript tree, using each `init.luau` as the ModuleScript for its containing directory. Put the tree in `ReplicatedStorage` for shared code or `ServerScriptService` for server-only code.
+1. Download `Registry.zip` from [GitHub Releases](https://github.com/Kooraseru-Hub/Registry/releases) or copy `source/Registry` from [main](https://github.com/Kooraseru-Hub/Registry/tree/main).
+2. Import `Registry` as a ModuleScript tree. Each `init.luau` is the ModuleScript for its folder.
+3. Place it in `ReplicatedStorage` for shared code or `ServerScriptService` for server-only code.
+
+## Quick start
+
+With `Registry` in `ReplicatedStorage`, a script can register a module and run its lifecycle.
+
+```luau
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Registry = require(ReplicatedStorage.Registry)
+
+Registry:Register("Services/Data", require(script.Parent.Data))
+Registry:RunLifecycle()
+```
+
+Use `Registry:Get("Services/Data")` to look up the registered module. Registry supports dependencies, lifecycle hooks, and cleanup with Maid.
 
 ## Contribute
 
-Open changes against `source`. With Node.js 24+ and Bash, run:
+Open a pull request against [source](https://github.com/Kooraseru-Hub/Registry/tree/source) or [report an issue](https://github.com/Kooraseru-Hub/Registry/issues/new/choose). Registry is dedicated to the public domain under [CC0 1.0](LICENSE).
+
+## CI and releases
+
+Run local validation with Node.js 24+ and Bash.
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts
 node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine native-validate
 ```
 
-Pushes to `source` and pull requests targeting it use the pinned CI Engine. To ship a version, merge its release record into `source`, then run the **Manual** workflow on `source` with **publish** selected and publication confirmed. The Engine stages the source archive, generates `main`, and publishes the release from the validated source commit.
+A push to `source` requests staged publication. CI validates the revision, generates `main`, publishes the docs site, and creates a GitHub Release for each new version record. Update `config/publishing/releases/` to ship a new version. Existing release tags are skipped.
 
-Registry is dedicated to the public domain under [CC0 1.0](LICENSE).
-
-## GitHub Actions credentials
-
-The release and generated branch share the `ci-publication` environment, which is restricted to `source`. Both jobs use the built-in `GITHUB_TOKEN` with job-scoped Contents write access. Registry CI requires no stored secrets or custom variables. The inherited GitHub App and PAT bindings are available for optional Template components. Registry leaves ruleset and Projects sync, Pages, and Cloudflare previews disabled.
+The built-in workflow token publishes releases, branches, and Pages. Ruleset sync uses a GitHub App with repository Administration write access in `ci-rulesets`. Projects sync uses an organization Projects write token in `ci-projects`.

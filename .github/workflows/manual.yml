@@ -21,6 +21,11 @@ on:
         required: false
         default: false
 
+      expected_sha:
+        description: Expected source revision for automated publication
+        type: string
+        required: false
+
 permissions: {}
 jobs:
   dispatch:
@@ -36,10 +41,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CI_OPERATION: ${{ inputs.operation }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
           REQUEST_PUBLISH: ${{ inputs.publish }}
           REQUEST_INPUTS: ${{ toJSON(inputs) }}
         run: |
           set -euo pipefail
+          if [[ -n "$EXPECTED_SHA" && "$EXPECTED_SHA" != "$GITHUB_SHA" ]]; then
+            echo "A newer revision owns source"
+            exit 0
+          fi
           REQUEST_REF="$GITHUB_REF"
           REQUEST_SHA="$GITHUB_SHA"
           if [[ -z "${REQUEST_INPUTS:-}" ]]; then REQUEST_INPUTS='{}'; fi

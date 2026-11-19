@@ -23,5 +23,5 @@ test("new repository readiness requires no hosted credentials", () => {
   assert.equal(report.configuredRepository, "current");
   assert.equal(report.defaultBranch, "development");
   assert.equal(report.generatedBranchConfigured, true);
-  assert.equal(report.publicationEnabled, false);
+  assert.equal(report.publicationEnabled, true);
 });

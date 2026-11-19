@@ -77,15 +77,12 @@ function analyze(directory = ROOT, env = process.env) {
   catch (error) { issues.push("Template metadata: " + error.message); }
   try {
     operation = JSON.parse(fs.readFileSync(path.join(directory, "config/ci/operations.json"), "utf8"));
-    const callers = ["pull", "push"];
-    const eventNames = { pull: "pull_request", push: "push" };
-    for (const caller of callers) {
-      const source = fs.readFileSync(path.join(directory, ".github/workflows", caller + ".yml"), "utf8");
-      const selected = [...new Set([...source.matchAll(/^          CI_OPERATION:\s*([a-z][a-z0-9-]*)\s*$/gm)]
-        .map(match => match[1]).filter(name => operation.operations?.[name]?.events?.includes(eventNames[caller])))];
-      if (selected.length !== 1) issues.push("CI entry point has no unique " + caller + " operation");
-      else if (caller === "push") pushOperation = selected[0];
-    }
+    const pull = fs.readFileSync(path.join(directory, ".github/workflows/pull.yml"), "utf8");
+    const push = fs.readFileSync(path.join(directory, ".github/workflows/push.yml"), "utf8");
+    const review = pull.match(/^          CI_OPERATION:\s*([a-z][a-z0-9-]*)\s*$/m)?.[1];
+    pushOperation = push.match(/-f operation=([a-z][a-z0-9-]*) -f publish=true/)?.[1] ?? null;
+    if (!operation.operations?.[review]?.events?.includes("pull_request")) issues.push("Pull request review operation is missing");
+    if (!operation.operations?.[pushOperation]?.events?.includes("workflow_dispatch")) issues.push("Push publication operation is missing");
   } catch (error) { issues.push("CI operations: " + error.message); }
   try {
     declaredTarget = targetRepository(fs.readFileSync(path.join(directory, "config/targets.toml"), "utf8"));
@@ -100,7 +97,7 @@ function analyze(directory = ROOT, env = process.env) {
   if (!project.repository) notes.push("GitHub repository identity unavailable offline; it is resolved from GITHUB_REPOSITORY on GitHub.");
   if (!project.defaultBranch) notes.push("Default branch unknown locally; GitHub Actions resolves it from the repository event.");
   const publishing = operation?.operations?.[pushOperation]?.publication === true;
-  if (publishing) notes.push("Automatic publication is enabled. Configure the ci-bootstrap environment and scoped credentials, or select an OIDC-enabled publisher before publishing.");
+  if (publishing) notes.push("Source pushes request publication through the staged Manual workflow.");
   else notes.push("Default pushes run read-only CI. Publishing is optional and must be explicitly enabled in operations.json.");
   if (project.defaultBranch === "main") notes.push("Generated branch 'main' already matches the default branch. The branch publisher will skip it rather than overwrite it.");
   notes.push("A successful readiness check does not prove marketplace trust registration or GitHub environment secret availability.");

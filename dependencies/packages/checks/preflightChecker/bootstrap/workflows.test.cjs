@@ -24,12 +24,16 @@ test("native delivery plan covers each real publication component with its own l
   const plan=nativePlan(t);
   const tasks=execute(t,'local B=require("@ci/bootstrap")\nlocal J=require("@formats/json")\nprint(J.encode(B.Plan("push")))');
   assert.deepEqual(plan.jobs.map(job=>job.id).sort(),tasks.filter(task=>task.phase==="publish").map(task=>task.identity).sort());
-  assert.deepEqual(plan.jobs.map(job => job.id).sort(), ["distribution/releases/publish", "governance/branches/publish"]);
-  for (const job of plan.jobs) {
-    assert.equal(job.lane, "contents");
-    assert.equal(job.environment, "ci-publication");
-    assert.equal(job.bindings, undefined);
-  }
+  const lanes = Object.fromEntries(plan.jobs.map(job => [job.id, job.lane]));
+  assert.deepEqual(lanes, {
+    "distribution/releases/publish": "contents",
+    "documentation/pages/publish": "pages",
+    "governance/branches/publish": "contents",
+    "governance/rulesets/sync": "credential",
+    "work/labels/sync": "issues",
+    "work/milestones/sync": "issues",
+    "work/projects/sync": "credential",
+  });
   assert.equal(plan.artifact,plan.destination);
   assert.match(plan.artifact,/^build\/run\/[^/]+\/transport\/bundles$/);
   const {normalize}=require("../../../../../dependencies/managed/packages/ci-engine/src/adapters/github/delivery.cjs");
@@ -59,7 +63,7 @@ test("authored events dispatch independently from the pinned engine", () => {
   const bootstrap=fs.readFileSync(path.join(directory,"bootstrap.yml"),"utf8");
   assert.match(bootstrap,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.match(bootstrap,/repository_dispatch:/);
-  for(const file of ["push","pull","manual","remote"]){
+  for(const file of ["pull","manual","remote"]){
     const workflow=fs.readFileSync(path.join(directory,file+".yml"),"utf8");
     assert.match(workflow,/ci-request/);
     assert.doesNotMatch(workflow,/uses: .*bootstrap\.yml|secrets: inherit/);
@@ -68,7 +72,7 @@ test("authored events dispatch independently from the pinned engine", () => {
 test("optional administration components use their current skip policies", t => {
 	const source = 'local S=require("@ci/bootstrap/outcomes/skipPolicy")\nlocal J=require("@formats/json")\nprint(J.encode({projects=S.Conclusion("work/projects/sync"),rulesets=S.Conclusion("governance/rulesets/sync"),releases=S.Conclusion("distribution/releases/publish"),milestones=S.Conclusion("work/milestones/sync"),default=S.Conclusion("source/build")}))';
 	const results = execute(t, source);
-	assert.deepEqual(results, { projects: "neutral", rulesets: "neutral", default: "neutral", releases: "success", milestones: "neutral" });
+	assert.deepEqual(results, { projects: "success", rulesets: "success", default: "neutral", releases: "success", milestones: "success" });
 });
 test("component contract rejects missing phases and privileged Build", t => {
 	const result = execute(t, 'local C=require("@ci/bootstrap/contracts/contract")\nlocal J=require("@formats/json")\nlocal a=pcall(C.new,"example","x","fixture",{provides={"example"}})\nlocal b=pcall(C.new,"example","x","fixture",{provides={"example"},phase="build",boundary="privileged",events={"push"}})\nprint(J.encode({a=a,b=b}))'); assert.equal(result.a, false); assert.equal(result.b, false);
@@ -105,8 +109,9 @@ test("publication requires admitted same-run trusted source and retains loopback
   assert.match(publication,/local uploadOrigin = if Process\.env\.TEMPLATE_PUBLICATION_REHEARSAL == "1"/);
   assert.equal(fs.existsSync(path.join(root,"dependencies/managed/packages/ci-engine/src/native/github/resources/branches/branchRun.luau")),false);
 });
-test("Registry enables only branch and release publication", () => {
+test("Registry publishes branches, releases, and Pages with Cloudflare previews disabled", () => {
   const targets = fs.readFileSync(path.join(root, "config/targets.toml"), "utf8");
-  for (const target of ["branches", "releases"]) assert.ok(targets.includes(target + " = true"));
-  for (const target of ["packages", "pages", "milestones"]) assert.ok(targets.includes(target + " = false"));
+  for (const target of ["branches", "releases", "pages", "milestones"]) assert.ok(targets.includes(target + " = true"));
+  assert.match(targets, /^packages = false$/m);
+  assert.match(targets, /\[github\.previews\]\s+enabled = false/);
 });
