@@ -1,23 +1,11 @@
 ## Summary
 
-Describe the problem and the resulting behavior. Include an example when helpful.
-
-## Related issues
-
-Link related issues, or state that there are none.
+<!-- Describe how this changes Registry or its repository. Link related issues if applicable. -->
 
 ## Validation
 
-List the commands/checks performed and their results. If something was not tested,
-explain why and what remains unverified.
+<!-- For runtime changes, describe the Roblox Studio scenario you tested and whether it ran on the server or client. For docs or CI changes, list the checks you ran and their results. -->
 
-## Compatibility and migration
+## Compatibility
 
-Describe breaking changes or required configuration changes, or state that there
-are none.
-
-## Checklist
-
-- [ ] I reviewed the applicable repository rules.
-- [ ] I included relevant validation evidence above.
-- [ ] I updated affected documentation/configuration, or it does not need updating.
+<!-- If the public Luau API, lifecycle behavior, or install layout changes, explain what existing users need to do. -->

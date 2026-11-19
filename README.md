@@ -18,3 +18,7 @@ node dependencies/packages/core/dependencyLoader/index.ts --exec tools.ciEngine 
 Pushes to `source` and pull requests targeting it use the pinned CI Engine. To ship a version, merge its release record into `source`, then run the **Manual** workflow on `source` with **publish** selected and publication confirmed. The Engine stages the source archive, generates `main`, and publishes the release from the validated source commit.
 
 Registry is dedicated to the public domain under [CC0 1.0](LICENSE).
+
+## GitHub Actions credentials
+
+The release and generated branch share the `ci-publication` environment, which is restricted to `source`. Both jobs use the built-in `GITHUB_TOKEN` with job-scoped Contents write access. Registry CI requires no stored secrets or custom variables. The inherited GitHub App and PAT bindings are available for optional Template components. Registry leaves ruleset and Projects sync, Pages, and Cloudflare previews disabled.

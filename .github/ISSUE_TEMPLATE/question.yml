@@ -1,26 +1,22 @@
-name: Help or question
-description: Ask about using, building, or configuring the project.
+name: Registry help or question
+description: Ask about installing or using Registry in a Roblox experience.
 title: "[Question] "
 labels: [question, needs triage]
 body:
   - type: textarea
-    id: goal
+    id: question
     attributes:
-      label: What are you trying to do?
-    validations:
-      required: true
-  - type: textarea
-    id: tried
-    attributes:
-      label: What have you tried?
-      description: Include relevant documentation, commands, and results.
+      label: What would you like help with?
+      description: Tell us what you want Registry to do and what you have tried so far.
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Version or commit
+      label: Registry version or revision
+      description: Include the release, commit, or where you imported Registry from, if known.
   - type: textarea
-    id: context
+    id: setup
     attributes:
-      label: Relevant environment and context
+      label: Relevant Roblox setup
+      description: Include any relevant Luau code, ModuleScript paths, lifecycle calls, and whether your code runs on the server or client.

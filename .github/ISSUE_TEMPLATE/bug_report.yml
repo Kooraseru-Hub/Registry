@@ -1,57 +1,44 @@
-name: Bug report
-description: Report a reproducible problem.
+name: Registry bug report
+description: Report a problem with Registry in a Roblox experience or in this repository.
 title: "[Bug] "
 labels: [bug, needs triage]
 body:
-  - type: checkboxes
-    id: existing
-    attributes:
-      label: Existing reports
-      options:
-        - label: I searched existing issues for this problem.
-          required: true
   - type: textarea
-    id: summary
+    id: behavior
     attributes:
-      label: What went wrong?
-      description: Describe the problem and what it prevents you from doing.
+      label: What happened, and what did you expect?
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
       label: Steps to reproduce
-      description: Include the smallest example, commands, or configuration that reproduces it.
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected behavior
-    validations:
-      required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
+      description: Share a minimal Luau snippet and the relevant ModuleScript layout, or link the failing GitHub Actions run for a CI issue.
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Version or commit
-      placeholder: Release version, commit SHA, or branch tested
+      label: Registry version or revision
+      description: Include the release, commit, or where you imported Registry from, if known.
+  - type: dropdown
+    id: context
+    attributes:
+      label: Where did the issue occur?
+      options:
+        - Roblox Studio
+        - Published Roblox experience
+        - GitHub Actions or release
+        - Other
     validations:
       required: true
   - type: textarea
-    id: environment
+    id: setup
     attributes:
-      label: Relevant environment
-      description: Operating system, runtime, compiler, dependencies, or hosting environment as applicable.
-    validations:
-      required: true
+      label: Relevant Roblox setup
+      description: If applicable, describe where Registry and the calling script are placed, whether the call runs on the server or client, and how you imported Registry.
   - type: textarea
-    id: logs
+    id: output
     attributes:
-      label: Logs and additional context
-      description: Include relevant output or screenshots if available.
+      label: Output or stack trace
+      description: Paste the relevant Roblox Output or CI error, if available.
