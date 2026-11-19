@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { reviewBase } = require("./review.cjs");
-const { commentsFor } = require("./publish.cjs");
+const { commentsFor, submitReviews } = require("./publish.cjs");
 
 test("independent PR reviews scope findings to the admitted default branch", () => {
   assert.equal(reviewBase({ CI_ORIGIN_EVENT: "pull_request", CI_DEFAULT_BRANCH: "source" }), "source");
@@ -22,4 +22,16 @@ test("review comments point only to added lines and deduplicate findings", () =>
   assert.equal(comments.length, 1);
   assert.deepEqual([comments[0].path, comments[0].line, comments[0].side], [file, 3, "RIGHT"]);
   assert.match(comments[0].body, /Use const/);
+});
+
+test("all review comments are sent in batches and stop if the head changes", () => {
+  const comments = Array.from({ length: 123 }, (_, line) => ({ line }));
+  const batches = [];
+  submitReviews(comments, () => true, batch => batches.push(batch));
+  assert.deepEqual(batches.map(batch => batch.length), [50, 50, 23]);
+  assert.deepEqual(batches.flat(), comments);
+
+  const stale = [];
+  submitReviews(comments, () => stale.length === 0, batch => stale.push(batch));
+  assert.deepEqual(stale, [comments.slice(0, 50)]);
 });

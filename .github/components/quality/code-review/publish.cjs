@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { addedLines } = require("./diff.cjs");
 
-const limit = 50;
+const commentsPerReview = 50;
 const reportNames = ["rules-audit-findings", "code-review-findings"];
 
 function commentsFor(findings, files) {
@@ -71,23 +71,29 @@ function main(env = process.env) {
   if (!findings.length) return; // The engine can fail before producing diagnostics.
   const comments = commentsFor(findings, api(endpoint + "/files?per_page=100", true));
   if (!comments.size) return;
-  const omitted = Math.max(0, comments.size - limit);
-  const review = new Map([...comments].slice(0, limit));
   for (const comment of api(endpoint + "/comments?per_page=100", true)) {
     if (comment.user?.login !== "github-actions[bot]" || comment.original_commit_id !== sha) continue;
     const key = /^<!-- registry-review:([a-f0-9]{64}) -->/.exec(comment.body)?.[1];
-    if (key) review.delete(key);
+    if (key) comments.delete(key);
   }
-  if (!review.size || !isCurrent()) return;
-  gh(["api", "--method", "POST", endpoint + "/reviews", "--input", "-"], JSON.stringify({
-    commit_id: sha,
-    event: "COMMENT",
-    body: "Registry Code Review. " + (omitted ? "The first 50 findings are attached. See CI artifacts for the full report." : "Findings are attached to changed lines."),
-    comments: [...review.values()],
-  }));
+  submitReviews([...comments.values()], isCurrent, comments => {
+    gh(["api", "--method", "POST", endpoint + "/reviews", "--input", "-"], JSON.stringify({
+      commit_id: sha,
+      event: "COMMENT",
+      body: "Registry Code Review. See CI artifacts for the full report.",
+      comments,
+    }));
+  });
 }
 
-module.exports = { commentsFor };
+function submitReviews(comments, isCurrent, submit) {
+  for (let offset = 0; offset < comments.length; offset += commentsPerReview) {
+    if (!isCurrent()) return;
+    submit(comments.slice(offset, offset + commentsPerReview));
+  }
+}
+
+module.exports = { commentsFor, submitReviews };
 if (require.main === module) {
   try { main(); }
   catch { console.error("Registry could not publish inline review findings. See the engine run for diagnostics."); process.exitCode = 1; }
