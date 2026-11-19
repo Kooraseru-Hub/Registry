@@ -49,8 +49,8 @@ end
 	@param path string Absolute path to register the module under.
 	@param module ModuleScript | Module The instance or table to store.
 ]]
-function Registry:Register(path: string, module: ModuleScript | Module): ()
-	Register.Register(self :: any, path, module)
+function Registry.Register(self: Registry, path: string, module: ModuleScript | Module): ()
+	Register.Register(self, path, module)
 end
 
 --[[
@@ -61,12 +61,12 @@ end
 	@param alias string The alias name (no leading @, no slashes).
 	@param path string The absolute path the alias expands to.
 ]]
-function Registry:RegisterAlias(alias: string, path: string): ()
+function Registry.RegisterAlias(self: Registry, alias: string, path: string): ()
 	assert(type(alias) == "string" and alias ~= "", "[Registry] alias must be a non-empty string")
 	assert(alias:find("/", 1, true) == nil, "[Registry] alias must not contain '/'")
 	assert(alias ~= "game" and alias ~= "self", "[Registry] alias '@game' and '@self' are reserved")
 	assert(type(path) == "string" and path ~= "", "[Registry] alias target path must be a non-empty string");
-	(self :: any).Aliases[alias] = path
+	self.Aliases[alias] = path
 end
 
 --[[
@@ -79,8 +79,8 @@ end
 	@param caller Module? Required for @self/ and relative paths.
 	@return Module The resolved module.
 ]]
-function Registry:Get(target: Resolvable, caller: Module?): Module
-	return Lookup.Get(self :: any, target, caller)
+function Registry.Get(self: Registry, target: Resolvable, caller: Module?): Module
+	return Lookup.Get(self, target, caller)
 end
 
 --[[
@@ -91,8 +91,8 @@ end
 	@param caller Module? Required for @self/ and relative paths.
 	@return { Module } Descendant modules.
 ]]
-function Registry:GetDescendants(path: string, caller: Module?): { Module }
-	return Lookup.GetDescendants(self :: any, path, caller)
+function Registry.GetDescendants(self: Registry, path: string, caller: Module?): { Module }
+	return Lookup.GetDescendants(self, path, caller)
 end
 
 --[[
@@ -101,8 +101,8 @@ end
 	@param category string The category name.
 	@return { Module } Modules in the category.
 ]]
-function Registry:GetByCategory(category: string): { Module }
-	return Categories.GetByCategory(self :: any, category)
+function Registry.GetByCategory(self: Registry, category: string): { Module }
+	return Categories.GetByCategory(self, category)
 end
 
 --[[
@@ -112,8 +112,8 @@ end
 
 	@param order { string } Ordered list of category names.
 ]]
-function Registry:SetStartOrder(order: { string }): ()
-	Categories.SetStartOrder(self :: any, order)
+function Registry.SetStartOrder(self: Registry, order: { string }): ()
+	Categories.SetStartOrder(self, order)
 end
 
 --[[
@@ -125,8 +125,8 @@ end
 	@param callback HookCallback Listener function.
 	@return HookConnection
 ]]
-function Registry:On(event: HookEvent, callback: HookCallback): HookConnection
-	return (self :: any).Hooks:On(event, callback)
+function Registry.On(self: Registry, event: HookEvent, callback: HookCallback): HookConnection
+	return self.Hooks:On(event, callback)
 end
 
 --[[
@@ -137,8 +137,8 @@ end
 	@param caller Module? Required for @self/ and relative paths.
 	@return boolean
 ]]
-function Registry:IsRegistered(path: string, caller: Module?): boolean
-	return Lookup.IsRegistered(self :: any, path, caller)
+function Registry.IsRegistered(self: Registry, path: string, caller: Module?): boolean
+	return Lookup.IsRegistered(self, path, caller)
 end
 
 --[[
@@ -148,8 +148,8 @@ end
 	according to the entry's passRegistry / passPath flags. Dependency
 	declarations are validated once before the first stage runs.
 ]]
-function Registry:RunLifecycle(): ()
-	Dependencies.Report(self :: any)
+function Registry.RunLifecycle(self: Registry): ()
+	Dependencies.Report(self)
 	local entries = Stages.Entries
 	local drivers = Stages.Drivers
 	for i = 1, #entries do
@@ -159,9 +159,9 @@ function Registry:RunLifecycle(): ()
 			continue
 		end
 		if entry.passRegistry then
-			driver.Run(self :: any, self)
+			driver.Run(self, self)
 		else
-			driver.Run(self :: any)
+			driver.Run(self)
 		end
 	end
 end
@@ -170,8 +170,8 @@ end
 	Runs only the Setup stage. Prefer :RunLifecycle when possible so every
 	stage fires in its declared order.
 ]]
-function Registry:SetupAll(): ()
-	Stages.Drivers.Setup.Run(self :: any)
+function Registry.SetupAll(self: Registry): ()
+	Stages.Drivers.Setup.Run(self)
 end
 
 --[[
@@ -180,17 +180,17 @@ end
 	call :RunLifecycle instead. Dependency declarations are validated once
 	before Setup so unresolved or cyclic dependencies surface early.
 ]]
-function Registry:InitAll(): ()
-	Dependencies.Report(self :: any)
-	Stages.Drivers.Setup.Run(self :: any)
-	Stages.Drivers.Init.Run(self :: any, self)
+function Registry.InitAll(self: Registry): ()
+	Dependencies.Report(self)
+	Stages.Drivers.Setup.Run(self)
+	Stages.Drivers.Init.Run(self, self)
 end
 
 --[[
 	Runs the Start stage. Called after :InitAll during bootstrap.
 ]]
-function Registry:StartAll(): ()
-	Stages.Drivers.Start.Run(self :: any)
+function Registry.StartAll(self: Registry): ()
+	Stages.Drivers.Start.Run(self)
 end
 
 --[[
@@ -199,8 +199,8 @@ end
 	Maid. Should be called explicitly during shutdown; not part of the
 	default RunLifecycle pipeline.
 ]]
-function Registry:DestroyAll(): ()
-	Stages.Drivers.Destroy.Run(self :: any, self)
+function Registry.DestroyAll(self: Registry): ()
+	Stages.Drivers.Destroy.Run(self, self)
 end
 
 --[[
@@ -211,8 +211,8 @@ end
 	@param module Module The module whose Maid to return.
 	@return Maid
 ]]
-function Registry:GetMaid(module: Module): Maid
-	local maid = (self :: any).ModuleMaids[module]
+function Registry.GetMaid(self: Registry, module: Module): Maid
+	local maid = self.ModuleMaids[module]
 	assert(maid ~= nil, "[Registry] no Maid for module; was it registered?")
 	return maid
 end
@@ -223,9 +223,9 @@ end
 	normally, then reinitializes all state maps in-place. The metatable and
 	Hooks object are preserved so existing listeners survive the reset.
 ]]
-function Registry:Reset(): ()
-	Stages.Drivers.Destroy.Run(self :: any, self)
-	State.Reset(self :: any)
+function Registry.Reset(self: Registry): ()
+	Stages.Drivers.Destroy.Run(self, self)
+	State.Reset(self)
 end
 
 --[[
@@ -235,8 +235,8 @@ end
 
 	@return { [Module]: { ErrorRecord } }
 ]]
-function Registry:GetErrors(): { [Module]: { ErrorRecord } }
-	return ErrorManager.All(self :: any)
+function Registry.GetErrors(self: Registry): { [Module]: { ErrorRecord } }
+	return ErrorManager.All(self)
 end
 
 --[[
@@ -245,8 +245,8 @@ end
 
 	@return InspectorSnapshot
 ]]
-function Registry:Inspect(): InspectorSnapshot
-	return Inspector.Snapshot(self :: any)
+function Registry.Inspect(self: Registry): InspectorSnapshot
+	return Inspector.Snapshot(self)
 end
 
 --[[
@@ -255,8 +255,8 @@ end
 
 	@return string
 ]]
-function Registry:ListModules(): string
-	return Inspector.FormatList(self :: any)
+function Registry.ListModules(self: Registry): string
+	return Inspector.FormatList(self)
 end
 
 --[[
@@ -269,11 +269,11 @@ end
 	@param name string The bare module name to search for.
 	@return Module The matching module.
 ]]
-function Registry:GetByName(name: string): Module
+function Registry.GetByName(self: Registry, name: string): Module
 	local matches: { Module } = {}
 	local suffix = "/" .. name
 	local suffixLen = #suffix
-	for path, module in pairs((self :: any).ModulesByPath) do
+	for path, module in pairs(self.ModulesByPath) do
 		if path:sub(-suffixLen) == suffix or path == name then
 			matches[#matches + 1] = module
 		end
