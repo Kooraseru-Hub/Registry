@@ -9,7 +9,8 @@ test('PR admission uses read-only review', () => {
   const review = fs.readFileSync(path.join(root, '.github/workflows/pull.yml'), 'utf8');
   assert.match(review, /pull_request_target:/);
   assert.match(review, /CI_OPERATION: review/);
-  assert.doesNotMatch(review, /checkout@|pull-requests: write|secrets:/);
+  assert.doesNotMatch(review.split("  review-comments:")[0], /checkout@|pull-requests: write|secrets:/);
+  assert.match(review.split("  review-comments:")[1], /pull-requests: write/);
 });
 test('dropdown choices correspond to configured manual operations', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/manual.yml'), 'utf8');

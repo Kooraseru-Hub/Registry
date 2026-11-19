@@ -2,7 +2,9 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { execute, changedFiles, review, annotation } = require("../code-review/review.cjs");
+const { execute, reviewBase, changedFiles, review, annotation } = require("../code-review/review.cjs");
+const { execFileSync } = require("node:child_process");
+const { addedLines } = require("../code-review/diff.cjs");
 const root = path.resolve(__dirname, "../../../..");
 
 function summary(findings, checked, base) {
@@ -24,27 +26,44 @@ function summary(findings, checked, base) {
 		"Blocking errors: " + checked.blocking.length + ". Inline annotations: " + checked.annotations.length +
 			" (" + checked.omitted + " further scoped findings omitted).", "",
 		"| Rule | Errors | Warnings | Information |", "|---|---:|---:|---:|", ...rows, "",
-		"Warnings are advisory. Expected rule-fixture findings are excluded. Download rules-audit-findings for every diagnostic.", "",
+		"New or edited Registry lines that fail the const binding rule block PR review. Warnings are advisory. Expected rule-fixture findings are excluded. Download rules-audit-findings for every diagnostic.", "",
 	].join("\n");
+}
+
+function enforceConst(findings, changed, base) {
+	const newLines = new Map();
+	for (const item of findings) {
+		if (item.source !== "luau/const-bindings" || item.fixture ||
+			!item.file.startsWith("source/Registry/") || !changed.has(item.file)) continue;
+		if (!newLines.has(item.file)) {
+			const patch = execFileSync("git", ["--literal-pathspecs", "diff", "--no-ext-diff", "--no-textconv",
+				"--unified=0", "origin/" + base + "...HEAD", "--", item.file], {
+				cwd: root, encoding: "utf8", timeout: 15000, maxBuffer: 4 * 1024 * 1024,
+			});
+			newLines.set(item.file, addedLines(patch));
+		}
+		if (newLines.get(item.file).has(item.line)) item.severity = "error";
+	}
 }
 
 function main() {
 	const directory = path.join(root, "build/rules-audit");
 	fs.mkdirSync(directory, { recursive: true });
-	let changed = null, baseFailure = null;
-	try { changed = changedFiles(process.env.GITHUB_BASE_REF); }
+	let changed = null, baseFailure = null, base = null;
+	try { base = reviewBase(); changed = changedFiles(base); }
 	catch (error) { baseFailure = String(error.message || error); }
 	const findings = execute("Rules", ["dependencies/packages/checks/preflightChecker/index.ts", "--rules"], root, "Rules audit");
 	if (baseFailure) findings.push({
 		file: ".github/components/quality/rules-audit/audit.cjs", line: 1, column: 1, severity: "error",
 		source: "Rules Audit", message: baseFailure, infrastructure: true,
 	});
+	if (changed) enforceConst(findings, changed, base);
 	const checked = review(findings, changed);
 	fs.writeFileSync(path.join(directory, "diagnostics.json"), JSON.stringify({
-		version: 1, audit: "rules", base: process.env.GITHUB_BASE_REF || null,
+		version: 1, audit: "rules", base,
 		changedFiles: changed ? [...changed].sort() : null, diagnostics: findings, blocking: checked.blocking.length,
 	}, null, 2) + "\n");
-	const report = summary(findings, checked, process.env.GITHUB_BASE_REF);
+	const report = summary(findings, checked, base);
 	fs.writeFileSync(path.join(directory, "summary.md"), report);
 	if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);
 	for (const item of checked.annotations) annotation(item);
