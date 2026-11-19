@@ -1,0 +1,26 @@
+# The sole engine pin. Event handlers submit requests instead of owning the engine.
+name: CI Engine
+on:
+  repository_dispatch:
+    types: [ci-request]
+run-name: ${{ format('CI / {0} / {1}{2}', github.event.client_payload.operation, github.event.client_payload.sha, github.event.client_payload.id && format(' / request {0}', github.event.client_payload.id) || '') }}
+permissions: {}
+concurrency:
+  group: ${{ github.event.client_payload.event == 'pull_request' && format('ci-pr-{0}', github.event.client_payload.pr) || format('ci-ref-{0}', github.event.client_payload.ref) }}
+  cancel-in-progress: ${{ github.event.client_payload.event == 'pull_request' || (github.event.client_payload.event == 'push' && github.event.client_payload.ref != format('refs/heads/{0}', github.event.repository.default_branch)) }}
+jobs:
+  engine:
+    name: CI Engine / engine
+    uses: Kooraseru-Hub/CI-Engine/.github/workflows/bootstrap.yml@04e6ff05b8bda63c7779a8468a23de7f99aac251
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+      checks: write
+      issues: write
+      pages: write
+      id-token: write
+    with:
+      request: ${{ toJSON(github.event.client_payload) }}
+      operation: ${{ github.event.client_payload.operation }}
+      publish: ${{ github.event.client_payload.publish == true }}

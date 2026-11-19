@@ -1,0 +1,7 @@
+# Shared components are discovered from .github/components.
+default = true
+
+[enabled]
+"distribution/attestations/publish" = false
+"distribution/packages/build" = false
+"distribution/packages/publish" = false

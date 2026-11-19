@@ -1,0 +1,12 @@
+[skip]
+default = "neutral"
+
+[skip.components]
+# Re-running publication for an existing release is an accepted skip.
+"distribution/releases/publish" = "success"
+
+# Authorization-dependent administration is reported separately.
+"governance/rulesets/sync" = "success"
+"work/projects/sync" = "success"
+"documentation/pages/publish" = "success"
+"work/milestones/sync" = "success"

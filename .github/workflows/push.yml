@@ -1,0 +1,47 @@
+name: Push
+
+on:
+  push:
+    branches: [source]
+
+permissions: {}
+jobs:
+  publish:
+    name: Request publication
+    if: github.event.deleted != true && github.ref_name == github.event.repository.default_branch
+    concurrency:
+      group: registry-publish-request
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch publication for this revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$GITHUB_REF_NAME" --jq .object.sha)
+          if [[ "$current" != "$GITHUB_SHA" ]]; then exit 0; fi
+          gh workflow run manual.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f operation=publish -f publish=true -f expected_sha="$GITHUB_SHA"
+
+  attest:
+    name: Attest Registry source archive
+    if: github.event.deleted != true && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash .github/components/source/build/archive.sh
+      - uses: actions/attest@v4.2.2
+        with:
+          subject-path: build/artifacts/Registry.zip

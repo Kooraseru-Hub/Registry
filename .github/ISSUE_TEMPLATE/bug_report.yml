@@ -1,0 +1,44 @@
+name: Registry bug report
+description: Report a problem with Registry in a Roblox experience or in this repository.
+title: "[Bug] "
+labels: [bug, needs triage]
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Share a minimal Luau snippet and the relevant ModuleScript layout, or link the failing GitHub Actions run for a CI issue.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Registry version or revision
+      description: Include the release, commit, or where you imported Registry from, if known.
+  - type: dropdown
+    id: context
+    attributes:
+      label: Where did the issue occur?
+      options:
+        - Roblox Studio
+        - Published Roblox experience
+        - GitHub Actions or release
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Relevant Roblox setup
+      description: If applicable, describe where Registry and the calling script are placed, whether the call runs on the server or client, and how you imported Registry.
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or stack trace
+      description: Paste the relevant Roblox Output or CI error, if available.

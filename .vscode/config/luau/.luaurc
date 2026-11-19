@@ -1,0 +1,25 @@
+{
+  "languageMode": "strict",
+  "lint": {
+    "*": true
+  },
+  "lintErrors": true,
+  "typeErrors": true,
+  "aliases": {
+    "workspace": "../../..",
+    "dependencies": "@workspace/dependencies",
+
+    "ci": "@dependencies/managed/packages/ci-engine/src/native",
+    "components": "@workspace/.github/components",
+    "tooling": "@workspace/tooling",
+    "build": "@workspace/build/run",
+
+    // Internal dependencies/tooling
+    "ruleLinter": "@dependencies/packages/checks/ruleLinter",
+    "formats": "@dependencies/packages/core/dataFormats",
+
+    // External dependencies
+    "lute": "@workspace/dependencies/managed/types/lute",
+    "std": "@lute/std"
+  }
+}

@@ -1,0 +1,56 @@
+name: Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Select an available CI operation
+        type: choice
+        required: true
+        default: validation
+        options:
+          - build
+          - publish
+          - publish-check
+          - readiness
+          - rules-audit
+          - validation
+      publish:
+        description: Confirm publication for publish
+        type: boolean
+        required: false
+        default: false
+
+      expected_sha:
+        description: Expected source revision for automated publication
+        type: string
+        required: false
+
+permissions: {}
+jobs:
+  dispatch:
+    name: Request CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Submit immutable request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_OPERATION: ${{ inputs.operation }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          REQUEST_PUBLISH: ${{ inputs.publish }}
+          REQUEST_INPUTS: ${{ toJSON(inputs) }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$EXPECTED_SHA" && "$EXPECTED_SHA" != "$GITHUB_SHA" ]]; then
+            echo "A newer revision owns source"
+            exit 0
+          fi
+          REQUEST_REF="$GITHUB_REF"
+          REQUEST_SHA="$GITHUB_SHA"
+          if [[ -z "${REQUEST_INPUTS:-}" ]]; then REQUEST_INPUTS='{}'; fi
+          jq -n --arg event 'workflow_dispatch' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -

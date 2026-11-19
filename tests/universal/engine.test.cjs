@@ -1,0 +1,75 @@
+"use strict";
+// This test verifies that the external engine and trusted local publisher
+// share an event policy without weakening either permission boundary.
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "../..");
+const engine = JSON.parse(fs.readFileSync(path.join(root, "config/ci/operations.json"), "utf8"));
+test("one canonical operation catalog owns component selection", () => {
+  assert.equal(engine.version, 1);
+  assert.equal(engine.componentRoot, ".github/components");
+  assert.equal(fs.existsSync(path.join(root, "config/ci/engine.json")), false);
+  assert.equal(fs.existsSync(path.join(root, ".github/config")), false);
+  assert.equal(fs.existsSync(path.join(root, "ci")), false);
+});
+test("capability contracts declare an explicit setup prerequisite", () => {
+  const rootPath=path.join(root,engine.componentRoot);
+  const components=["setup","workflows","code-review","rules-audit","build-tests","template-updates"];
+  for (const name of components) {
+    const filename=path.join(rootPath,"quality",name,"component.json");
+    const entry=JSON.parse(fs.readFileSync(filename,"utf8"));
+    assert.equal(entry.boundary,"read",name);
+    assert.deepEqual(entry.requires,name==="setup"?[]:["tools.workspace"],name);
+    if (name === "workflows" || name === "build-tests") {
+      assert.deepEqual(entry.command, ["node", "dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", ...(name === "workflows" ? ["native-lint"] : ["native-validate"])]);
+    } else {
+      assert.equal(entry.command.length, 2);
+      assert.equal(entry.command[0], "node");
+      assert.ok(fs.existsSync(path.join(root, entry.command[1])), entry.command[1]);
+    }
+  }
+});
+
+test("one independent engine; lightweight callers only submit requests", () => {
+  const directory = path.join(root, ".github/workflows");
+  const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.yml"), "utf8");
+  assert.match(bootstrap, /repository_dispatch:\s*\n\s*types: \[ci-request\]/);
+  assert.equal([...bootstrap.matchAll(/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/g)].length, 1);
+  for (const name of ["pull", "manual", "remote"]) {
+    const workflow = fs.readFileSync(path.join(directory, name + ".yml"), "utf8");
+    assert.match(workflow, /gh api --method POST "repos\/\$GITHUB_REPOSITORY\/dispatches"/);
+    assert.doesNotMatch(workflow, /uses: .*bootstrap\.yml|CI-Engine|secrets:/);
+  }
+});
+test("manual build is read-only; publication uses staged permission lanes", () => {
+  const ops=engine.operations;
+  assert.equal(ops.build.mode,"readonly");
+  assert.equal(ops.build.delivery,undefined);
+  assert.deepEqual(ops.build.hostTests,ops.validation.hostTests);
+  const op=ops.publish;
+  assert.equal(op.mode,"staged");
+  assert.deepEqual(op.events,["workflow_dispatch"]);
+  assert.equal(op.publication,true);
+  assert.equal(op.delivery.command[0],"node");
+  assert.equal(op.execution,undefined);
+  assert.equal(op.branchPrefix,undefined);
+});
+test("source ruleset requires the actual external reusable workflow gate", () => {
+  const source = JSON.parse(fs.readFileSync(path.join(root, "config/rulesets/source-gate.json"), "utf8"));
+  const rule = source.rules.find(item => item.type === "required_status_checks");
+  assert.ok(rule, "a required status checks rule must exist");
+  assert.deepEqual(rule.parameters.required_status_checks, [
+    { context: "CI Engine / engine / validate", integration_id: 15368 },
+  ]);
+});
+
+test("Registry operations have no native host matrix", () => {
+  for (const operation of Object.values(engine.operations)) assert.equal(operation.hostTests, undefined);
+});
+
+test("Registry reviews have no publication delivery", () => {
+  assert.equal(fs.existsSync(path.join(root, "config/ci/review-delivery.json")), false);
+});

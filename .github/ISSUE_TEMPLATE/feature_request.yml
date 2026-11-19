@@ -1,0 +1,24 @@
+name: Registry feature request
+description: Suggest an improvement to Registry or its Roblox integration.
+title: "[Feature] "
+labels: [enhancement, needs triage]
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: What are you trying to accomplish?
+      description: Describe your Roblox use case and where the current Registry API or workflow falls short.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How should Registry behave?
+      description: Describe the proposed behavior. Include an example Luau call or module layout if it helps.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Current workaround or compatibility notes
+      description: Share any workaround or describe how the change could affect existing Registry users.
