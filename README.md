@@ -650,8 +650,6 @@ return ShopService
 | **Coupling** | ❌ Tight coupling | ✅ Loose coupling |
 | **Module Discovery** | ❌ Search for require() calls | ✅ See all in main script |
 | **Type Safety** | Luau can infer types from direct requires | Registry exposes types for its module and lifecycle contracts |
-
-
 | **Dependencies** | ❌ Hidden in code | ✅ Explicit declarations |
 
 ---
