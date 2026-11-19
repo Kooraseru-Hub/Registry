@@ -1,0 +1,16 @@
+# Shared components are discovered from .github/components.
+default = true
+
+[enabled]
+"distribution/attestations/publish" = false
+"distribution/packages/build" = false
+"distribution/packages/publish" = false
+"documentation/pages/build" = false
+"documentation/pages/publish" = false
+"governance/rulesets/plan" = false
+"governance/rulesets/sync" = false
+"work/labels/sync" = false
+"work/milestones/plan" = false
+"work/milestones/sync" = false
+"work/projects/plan" = false
+"work/projects/sync" = false

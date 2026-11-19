@@ -1,0 +1,6 @@
+[skip]
+default = "neutral"
+
+[skip.components]
+# Re-running publication for an existing release is an accepted skip.
+"distribution/releases/publish" = "success"

@@ -1,0 +1,35 @@
+name: Push
+
+on:
+  push:
+    branches:
+      - source
+
+permissions: {}
+jobs:
+  dispatch:
+    name: Request CI
+    if: github.event.deleted != true
+    concurrency:
+      group: ci-starter-push-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Submit immutable request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_OPERATION: validation
+        run: |
+          set -euo pipefail
+          REQUEST_REF="$GITHUB_REF"
+          REQUEST_SHA="$GITHUB_SHA"
+          # A merge into the default branch is handled here, exactly like a direct push.
+          branch="${GITHUB_REF#refs/heads/}"
+          encoded=$(jq -nr --arg ref "$branch" '$ref | split("/") | map(@uri) | join("/")')
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded" --jq .object.sha)
+          if [[ "$current" != "$REQUEST_SHA" ]]; then echo "A newer revision owns this branch"; exit 0; fi
+          if [[ -z "${REQUEST_INPUTS:-}" ]]; then REQUEST_INPUTS='{}'; fi
+          jq -n --arg event 'push' --arg operation "$CI_OPERATION" --arg ref "$REQUEST_REF" --arg sha "$REQUEST_SHA" --argjson publish "${REQUEST_PUBLISH:-false}" --argjson pr "${PR_NUMBER:-0}" --argjson inputs "$REQUEST_INPUTS" '{event_type:"ci-request",client_payload:{event:$event,operation:$operation,ref:$ref,sha:$sha,publish:$publish,pr:$pr,inputs:$inputs}}' | gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input -

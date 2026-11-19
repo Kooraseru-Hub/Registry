@@ -1,0 +1,6 @@
+# Best effort: unsupported plans/permissions or service failures warn without
+# failing unrelated builds, publications, or deployments. No public fallback
+# signing service is used for private repository data.
+[attestations]
+mode = "disabled" # Enable only after the fixed CI workflow has a native attestation step.
+# mode = "disabled" explicitly skips provenance generation.

@@ -1,0 +1,18 @@
+[github]
+repository = "current"
+
+[github.aliases]
+
+[github.bootstrap]
+enabled = false
+branch_prefix = "ci/run-"
+
+[github.publication]
+releases = true
+branches = true
+packages = false
+pages = false
+milestones = false
+
+[github.previews]
+enabled = false

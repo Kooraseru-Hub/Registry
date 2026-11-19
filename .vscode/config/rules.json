@@ -1,0 +1,45 @@
+{
+  "defaults": {
+    "severity": "warning",
+    "fixtureSeverity": "info"
+  },
+  "rules": {
+    "luau/const-bindings": {
+      "severity": "info"
+    },
+    "luau/script-layout": {
+      "settings": { "entryPoints": ["dependencies/managed/packages/ci-engine/src/native/entry.luau", "dependencies/packages/core/hostRunner/run.luau"] }
+    },
+    "luau/module-roots": {
+      "severity": "info"
+    },
+    "luau/phase-comments": {
+      "severity": "info"
+    },
+    "luau/file-system": {
+      "settings": {
+        "sectionMarkers": {
+          "allowed": [
+            "Services",
+            "Modules",
+            "Types",
+            "Constants",
+            "Variables",
+            "Helpers",
+            "Constructor",
+            "Functions",
+            "Methods",
+            "Lifecycle",
+            "Initialization"
+          ],
+          "disallowed": [
+            "Imports",
+            "Module",
+            "Public Methods",
+            "Private Methods"
+          ]
+        }
+      }
+    }
+  }
+}

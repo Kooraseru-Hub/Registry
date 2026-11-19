@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "operations": {
+    "review": {
+      "mode": "readonly",
+      "events": [
+        "pull_request"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "validation": {
+      "mode": "readonly",
+      "events": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "readiness": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/workflows",
+        "quality/code-review",
+        "quality/rules-audit",
+        "quality/template-updates"
+      ]
+    },
+    "rules-audit": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/setup",
+        "quality/rules-audit"
+      ]
+    },
+    "build": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "publish": {
+      "mode": "staged",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/*"
+      ],
+      "publication": true,
+      "delivery": {
+        "command": [
+          "node",
+          "dependencies/packages/core/dependencyLoader/index.ts",
+          "--exec",
+          "tools.ciEngine",
+          "native-plan"
+        ]
+      }
+    },
+    "remote-validation": {
+      "mode": "readonly",
+      "events": [
+        "repository_dispatch"
+      ],
+      "actions": [
+        "ci-validation"
+      ],
+      "components": [
+        "quality/*"
+      ]
+    },
+    "publish-check": {
+      "mode": "readonly",
+      "events": [
+        "workflow_dispatch"
+      ],
+      "components": [
+        "quality/workflows",
+        "quality/build-tests"
+      ]
+    }
+  },
+  "componentRoot": ".github/components"
+}
