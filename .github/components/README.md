@@ -120,18 +120,20 @@ See the [Rules settings contract](../rules/general/workflows/review/checker-cont
 
 ## Local GitHub Actions
 
-From the repository root, run `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine` or use the **Run GitHub Actions locally** VS Code task.
+Use **Registry: Build** (Ctrl+Shift+B) for a fast native build. It writes to the workspace build directory.
+
+Use **Registry: Validate in Docker** in VS Code or run `bash .vscode/config/act/validate.sh` from the repository root. The task runs native validation in one Docker container named `kooraseru-hub-registry-ci`, with hostname `registry-ci`. It copies tracked working-tree files into the container and streams output to the terminal. The container and its local build output are removed on exit.
 
 
 ## Local execution
 
-Run normal dependency setup, then use the **CI: Run locally** task or GitHub Local Actions workflow button. The extension's supported `actCommand` setting routes through the same repository launcher. `act` must be on PATH. Informational flags (`--help`, `--version`, `--list`) pass through without starting a pipeline.
+Use **Registry: Emulate GitHub Actions** or the GitHub Local Actions workflow button to exercise the workflow graph. This mode uses `act` job containers and enables cleanup on failures by default. Run normal dependency setup first. Informational flags (`--help`, `--version`, `--list`) pass through without starting a pipeline.
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts
-node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine
-node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine --input operation=build
-node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine --input operation=readiness
+node .vscode/config/act/run.cjs
+node .vscode/config/act/run.cjs --input operation=build
+node .vscode/config/act/run.cjs --input operation=readiness
 ```
 
 Local `act` stages default to a 30-minute timeout, adjustable with `CI_LOCAL_TIMEOUT_MINUTES` (1–240). The launcher allocates a run-specific artifact server path and port, so do not pin either in `.actrc`. Failed runs preserve their stage logs under `build/run/<id>/` and invocation records in `.workspace/ci/runs/`.

@@ -28,19 +28,20 @@ for (const protocolVersion of ["2025-11-25", "2026-07-28"]) test("MCP stdio hand
 			const entry = pending.get(value.id);
 			if (entry) {
 				pending.delete(value.id);
+				clearTimeout(entry.timer);
 				entry.resolve(value);
 			}
 		}
 	});
 	const request = (method, params = {}) => new Promise((resolve, reject) => {
 		const id = ++nextId;
-		pending.set(id, { resolve, reject });
+		const timer = setTimeout(() => {
+			pending.delete(id);
+			reject(new Error(`MCP ${method} response timed out: ${stderr}`));
+		}, 30000);
+		pending.set(id, { resolve, timer });
 		child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
 	});
-	const timer = setTimeout(() => {
-		for (const entry of pending.values()) entry.reject(new Error("MCP response timed out: " + stderr));
-		pending.clear();
-	}, 10000);
 	try {
 		const handshake = await request("initialize", {
 			protocolVersion,
@@ -78,7 +79,7 @@ for (const protocolVersion of ["2025-11-25", "2026-07-28"]) test("MCP stdio hand
 			assert.ok(Array.isArray(diagnostics.result.structuredContent.diagnostics));
 		}
 	} finally {
-		clearTimeout(timer);
+		for (const entry of pending.values()) clearTimeout(entry.timer);
 		child.stdin.end();
 		child.kill();
 	}

@@ -2,10 +2,39 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "CI: Run locally",
+      "label": "Registry: Build",
+      "detail": "Build artifacts directly in the workspace without Docker.",
       "type": "process",
       "command": "node",
-      "args": ["${workspaceFolder}/dependencies/packages/core/dependencyLoader/index.ts", "--only", "tools.ciEngine", "--exec", "tools.ciEngine"],
+      "args": ["dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", "native", "--stage", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "CI_EVENT": "workflow_dispatch",
+          "CI_OPERATION": "build",
+          "CI_GRAPH_RUN": "true",
+          "CI_PHASE": "build"
+        }
+      },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Registry: Validate in Docker",
+      "detail": "Build and run tests in one temporary container.",
+      "type": "process",
+      "command": "bash",
+      "windows": { "command": "C:/msys64/usr/bin/bash.exe" },
+      "args": [".vscode/config/act/validate.sh"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Registry: Emulate GitHub Actions",
+      "detail": "Run the workflow with act and retain the artifact ZIP.",
+      "type": "process",
+      "command": "node",
+      "args": ["${workspaceFolder}/.vscode/config/act/run.cjs"],
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     }

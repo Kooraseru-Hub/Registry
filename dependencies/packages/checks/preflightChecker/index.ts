@@ -26,7 +26,7 @@ function luauSources(directory = root, includeFixtures = false): string[] {
 	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
 		if (entry.isSymbolicLink()) continue;
 		const file = path.join(directory, entry.name);
-		const generatedBuild = (directory === root && entry.name === "build") ||
+		const generatedBuild = (directory === root && (entry.name === "build" || entry.name === ".ci-engine-act")) ||
 			(directory === path.join(root, "dependencies") && (entry.name === "managed" || entry.name.startsWith(".managed-migration-")));
 		const fixtureDirectory = ["valid", "invalid", "review", "examples"].includes(entry.name) && path.relative(root, file).startsWith("rules" + path.sep + "luau" + path.sep);
 		if (entry.isDirectory() && !generatedBuild && !ignoredDirectories.has(entry.name) && (includeFixtures || !fixtureDirectory)) result.push(...luauSources(file, includeFixtures));
@@ -75,7 +75,8 @@ function compilerDiagnostics(output: string, source: string): Diagnostic[] {
 
 function check(program: string, args: string[], source: string): void {
 	console.log(`::preflight-stage::${source}`);
-	const result = spawnSync(program, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } });
+	const timeout = process.env.ACT === "true" && source === "Lute" ? 120_000 : 30_000;
+	const result = spawnSync(program, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } });
 	const output = `${result.stdout || ""}\n${result.stderr || ""}`;
 	const diagnostics = compilerDiagnostics(output, source);
 	const seen = new Set<string>();

@@ -2,3 +2,5 @@
 *.luau text eol=lf
 *.sh text eol=lf
 *.toml text eol=lf
+# The CI Engine manual input synchronizer expects LF.
+/.github/workflows/manual.yml text eol=lf

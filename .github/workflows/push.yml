@@ -6,8 +6,35 @@ on:
 
 permissions: {}
 jobs:
+  benchmark:
+    name: Build Registry benchmark on Windows
+    if: github.event.deleted != true && github.ref_name == github.event.repository.default_branch
+    runs-on: [self-hosted, Windows, roblox-studio]
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify Registry API and generate benchmark images
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="build/artifacts/benchmarks/$GITHUB_SHA/$GITHUB_RUN_ATTEMPT"
+          bash tests/registry/Studio/run.sh Lookup
+          bash tests/registry/Studio/run.sh Matrix "$output"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: registry-benchmark-${{ github.sha }}
+          path: build/artifacts/benchmarks/${{ github.sha }}/${{ github.run_attempt }}/
+          if-no-files-found: error
+          overwrite: true
+
   publish:
     name: Request publication
+    needs: benchmark
     if: github.event.deleted != true && github.ref_name == github.event.repository.default_branch
     concurrency:
       group: registry-publish-request

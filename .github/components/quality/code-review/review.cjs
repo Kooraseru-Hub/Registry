@@ -90,7 +90,8 @@ function annotation(item) {
 
 function execute(name, args, workspace = root, label = "Code review") {
 	process.stdout.write(label + ": running " + name + "\n");
-	const result = spawnSync(process.execPath, args, { cwd: workspace, encoding: "utf8", timeout: 150000, maxBuffer: 32 * 1024 * 1024 });
+	const timeout = process.env.ACT === "true" ? 300_000 : 150_000;
+	const result = spawnSync(process.execPath, args, { cwd: workspace, encoding: "utf8", timeout, maxBuffer: 32 * 1024 * 1024 });
 	const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
 	const findings = diagnosticOutput(output, workspace);
 	if (result.error || (result.status !== 0 && !findings.some(item => item.severity === "error"))) {

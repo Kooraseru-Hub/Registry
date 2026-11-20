@@ -55,7 +55,7 @@ def read_samples(records):
     return grouped, rows
 
 
-def render(phase, grouped):
+def render(phase, grouped, results=RESULTS):
     heading, *groups, levels, x_label = PHASES[phase]
     latencies = np.zeros((2, 30, 30))
     calls_by_row = []
@@ -76,11 +76,11 @@ def render(phase, grouped):
     latencies *= factor
     scale = LogNorm(vmin=latencies.min(), vmax=latencies.max())
     for name, title, data in zip(("require", "registry"), ("Direct require", "Registry:Get"), latencies):
-        render_slide(phase, heading, groups, levels, x_label, calls_by_row, palette, scale, unit, name, title, data)
+        render_slide(phase, heading, groups, levels, x_label, calls_by_row, palette, scale, unit, name, title, data, results)
         print(f"{phase} {name}: {data.min():.3g}–{data.max():.3g} {unit}/op")
 
 
-def render_slide(phase, heading, groups, levels, x_label, calls_by_row, palette, scale, unit, name, title, data):
+def render_slide(phase, heading, groups, levels, x_label, calls_by_row, palette, scale, unit, name, title, data, results):
     fig, ax = plt.subplots(figsize=(8, 8), dpi=235)
     fig.subplots_adjust(left=.15, right=.94, bottom=.175, top=.77)
     fig.patch.set_alpha(0)
@@ -112,12 +112,13 @@ def render_slide(phase, heading, groups, levels, x_label, calls_by_row, palette,
     bar.ax.tick_params(length=0, pad=5, labelsize=9, colors="white")
     fig.text(.545, .057, f"Median {unit} per operation  ·  blue is faster  ·  shared log scale",
              color="white", fontsize=9, ha="center")
-    fig.savefig(RESULTS / f"{name}-{phase}-matrix.png", transparent=True)
+    fig.savefig(results / f"{name}-{phase}-matrix.png", transparent=True)
     plt.close(fig)
 
 
 def main():
-    csv_path = RESULTS / "matrix-samples.csv"
+    results = Path(sys.argv[2]) if len(sys.argv) > 2 else RESULTS
+    csv_path = results / "matrix-samples.csv"
     if len(sys.argv) > 1:
         records = PATTERN.findall(Path(sys.argv[1]).read_text(encoding="utf-8"))
     else:
@@ -125,7 +126,7 @@ def main():
         with csv_path.open(newline="") as stream:
             records = [tuple(row[field] for field in fields) for row in csv.DictReader(stream)]
     grouped, rows = read_samples(records)
-    RESULTS.mkdir(exist_ok=True)
+    results.mkdir(parents=True, exist_ok=True)
     with csv_path.open("w", newline="") as stream:
         writer = csv.writer(stream)
         writer.writerow(["phase", "row", "column", "workload", "level", "trial", "operations",
@@ -135,7 +136,7 @@ def main():
             group, level = divmod(column - 1, 10)
             writer.writerow([phase, row, column, groups[group], levels[level], *sample])
     for phase in PHASES:
-        render(phase, grouped)
+        render(phase, grouped, results)
 
 
 if __name__ == "__main__":

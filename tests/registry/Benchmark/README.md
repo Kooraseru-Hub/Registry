@@ -1,5 +1,7 @@
 # Registry benchmark
 
+The source push workflow runs the Registry API smoke test and both benchmark phases on a self-hosted Windows runner labeled `roblox-studio`. The runner account needs Roblox Studio, Git Bash, Node.js, and Python 3 with Matplotlib and NumPy. Set `ROBLOX_STUDIO_EXECUTABLE` in the runner environment when Studio is installed outside its default location. The workflow uploads the four images and raw trials as `registry-benchmark-<commit SHA>` before requesting publication.
+
 ## 30×30 comparisons
 
 | Implementation | First load | Cached lookup |

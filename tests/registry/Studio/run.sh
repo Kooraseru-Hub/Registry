@@ -64,3 +64,8 @@ if [[ ! -f $log ]] || ! tr -d '\r' < "$log" | grep -Fx "$marker" >/dev/null; the
     exit 1
 fi
 printf 'Passed %s. Log: %s\n' "$suite" "$log"
+
+if [[ $suite == Matrix && -n ${2:-} ]]; then
+    MSYS2_ARG_CONV_EXCL="*" py -3 "$(cygpath -m "$studio_dir/../Benchmark/plot-matrix.py")" \
+        "$(cygpath -m "$log")" "$(cygpath -am "$2")"
+fi

@@ -92,6 +92,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 		["branch.name"] = branchName,
 		["branch.source"] = "source",
 	}
+
 	local rendered = content:gsub("{{([%w_.-]+)}}", function(key: string): string
 		return values[key] or error(`{source}: unknown repository placeholder {key}`, 0)
 	end)

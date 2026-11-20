@@ -144,7 +144,7 @@ function build() {
   if (!fs.existsSync(path.join(output, 'index.html'))) {
     throw new Error('Starlight failed to produce build/artifacts/pages/production/index.html');
   }
-  if (process.env.GITHUB_ACTIONS === 'true') {
+  if (process.env.GITHUB_ACTIONS === 'true' || process.env.CI_GRAPH_RUN === 'true') {
     const compatibility = path.join(root, 'build/github/pages');
     if (fs.existsSync(compatibility) && fs.lstatSync(compatibility).isSymbolicLink())
       throw new Error('Refusing symlinked native Pages staging directory');
