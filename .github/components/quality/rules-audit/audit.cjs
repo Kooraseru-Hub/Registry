@@ -34,7 +34,7 @@ function enforceConst(findings, changed, base) {
 	const newLines = new Map();
 	for (const item of findings) {
 		if (item.source !== "luau/const-bindings" || item.fixture ||
-			!item.file.startsWith("source/Registry/") || !changed.has(item.file)) continue;
+			item.file !== "source/Registry.luau" || !changed.has(item.file)) continue;
 		if (!newLines.has(item.file)) {
 			const patch = execFileSync("git", ["--literal-pathspecs", "diff", "--no-ext-diff", "--no-textconv",
 				"--unified=0", "origin/" + base + "...HEAD", "--", item.file], {
