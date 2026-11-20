@@ -1,18 +1,20 @@
 -- .github/components/work/labels/sync/init.luau
 --!strict
 
-local LabelCatalog = require("@self/labelCatalog")
-local LabelSync = require("@self/labelSync")
-local Publication = require("@ci/github/publication")
+const LabelCatalog = require("@self/labelCatalog")
+const LabelSync = require("@self/labelSync")
+const Publication = require("@ci/github/publication")
 
 local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
+--- Create the component used to synchronize repository labels.
 function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
+--- Synchronize GitHub labels from the validated repository catalog.
 function Component.Run(self: Component, _: { event: string }): string?
 	local labels = LabelCatalog.Read()
 	local repository = Publication.Begin("LABELS")

@@ -12,9 +12,18 @@ function mapEntry(relativePath, name) {
     const head = relativePath + "/init.luau";
     const hasHead = fs.existsSync(path.join(root, head));
     const children = fs.readdirSync(absolutePath, { withFileTypes: true })
+        .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
         .filter(entry => entry.isDirectory() || (entry.name.endsWith(".luau") && entry.name !== "init.luau"))
         .map(entry => mapEntry(relativePath + "/" + entry.name, entry.name.replace(/\.luau$/, "")))
         .filter(entry => entry.className !== "Folder" || entry.children.length > 0);
+
+    const names = new Set();
+    for (const child of children) {
+        if (names.has(child.name)) {
+            throw new Error(`Duplicate DataModel child "${child.name}" under ${relativePath}`);
+        }
+        names.add(child.name);
+    }
 
     return {
         name,

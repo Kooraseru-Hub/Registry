@@ -1,9 +1,9 @@
 -- .github/components/distribution/releases/publish/releaseAssetPublisher.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Hash = require("@formats/hash")
-local Publication = require("@ci/github/publication")
+const Fs = require("@std/fs")
+const Hash = require("@formats/hash")
+const Publication = require("@ci/github/publication")
 
 local ReleaseAssetPublisher = {}
 export type Asset = { name: string, bytes: string, digest: string }
@@ -13,6 +13,7 @@ export type Io = {
 	upload: typeof(Publication.Upload),
 }
 
+--- Decode and validate asset records from the release index.
 function ReleaseAssetPublisher.Read(value: unknown): { Asset }
 	local assets: { Asset } = {}
 	if value == nil then
@@ -22,6 +23,7 @@ function ReleaseAssetPublisher.Read(value: unknown): { Asset }
 		error("Staged release assets must be an array", 0)
 	end
 	local names: { [string]: boolean } = {}
+	-- Validate each asset before passing its metadata to publication.
 	for _, item in value do
 		local record = Publication.Record(item)
 		local name = Publication.Text(record.name)
@@ -31,8 +33,8 @@ function ReleaseAssetPublisher.Read(value: unknown): { Asset }
 			error("Duplicate or unsafe release asset name", 0)
 		end
 		names[name:lower()] = true
-		if not path:match("^build/github/releases/[%w_./%-]+$") or path:find("..", 1, true) then
-			error("Release asset must be a staged file under build/github/releases/", 0)
+		if not path:match("^build/artifacts/releases/[%w_./%-]+$") or path:find("..", 1, true) then
+			error("Release asset must be a staged file under build/artifacts/releases/", 0)
 		end
 		if (if Fs.exists(path) then Fs.type(path) else nil) ~= "file" then
 			error(`Missing staged release asset: {path}`, 0)
@@ -46,6 +48,7 @@ function ReleaseAssetPublisher.Read(value: unknown): { Asset }
 	return assets
 end
 
+--- Read the numeric asset ID needed for update operations.
 local function assetId(record: { [string]: unknown }): number
 	local id = record.id
 	if type(id) ~= "number" then
@@ -54,12 +57,14 @@ local function assetId(record: { [string]: unknown }): number
 	return id
 end
 
+--- Verify that GitHub returned the expected metadata for the uploaded asset.
 local function verify(record: { [string]: unknown }, asset: Asset): ()
 	if record.digest ~= asset.digest or record.state ~= "uploaded" then
 		error(`GitHub did not confirm the uploaded checksum for {asset.name}; existing assets have not been deleted`, 0)
 	end
 end
 
+--- Reconcile the staged assets with those attached to the GitHub release.
 function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, assets: { Asset }, io: Io): ()
 	if #assets == 0 then
 		return
@@ -67,6 +72,7 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 	local existing: { [string]: { [string]: unknown } } = {}
 	local page = 1
 
+	-- Page through existing assets before deciding what to upload or replace.
 	while true do
 		local items = io.list(`repos/{repository}/releases/{releaseId}/assets?per_page=100&page={page}`)
 		for _, item in items do
@@ -79,6 +85,7 @@ function ReleaseAssetPublisher.Sync(repository: string, releaseId: number, asset
 		page += 1
 	end
 
+	-- Reconcile each staged asset against the existing assets by name.
 	for _, asset in assets do
 		local previous = existing[asset.name]
 		if previous and previous.digest == asset.digest and previous.state == "uploaded" then

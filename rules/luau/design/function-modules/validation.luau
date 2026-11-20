@@ -1,12 +1,12 @@
 -- rules/luau/design/function-modules/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Query = require("@std/syntax/query")
-local Rule = require("@ruleLinter/rule")
-local Syntax = require("@std/syntax")
-local Utils = require("@std/syntax/utils")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Query = require("@std/syntax/query")
+const Rule = require("@ruleLinter/rule")
+const Syntax = require("@std/syntax")
+const Utils = require("@std/syntax/utils")
 
 type SourceRange = {
 	read beginLine: number,
@@ -15,6 +15,7 @@ type SourceRange = {
 	read endColumn: number,
 }
 
+--- Find a module wrapper exposed through a named callable member.
 local function namedWrapper(block: Syntax.CstStatBlock, stem: string): SourceRange?
 	local binding, method, returned = block.statements[1], block.statements[2], block.statements[3]
 	if binding.tag ~= "local" and binding.tag ~= "const" then
@@ -38,23 +39,27 @@ local function namedWrapper(block: Syntax.CstStatBlock, stem: string): SourceRan
 		return nil
 	end
 
+	-- Check whether the wrapper body references its own exported binding.
 	for _, reference in Query.findAllFromRoot(method.func, Utils.isExprLocal).nodes do
 		if reference["local"] == identity then
 			return nil
 		end
 	end
 
+	-- Return the wrapper location once the declaration has been identified.
 	return {
 		beginLine = binding.location.beginLine, beginColumn = binding.location.beginColumn,
 		endLine = returned.location.endLine, endColumn = returned.location.endColumn,
 	}
 end
 
+--- Determine whether an explicit string key matches the module stem.
 local function matchesQuotedName(key: Syntax.CstExpr, stem: string): boolean
 	return key.tag == "string" and (key.quoteStyle == "single" or key.quoteStyle == "double")
 		and key.value.text == stem
 end
 
+--- Find a module wrapper returned inline as a table member.
 local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Span?
 	if statement.tag ~= "return" or #statement.expressions ~= 1 then
 		return nil
@@ -72,6 +77,7 @@ local function inlineWrapper(statement: Syntax.CstStat, stem: string): Syntax.Sp
 	return nil
 end
 
+--- Find a module wrapper created by binding a function before export.
 local function boundWrapper(block: Syntax.CstStatBlock, stem: string): SourceRange?
 	local binding, returned = block.statements[1], block.statements[2]
 	if (binding.tag ~= "local" and binding.tag ~= "const") or #binding.variables ~= 1

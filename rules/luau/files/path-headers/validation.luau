@@ -1,8 +1,8 @@
 -- rules/luau/files/path-headers/validation.luau
 --!strict
 
-local Rule = require("@ruleLinter/rule")
-local Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Diagnostic = require("@ruleLinter/diagnostic")
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local path = context.path:gsub("\\", "/")

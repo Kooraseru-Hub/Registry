@@ -1,20 +1,21 @@
 -- .github/components/governance/rulesets/sync/init.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Process = require("@lute/process")
-local Json = require("@formats/json")
-local Authentication = require("@ci/github/authentication/authentication")
-local Configuration = require("@ci/github/configuration")
-local RulesetCatalog = require("@ci/github/resources/rulesets/rulesetCatalog")
-local RulesetSync = require("@ci/github/resources/rulesets/rulesetSync")
-local TokenPermissions = require("@ci/github/authentication/tokenPermissions")
-local Responses = require("@ci/github/reporting/responses")
+const Fs = require("@std/fs")
+const Process = require("@lute/process")
+const Json = require("@formats/json")
+const Authentication = require("@ci/github/authentication/authentication")
+const Configuration = require("@ci/github/configuration")
+const RulesetCatalog = require("@ci/github/resources/rulesets/rulesetCatalog")
+const RulesetSync = require("@ci/github/resources/rulesets/rulesetSync")
+const TokenPermissions = require("@ci/github/authentication/tokenPermissions")
+const Responses = require("@ci/github/reporting/responses")
 
 local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
+--- Report the ruleset publication decision and its context.
 local function report(
 	configuration: Configuration.Configuration,
 	state: string,
@@ -29,10 +30,12 @@ local function report(
 	Responses.Record("authorization/rulesets", markdown, selectedColor)
 end
 
+--- Create the component responsible for ruleset synchronization.
 function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
+--- Apply the ruleset plan when the configured credentials permit it.
 function Component.Run(self: Component, _: { event: string }): string?
 	local configuration = Configuration.new()
 	local repository = configuration:ResolveRepository(configuration.repository)
@@ -58,6 +61,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		end
 	end
 
+	-- Check the alternate token when the default token lacks access.
 	if not access and token and token ~= "" and token ~= Process.env.GH_TOKEN then
 		local required = TokenPermissions.Required(configuration, { "rulesets_token" }, "rulesets_token")
 		local inspection: TokenPermissions.Inspection = if verified
@@ -69,6 +73,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		end
 	end
 
+	-- Exit before writing when no authorized ruleset credential is available.
 	if not access then
 		local secret = configuration.credentials.rulesets_token or "<credentials.json roles.rulesets_token>"
 		local problem = `No App or {secret} credential with repository Administration: write was available.`
@@ -77,10 +82,12 @@ function Component.Run(self: Component, _: { event: string }): string?
 		return "skipped"
 	end
 
+	-- Apply the planned changes using the credential that passed the access check.
 	local authorizedAccess = access :: Authentication.Access
 	local ok, receipts, changed = pcall(RulesetSync.Sync, repository, authorizedAccess.token, definitions)
 	Authentication.Release(authorizedAccess)
 
+	-- Record the synchronization failure with its publication context.
 	if not ok then
 		-- Rejected API changes must remain failures and include a reviewable permissions record.
 		local problem = tostring(receipts)
@@ -88,8 +95,9 @@ function Component.Run(self: Component, _: { event: string }): string?
 		error(problem, 0)
 	end
 
-	Fs.createDirectory("build/github/ruleset-sync", { makeParents = true })
-	Fs.writeStringToFile("build/github/ruleset-sync/index.json", Json.encode({ applied = true, rulesets = receipts }))
+	-- Write the synchronization receipt once the remote operation succeeds.
+	Fs.createDirectory("build/artifacts/rulesets/receipts", { makeParents = true })
+	Fs.writeStringToFile("build/artifacts/rulesets/receipts/index.json", Json.encode({ applied = true, rulesets = receipts }))
 	if not changed then
 		print("All managed GitHub rulesets already match their source definitions")
 	end

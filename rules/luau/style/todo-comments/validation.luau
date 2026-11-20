@@ -1,10 +1,10 @@
 -- rules/luau/style/todo-comments/validation.luau
 --!strict
 
-local Comments = require("@ruleLinter/comments")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Rule = require("@ruleLinter/rule")
+const Comments = require("@ruleLinter/comments")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Rule = require("@ruleLinter/rule")
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, file = pcall(Parser.parse, context.source)

@@ -1,10 +1,11 @@
 -- dependencies/packages/core/dataFormats/json.luau
 --!strict
 
-local Json = require("@std/json")
+const Json = require("@std/json")
 
 -- The standard JSON library marks objects internally. Keep that detail inside
 -- this module so configuration consumers see ordinary named fields.
+--- Convert a Luau value into the JSON library's representation with validated keys.
 local function value(input: unknown): Json.Value
 	if input == nil or type(input) == "boolean" or type(input) == "string" or type(input) == "number" then
 		return input
@@ -14,6 +15,7 @@ local function value(input: unknown): Json.Value
 	end
 	local items = input :: { [string | number]: unknown }
 
+	-- Treat sequences as arrays and reject keys outside the sequence.
 	if #items > 0 then
 		local result: Json.Array = {}
 		for key, item in items do
@@ -25,8 +27,10 @@ local function value(input: unknown): Json.Value
 		return result
 	end
 
+	-- Use the library's object marker to serialize named fields as an object.
 	local result: Json.Object = Json.object({})
 
+	-- Validate object keys while recursively converting their values.
 	for key, item in items do
 		if type(key) ~= "string" then
 			error("JSON object keys must be strings", 0)
@@ -36,16 +40,19 @@ local function value(input: unknown): Json.Value
 	return result
 end
 
+--- Serialize a supported Luau value as JSON.
 local function encode(input: unknown): string
 	return Json.serialize(value(input))
 end
 
+--- Convert marked JSON objects and arrays into ordinary Luau tables.
 local function plain(input: Json.Value): unknown
 	if type(input) ~= "table" then
 		return input
 	end
 	local object = Json.asObject(input)
 
+	-- Read marked objects by string key and recursively normalize their contents.
 	if object then
 		local result: { [string]: unknown } = {}
 		for key, item in object do
@@ -56,6 +63,7 @@ local function plain(input: Json.Value): unknown
 		return result
 	end
 
+	-- Preserve array order while normalizing nested values.
 	local result: { unknown } = {}
 	for _, item in input :: Json.Array do
 		table.insert(result, plain(item))
@@ -63,10 +71,12 @@ local function plain(input: Json.Value): unknown
 	return result
 end
 
+--- Parse JSON and normalize the decoded containers.
 local function decode(input: string): unknown
 	return plain(Json.deserialize(input))
 end
 
+--- Validate and copy a decoded object with string keys.
 local function record(input: unknown): { [string]: unknown }
 	if type(input) ~= "table" then
 		error("Expected a data object", 0)
@@ -81,6 +91,7 @@ local function record(input: unknown): { [string]: unknown }
 	return result
 end
 
+--- Identify the JSON library's explicit null sentinel.
 local function isNull(input: unknown): boolean
 	return input == Json.null
 end

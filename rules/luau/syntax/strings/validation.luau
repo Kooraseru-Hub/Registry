@@ -1,17 +1,19 @@
 -- rules/luau/syntax/strings/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Parser = require("@std/syntax/parser")
-local Syntax = require("@std/syntax")
-local Query = require("@std/syntax/query")
-local Utils = require("@std/syntax/utils")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Syntax = require("@std/syntax")
+const Query = require("@std/syntax/query")
+const Utils = require("@std/syntax/utils")
 
+--- Recognize string expressions represented by quoted literals.
 local function isQuotedLiteral(node: Syntax.CstExpr): boolean
 	return node.tag == "string" and (node.quoteStyle == "single" or node.quoteStyle == "double")
 end
 
+--- Check whether the source replaces the builtin string conversion function.
 local function replacesTostring(block: Syntax.CstStatBlock): boolean
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
 		for _, target in assignment.variables do
@@ -29,6 +31,7 @@ local function replacesTostring(block: Syntax.CstStatBlock): boolean
 	return false
 end
 
+--- Determine whether interpolation already performs the requested conversion.
 local function isRedundantTostring(expression: Syntax.CstExpr): boolean
 	if expression.tag ~= "call" or #expression.arguments ~= 1 then
 		return false
@@ -72,8 +75,10 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Only simplify conversion calls when the source uses the builtin.
 	local builtinTostring = not replacesTostring(block)
 
+	-- Inspect interpolation arguments for redundant string conversions.
 	for _, node in Query.findAllFromRoot(block, Utils.isExprInterpString).nodes do
 		for _, expression in node.expressions do
 			if isQuotedLiteral(expression) then
@@ -84,6 +89,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Inspect standalone call expressions for redundant string formatting.
 	for _, call in Query.findAllFromRoot(block, Utils.isExprCall).nodes do
 		local callee = call.func
 		if callee.tag ~= "indexname" or callee.accessor.text ~= "." or callee.index.text ~= "format" or #call.arguments ~= 2 then

@@ -1,11 +1,11 @@
 -- rules/luau/style/const-bindings/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Parser = require("@std/syntax/parser")
-local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Syntax = require("@std/syntax")
+const Visitor = require("@std/syntax/visitor")
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)
@@ -15,6 +15,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 
 	local candidates: { Syntax.CstStatLocal } = {}
 	local exported: { [Syntax.CstLocal]: boolean } = {}
+	-- Collect candidate local bindings from each statement in the block.
 	for _, statement in block.statements do
 		if statement.tag == "local" and #statement.variables == 1 and #statement.values == 1
 			and statement.variables[1].name.text ~= "_" then
@@ -28,6 +29,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Record reassignment by binding identity so shadowed names remain independent.
 	local writes: { [Syntax.CstLocal]: boolean } = {}
 	local visitor = Visitor.create()
 
@@ -51,6 +53,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	Visitor.visitBlock(block, visitor)
 
 	local findings: { Diagnostic.Finding } = {}
+	-- Report candidates that no assignment can reach after declaration.
 	for _, declaration in candidates do
 		local binding = declaration.variables[1]
 		local isModuleTable = exported[binding] and declaration.values[1].tag == "table"

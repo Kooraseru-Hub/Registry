@@ -1,23 +1,25 @@
 -- .github/components/work/projects/plan/init.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Json = require("@formats/json")
-local ProjectCatalog = require("@ci/github/resources/projects/projectCatalog")
+const Fs = require("@std/fs")
+const Json = require("@formats/json")
+const ProjectCatalog = require("@ci/github/resources/projects/projectCatalog")
 
 local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
+--- Create the component responsible for planning GitHub Projects.
 function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
+--- Validate and stage the repository's project blueprints.
 function Component.Run(self: Component, _: { event: string }): ()
 	local projects = ProjectCatalog.Read()
-	Fs.createDirectory("build/github/project-plans", { makeParents = true })
+	Fs.createDirectory("build/artifacts/projects/plans", { makeParents = true })
 	Fs.writeStringToFile(
-		"build/github/project-plans/index.json",
+		"build/artifacts/projects/plans/index.json",
 		Json.encode({
 			projects = projects,
 			applied = false,

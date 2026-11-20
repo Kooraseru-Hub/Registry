@@ -1,11 +1,12 @@
 -- rules/luau/files/file-system/validation.luau
 --!strict
 
-local Comments = require("@ruleLinter/comments")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Syntax = require("@std/syntax")
+const Comments = require("@ruleLinter/comments")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Syntax = require("@std/syntax")
 
+--- Build the allowed and forbidden section-marker sets from settings.
 local function loadMarkerPolicy(settings: unknown): ({ [string]: boolean }, { [string]: boolean })
 	if type(settings) ~= "table" then
 		error("File-system rule settings must be an object", 0)
@@ -37,6 +38,7 @@ local function loadMarkerPolicy(settings: unknown): ({ [string]: boolean }, { [s
 	local allowed = readNames("allowed")
 	local disallowed = readNames("disallowed")
 
+	-- Resolve the marker sets without treating an allowed marker as forbidden.
 	for name in allowed do
 		if disallowed[name] then
 			error(`Section marker '{name}' cannot be both allowed and disallowed`, 0)
@@ -47,6 +49,7 @@ end
 
 type Marker = { name: string, span: Syntax.Span }
 
+--- Create the file-system validator for the supplied marker policy.
 local function create(settings: unknown): Rule.Rule
 	local allowedMarkers, disallowedMarkers = loadMarkerPolicy(settings)
 
@@ -56,16 +59,19 @@ local function create(settings: unknown): Rule.Rule
 			return {}
 		end
 
+		-- Check path segments before inspecting the source text.
 		for segment in path:gmatch("[^/]+") do
 			if segment == "generated" or segment == "vendor" or segment == "examples" or segment == "tests" then
 				return {}
 			end
 		end
 
+		-- Read the first two lines to find the path header and strict directive.
 		local first, second = context.source:match("^([^\r\n]*)\r?\n?([^\r\n]*)")
 		local findings: { Diagnostic.Finding } = {}
 		local hasPathHeader = first and first:match("^%-%- .+%.luau$")
 
+		-- Require the strict directive at the start or immediately after the path header.
 		if first ~= "--!strict" and not (hasPathHeader and second == "--!strict") then
 			local line = if hasPathHeader then 2 else 1
 			local header = if line == 2 then second else first
@@ -76,6 +82,7 @@ local function create(settings: unknown): Rule.Rule
 			}
 		end
 
+		-- Read each source line before validating section markers.
 		local lines = context.source:split("\n")
 		local approved: { Marker } = {}
 		Comments.VisitLineComments(context.source, function(comment, span)
@@ -100,6 +107,7 @@ local function create(settings: unknown): Rule.Rule
 			return left.span.beginLine < right.span.beginLine
 		end)
 
+		-- Compare approved markers to detect repeated sections.
 		for index = 2, #approved do
 			local previous, current = approved[index - 1], approved[index]
 			if previous.name ~= current.name or previous.span.beginColumn ~= current.span.beginColumn then

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-mkdir -p build/artifacts
-git archive --format=zip --output=build/artifacts/Registry.zip HEAD source/Registry.luau LICENSE
+mkdir -p build/artifacts/source
+git archive --format=zip --output=build/artifacts/source/Registry.zip HEAD source/Registry.luau LICENSE

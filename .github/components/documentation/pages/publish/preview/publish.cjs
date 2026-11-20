@@ -6,8 +6,7 @@ const { root, settings, target, resolveTarget, sourceContext, previewHost } = re
 const { api } = require('./github.cjs');
 const { syncComment, findOwned, bodyFor } = require('./comment.cjs');
 
-const candidateDir = path.join(root, 'build/preview-candidate');
-const uploadDir = path.join(root, 'build/preview-cloudflare');
+const uploadDir = path.join(root, 'build/local/cloudflare-upload');
 
 function selected(env, config) {
   const candidate = target(env.CI_PREVIEW_TARGET || '', config);
@@ -50,6 +49,8 @@ function prepareUpload(config, candidate) {
     fs.writeFileSync(path.join(uploadDir, 'index.html'),
       '<!doctype html><html><head><title>Preview closed</title></head><body>Preview closed</body></html>');
   } else {
+    if (!/^[0-9a-f]{40}$/.test(candidate.sha || '')) throw new Error('Invalid preview SHA');
+    const candidateDir = path.join(root, 'build/artifacts/pages/previews', candidate.sha);
     if (!fs.existsSync(path.join(candidateDir, 'index.html')) ||
         fs.lstatSync(candidateDir).isSymbolicLink())
       throw new Error('Missing static preview homepage');

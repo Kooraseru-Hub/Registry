@@ -10,17 +10,19 @@ local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
+--- Create the component used to publish staged packages.
 function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
+--- Publish packages using the staged index and return the publication outcome.
 function Component.Run(self: Component, _: { event: string }): string?
-	local index = Publication.Record(Json.decode(Fs.readFileToString("build/github/packages/index.json")))
+	local index = Publication.Record(Json.decode(Fs.readFileToString("build/artifacts/packages/index.json")))
 	local policy = ConflictPolicy.Parse(index.onExisting, "Staged packages")
 	print(`GitHub Packages existing-version policy: {policy}`)
 	-- GitHub Packages is separate from Releases and release attachments.
 	-- Unconfigured sample outputs exercise staging without inventing a registry format.
-	for _, value in Publication.ReadIndex("build/github/packages/index.json", "packages") do
+	for _, value in Publication.ReadIndex("build/artifacts/packages/index.json", "packages") do
 		local package = Publication.Record(value)
 		local name = Publication.Text(package.name)
 

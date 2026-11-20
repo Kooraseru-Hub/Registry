@@ -1,14 +1,14 @@
 -- dependencies/packages/checks/ruleLinter/editor.luau
 --!strict
 
-local Parser = require("@std/syntax/parser")
-local Fs = require("@std/fs")
-local Io = require("@std/io")
-local Hash = require("@formats/hash")
-local Json = require("@formats/json")
-local Runner = require("@ruleLinter/runner")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Fs = require("@std/fs")
+const Io = require("@std/io")
+const Hash = require("@formats/hash")
+const Json = require("@formats/json")
+const Runner = require("@ruleLinter/runner")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
 
 type Variant = { index: number, settings: unknown }
 type Entry = {
@@ -18,9 +18,9 @@ type Entry = {
 }
 type Request = { sources: { string }, entries: { Entry }, scoped: { source: string?, fixture: boolean? }? }
 
-local request = Json.decode(Io.input()) :: Request
-local sources: { Rule.Context } = {}
-local sourceHashes: { [string]: string } = {}
+const request = Json.decode(Io.input()) :: Request
+const sources: { Rule.Context } = {}
+const sourceHashes: { [string]: string } = {}
 for _, path in request.sources do
 	local source = if request.scoped and request.scoped.source ~= nil then request.scoped.source else Fs.readFileToString(path)
 	if request.scoped and not pcall(Parser.parseBlock, source) then
@@ -35,6 +35,7 @@ if #request.entries == 0 then
 	print("Repository rules: no validators discovered")
 end
 
+--- Emit a structured finding for the editor with its origin and source hash.
 local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixture: boolean, failure: ("fixture" | "checker")?)
 	print("::rule-finding::" .. Json.encode({
 		file = file, sourceHash = sourceHashes[file], source = if fixture then "Rule fixture" else rule.id,
@@ -46,6 +47,7 @@ local function emit(file: string, rule: Entry, finding: Diagnostic.Finding, fixt
 	}))
 end
 
+--- Report that a rule could not be loaded or executed.
 local function checkerFailed(rule: Entry, failure: unknown)
 	emit(rule.entry, rule, {
 		line = 1, column = 1, endLine = 1, endColumn = 1, severity = "error",
@@ -53,11 +55,12 @@ local function checkerFailed(rule: Entry, failure: unknown)
 	}, false, "checker")
 end
 
+--- Report invalid settings and identify the affected override when known.
 local function settingsFailed(rule: Entry, failure: unknown, index: number?)
 	print("::rule-settings-error::" .. Json.encode({ rule = rule.id, message = tostring(failure), index = index }))
 end
 
-local prepared: { { rule: Entry, validators: { [number]: Rule.Rule } } } = {}
+const prepared: { { rule: Entry, validators: { [number]: Rule.Rule } } } = {}
 for _, rule in request.entries do
 	local loaded, module = pcall(Runner.Load, rule.entry)
 	if not loaded then

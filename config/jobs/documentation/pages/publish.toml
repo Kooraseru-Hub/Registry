@@ -24,7 +24,7 @@ name = "Upload Pages artifact"
 uses = "actions/upload-pages-artifact@v4"
 if = "${{ steps.pages.outputs.enabled == 'true' }}"
 [steps.with]
-path = "build/github/pages"
+path = "build/artifacts/pages/production"
 
 [[steps]]
 name = "Deploy Pages"

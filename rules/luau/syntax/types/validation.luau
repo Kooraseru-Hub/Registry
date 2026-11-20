@@ -1,13 +1,14 @@
 -- rules/luau/syntax/types/validation.luau
 --!strict
 
-local Rule = require("@ruleLinter/rule")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Query = require("@std/syntax/query")
-local Syntax = require("@std/syntax")
-local Utils = require("@std/syntax/utils")
+const Rule = require("@ruleLinter/rule")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Query = require("@std/syntax/query")
+const Syntax = require("@std/syntax")
+const Utils = require("@std/syntax/utils")
 
+--- Read the original type annotation text for a syntax span.
 local function sourceAt(lines: { string }, span: Syntax.Span): string
 	if span.beginLine == span.endLine then
 		return lines[span.beginLine]:sub(span.beginColumn, span.endColumn - 1)
@@ -20,6 +21,7 @@ local function sourceAt(lines: { string }, span: Syntax.Span): string
 	return table.concat(parts, "\n")
 end
 
+--- Compare annotations to identify an equivalent repeated assertion.
 local function sameAnnotation(lines: { string }, inner: Syntax.CstType, outer: Syntax.CstType): boolean
 	if inner.tag == "reference" and outer.tag == "reference" and not inner.openParameters and not outer.openParameters then
 		local innerPrefix = if inner.prefix then inner.prefix.text else nil
@@ -37,6 +39,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local findings: { Diagnostic.Finding } = {}
 	local lines = context.source:split("\n")
 
+	-- Inspect type references for forbidden annotations.
 	for _, reference in Query.findAllFromRoot(ast, Utils.isTypeReference).nodes do
 		if reference.prefix ~= nil or reference.name.text ~= "any" then
 			continue
@@ -49,6 +52,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		}
 	end
 
+	-- Look for repeated assertions around an already asserted value.
 	for _, assertion in Query.findAllFromRoot(ast, Utils.isExprTypeAssertion).nodes do
 		local outer = assertion.annotation
 		if outer.tag == "reference" and not outer.prefix and outer.name.text == "any" then

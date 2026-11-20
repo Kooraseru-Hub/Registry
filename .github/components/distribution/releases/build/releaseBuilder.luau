@@ -1,16 +1,16 @@
 -- .github/components/distribution/releases/build/releaseBuilder.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Process = require("@lute/process")
-local Json = require("@formats/json")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
-local ReleaseAssets = require("./releaseAssets")
+const Fs = require("@std/fs")
+const Process = require("@lute/process")
+const Json = require("@formats/json")
+const Glob = require("@ci/bootstrap/discovery/glob")
+const ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+const ReleaseAssets = require("./releaseAssets")
 
-local CONFIG_PATH = "config/publishing/releases/settings.json"
-local RECORD_ROOT = "config/publishing/releases"
-local OUTPUT_ROOT = "build/github/releases"
+const CONFIG_PATH = "config/publishing/releases/settings.json"
+const RECORD_ROOT = "config/publishing/releases"
+const OUTPUT_ROOT = "build/artifacts/releases"
 
 type ReleaseRecord = {
 	assetPatterns: unknown,
@@ -46,6 +46,7 @@ export type ReleaseBuilder = setmetatable<{}, typeof(ReleaseBuilder)>
 local requireCommit: (string, string) -> ()
 local safeNotesPath: (string) -> string
 
+--- Ensure the release staging path is a directory before writing to it.
 local function ensureDirectory(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == "link" then
@@ -58,6 +59,7 @@ local function ensureDirectory(path: string): ()
 	end
 end
 
+--- Validate a release version according to its configured version scheme.
 local function validVersion(versionType: string, version: string, options: { [string]: unknown }): boolean
 	if versionType == "marketing" then
 		return version ~= "" and not version:find("[/\\\\:]", 1) and not version:find("..", 1, true)
@@ -95,14 +97,19 @@ local function validVersion(versionType: string, version: string, options: { [st
 		return false
 	end
 
+	-- Split the semantic version into its core and optional metadata.
 	local core = version
 	local build = core:find("+", 1, true)
+
+	-- Validate build metadata separately from the version core.
 	if build then
 		if options.allow_build_metadata ~= true or build == #core then
 			return false
 		end
 		core = core:sub(1, build - 1)
 	end
+
+	-- Check the numeric core after stripping optional version suffixes.
 	local major, minor, patch = core:match("^(%d+)%.(%d+)%.(%d+)$")
 	local preMajor, preMinor, prePatch, identifier, preNumber = core:match("^(%d+)%.(%d+)%.(%d+)%-([%w%-]+)%.(%d+)$")
 	if not (major and minor and patch) and not (preMajor and preMinor and prePatch and identifier and preNumber) then
@@ -113,17 +120,22 @@ local function validVersion(versionType: string, version: string, options: { [st
 			and patch
 		then { major, minor, patch }
 		else { preMajor, preMinor, prePatch, preNumber }
+
+	-- Reject numeric prerelease identifiers that contain leading zeroes.
 	for _, part in parts do
 		if part and #part > 1 and part:sub(1, 1) == "0" then
 			return false
 		end
 	end
+
+	-- Enforce the configured prerelease identifier when the version includes one.
 	if identifier and options.prerelease_identifier and identifier ~= options.prerelease_identifier then
 		return false
 	end
 	return true
 end
 
+--- Resolve a Git reference to the commit used for release staging.
 local function resolveReference(reference: string, label: string): string
 	local result = Process.run({ "git",  "rev-parse", "--verify", reference .. "^{commit}" })
 	if not result.ok then
@@ -134,6 +146,7 @@ local function resolveReference(reference: string, label: string): string
 	return reference
 end
 
+--- Decode and validate release records and their conflict policy.
 local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	local configuration = Json.record(Json.decode(Fs.readFileToString(CONFIG_PATH)))
 	if type(configuration) ~= "table" or type(configuration.release) ~= "table" then
@@ -154,6 +167,8 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 	local versions: { [string]: boolean } = {}
 	local sequences: { [number]: boolean } = {}
 	local entries: { ReleaseInput } = {}
+
+	-- Read the release records from their configured directories.
 	for _, directory in Glob.Find(`{RECORD_ROOT}/*`) do
 		local metadata = (if Fs.exists(directory) then Fs.type(directory) else nil)
 		if metadata == "link" then
@@ -184,9 +199,13 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		sequences[sequence] = true
 		table.insert(entries, { path = path, directory = identity, sequence = sequence, value = value })
 	end
+
+	-- Sort release inputs before resolving their previous-tag relationships.
 	table.sort(entries, function(a: ReleaseInput, b: ReleaseInput)
 		return a.sequence < b.sequence
 	end)
+
+	-- Resolve each sorted release entry against its source and notes settings.
 	for _, entry in entries do
 		local value = entry.value
 		local recordPath = entry.path
@@ -210,13 +229,13 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 		if versions[version] then
 			error(`{CONFIG_PATH}: duplicate release version {version}`, 0)
 		end
-		local resolvedCommit = if commit == nil
-			then resolveReference(sharedSource, `release {version} source`)
-			else if type(commit) == "string"
-				then resolveReference(commit, `release {version} source`)
-				else error(`{CONFIG_PATH}: release {version} source must be a Git reference`, 0)
+		if commit ~= nil and type(commit) ~= "string" then
+			error(`{CONFIG_PATH}: release {version} source must be a Git reference`, 0)
+		end
+		const resolvedCommit = resolveReference(commit or sharedSource, `release {version} source`)
 		local notesStart = value.previous_tag
 		local previousTag: string? = nil
+
 		if notesStart == "previous" then
 			previousTag = if #records > 0 then records[#records].tag else nil
 			if not previousTag then
@@ -234,12 +253,14 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 			end
 			previousTag = notesStart
 		end
+
 		if
 			type(value.notes) ~= "string"
 			or not string.match(value.notes, "^[%w_.-]+%.md$")
 		then
 			error(`{recordPath}: release record requires a notes filename`, 0)
 		end
+
 		local notes = `{entry.directory}/{value.notes}`
 		safeNotesPath(notes)
 		versions[version] = true
@@ -272,11 +293,13 @@ safeNotesPath = function(notes: string): string
 	if notes == "" or notes:find("\\", 1, true) or notes:sub(1, 1) == "/" then
 		error(`{CONFIG_PATH}: unsafe release notes path {notes}`, 0)
 	end
+
 	for segment in notes:gmatch("[^/]+") do
 		if segment == "." or segment == ".." then
 			error(`{CONFIG_PATH}: unsafe release notes path {notes}`, 0)
 		end
 	end
+
 	local source = `{RECORD_ROOT}/{notes}`
 	if not (Fs.exists(source) and Fs.type(source) == "file") or (if Fs.exists(source) then Fs.type(source) else nil) == "link" then
 		error(`{CONFIG_PATH}: release notes do not exist as a regular file: {source}`, 0)
@@ -284,13 +307,17 @@ safeNotesPath = function(notes: string): string
 	return source
 end
 
+--- Create the release builder with no per-run state.
 function ReleaseBuilder.new(): ReleaseBuilder
 	return setmetatable({}, ReleaseBuilder)
 end
 
-function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
+--- Stage release metadata and assets for the publication job.
+function ReleaseBuilder.Run(_: ReleaseBuilder): string?
 	local records, policy = decodeRecords()
 	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+
+	-- Refuse a linked output path before replacing staged releases.
 	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
 	elseif outputMetadata == "dir" then
@@ -298,19 +325,23 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
+
+	-- Skip staging when there are no release records.
 	if #records == 0 then
 		print("Releases skipped: no release records")
 		return "skipped"
 	end
 	ensureDirectory("build")
-	ensureDirectory("build/github")
+	ensureDirectory("build/artifacts")
 	ensureDirectory(OUTPUT_ROOT)
 
 	local index: { ReleaseIndexEntry } = {}
+	-- Stage assets and metadata for each validated release.
 	for _, release in records do
 		local releaseDirectory = `{OUTPUT_ROOT}/{release.version}`
 		ensureDirectory(releaseDirectory)
 		local notesOutput: string? = nil
+
 		if release.notes then
 			local source = safeNotesPath(release.notes)
 			local notesName = release.notes:match("([^/]+)$")
@@ -320,6 +351,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 			Fs.copy(source, `{releaseDirectory}/{notesName}`)
 			notesOutput = `{release.version}/{notesName}`
 		end
+
 		local entry = {
 			assets = ReleaseAssets.Stage(release.assetPatterns, `{releaseDirectory}/assets`, release.commit),
 			version = release.version,
@@ -335,6 +367,7 @@ function ReleaseBuilder.Run(_self: ReleaseBuilder): string?
 		table.insert(index, entry)
 	end
 
+	-- Write the release index after the staged files are available.
 	Fs.writeStringToFile(`{OUTPUT_ROOT}/index.json`, Json.encode({ onExisting = policy, releases = index }))
 	print(`Staged {#records} release records into {OUTPUT_ROOT}`)
 	return nil

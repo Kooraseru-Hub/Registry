@@ -31,6 +31,7 @@ function fixture(root, textDocuments = [], autoRefresh = workflow.rules.autoRefr
 	};
 	const vscode = {
 		StatusBarAlignment: { Left: 1 },
+		ThemeColor: class { constructor(id) { this.id = id; } },
 		ProgressLocation: { Notification: 15 },
 		DiagnosticSeverity: { Error: 0, Warning: 1, Information: 2 },
 		window: {
@@ -144,6 +145,30 @@ test("setup and checker status items remain independently actionable", () => {
 	assert.equal(names.filter(name => name.endsWith(".runSetup")).length, 1);
 	assert.equal(names.filter(name => name.endsWith(".check")).length, 1);
 	assert.equal(state.statusItems.length, 2);
+	state.api.dispose();
+});
+
+test("dependency changes keep Preflight stale until a synced rerun", async () => {
+	const root = path.resolve("C:/repo");
+	const state = fixture(root);
+	const actions = [];
+	state.api.startWatching(action => actions.push(action));
+	state.api.updateDependencies({ complete: true });
+	state.api.beginCheck(1);
+	state.watchers.find(watcher => watcher.pattern.glob.includes("dependencies/dependencies.lock"))
+		.change(fileUri(path.join(root, "dependencies/dependencies.lock")));
+	state.api.publishPreflight({ generation: 1, error: "Old dependency failure", findings: [] });
+	const status = state.statusItems[1];
+	assert.match(status.text, /requires rerun/);
+	assert.equal(status.backgroundColor.id, "statusBarItem.warningBackground");
+	await state.commands.get(status.command)();
+	assert.deepEqual(actions, ["run"]);
+	state.api.beginSetup(2);
+	state.api.updateDependencies({ complete: true });
+	state.api.beginCheck(3);
+	state.api.publishPreflight({ generation: 3, error: "Current failure", findings: [] });
+	assert.match(status.text, /Preflight failed/);
+	assert.equal(status.backgroundColor, undefined);
 	state.api.dispose();
 });
 
@@ -268,7 +293,16 @@ test("Rules failures leave a passing compile result and its diagnostics intact",
 	assert.match(state.statusItems[1].text, /CI Preflight passed/);
 	assert.equal(state.statusItems[1].tooltip, "CI compile and Bootstrap plan checks passed. Click to rerun.");
 	assert.equal(state.statusItems.length, 2);
-	assert.equal(state.diagnosticCalls.sets[1].items[0].severity, 1);
+	assert.equal(state.diagnosticCalls.sets.length, 1);
+	state.workspace.textDocuments.push({ uri: fileUri(path.join("C:/repo", "rules/test.luau")), isDirty: false });
+	state.api.publishRules({ generation: 2, findings: [
+		{ file: "rules/test.luau", fixture: true, severity: "warning", message: "Expected violation" },
+		{ file: "rules/validation.luau", severity: "warning", message: "Rule authoring suggestion" },
+		{ file: "rules/failure.luau", fixture: true, fixtureFailure: true, severity: "error", message: "Fixture failed" },
+	] });
+	assert.equal(state.diagnosticCalls.sets.length, 2);
+	assert.equal(state.diagnosticCalls.sets[1].items[0].severity, 0);
+	assert.match(state.diagnosticCalls.sets[1].items[0].message, /Fixture failed/);
 	state.api.dispose();
 });
 

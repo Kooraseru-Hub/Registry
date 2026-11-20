@@ -1,13 +1,14 @@
 -- rules/luau/design/objects/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Query = require("@std/syntax/query")
-local Syntax = require("@std/syntax")
-local Rule = require("@ruleLinter/rule")
-local Utils = require("@std/syntax/utils")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Query = require("@std/syntax/query")
+const Syntax = require("@std/syntax")
+const Rule = require("@ruleLinter/rule")
+const Utils = require("@std/syntax/utils")
 
+--- Find a table field that explicitly declares the instance index.
 local function explicitIndex(entries: { Syntax.CstTableExprItem }): Syntax.CstTableExprItem?
 	local selected: Syntax.CstTableExprItem? = nil
 	for _, entry in entries do
@@ -33,6 +34,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local ownedTables: { [Syntax.CstLocal]: boolean } = {}
 	local instanceMetatables: { [Syntax.CstLocal]: boolean } = {}
 
+	-- Collect constant declarations that may define a local class.
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatConst).nodes do
 		for index, binding in declaration.variables do
 			local initializer = declaration.values[index]
@@ -42,6 +44,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Collect mutable local declarations that may define a local class.
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocal).nodes do
 		for index, binding in declaration.variables do
 			local initializer = declaration.values[index]
@@ -51,6 +54,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Resolve class declarations that assign their own index after construction.
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
 		for _, target in assignment.variables do
 			if target.tag == "local" then
@@ -59,8 +63,10 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Locate the metatable calls that construct instances or connect class tables.
 	local calls = Query.findAllFromRoot(block, Utils.isExprCall).nodes
 
+	-- Identify constructor calls that set the metatable on an instance.
 	for _, call in calls do
 		local callee = call.func
 		if callee.tag ~= "global" or callee.name.text ~= "setmetatable" or #call.arguments ~= 2 then
@@ -97,6 +103,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		}
 	end
 
+	-- Inspect class metatable calls after resolving the known class bindings.
 	for _, call in calls do
 		local callee = call.func
 		if callee.tag ~= "global" or callee.name.text ~= "setmetatable" or #call.arguments ~= 2 then
@@ -123,6 +130,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		}
 	end
 
+	-- Check method receivers for classes identified in the current source.
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatFunction).nodes do
 		local name = declaration.name
 		if name.tag ~= "indexname" then

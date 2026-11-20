@@ -2,7 +2,7 @@
 --!strict
 
 -- Coordinate the site assembly stage for the Pages component.
-local SiteBuilder = require("@self/siteBuilder")
+const SiteBuilder = require("@self/siteBuilder")
 
 local Component = {}
 Component.__index = Component
@@ -11,6 +11,7 @@ type ComponentFields = { siteBuilder: SiteBuilder.SiteBuilder }
 
 export type Component = setmetatable<ComponentFields, typeof(Component)>
 
+--- Create the component and its documentation site builder.
 function Component.new(): Component
 	local fields: ComponentFields = {
 		siteBuilder = SiteBuilder.new(),
@@ -18,7 +19,8 @@ function Component.new(): Component
 	return setmetatable(fields, Component)
 end
 
-function Component.Run(self: Component, _context: { event: string }): ()
+--- Run the documentation site build for this CI invocation.
+function Component.Run(self: Component, _: { event: string }): ()
 	self.siteBuilder:Run()
 end
 

@@ -31,8 +31,8 @@ if [[ -z $studio || ! -f $(cygpath -u "$studio") ]]; then
     exit 1
 fi
 
-mkdir -p "$root/build/studio-runner"
-run_dir=$(mktemp -d "$root/build/studio-runner/$suite-XXXXXXXX")
+mkdir -p "$root/build/artifacts/tests"
+run_dir=$(mktemp -d "$root/build/artifacts/tests/$suite-XXXXXXXX")
 log="$run_dir/studio.log"
 MSYS2_ARG_CONV_EXCL="*" py -3 "$(cygpath -m "$studio_dir/build.py")" "$(cygpath -m "$run_dir")"
 

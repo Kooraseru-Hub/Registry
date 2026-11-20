@@ -1,12 +1,12 @@
 -- rules/luau/design/declarative-data/validation.luau
 --!strict
 
-local Rule = require("@ruleLinter/rule")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Query = require("@std/syntax/query")
-local Syntax = require("@std/syntax")
-local Utils = require("@std/syntax/utils")
+const Rule = require("@ruleLinter/rule")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Query = require("@std/syntax/query")
+const Syntax = require("@std/syntax")
+const Utils = require("@std/syntax/utils")
 
 type LintViolation = {
 	lintname: string,
@@ -26,17 +26,20 @@ type Candidate = {
 const RULE_NAME = "declarative_data"
 const MESSAGE = "This table contains static declarative data; move it to a data file or document the runtime constraint."
 
+--- Recognize syntax nodes that represent scalar literals.
 local function isScalarLiteral(value: Syntax.CstExpr): boolean
 	return value.tag == "boolean" or value.tag == "string" or value.tag == "number"
 		or value.tag == "integer" or value.tag == "nil"
 end
 
 -- Recognize serializable literal values, recursively, without relying on identifier spelling.
+--- Determine whether a syntax expression can be represented as static data.
 local function isStatic(value: Syntax.CstExpr): boolean
 	if isScalarLiteral(value) then
 		return true
 	end
 
+	-- Accept interpolations only when their embedded expressions are also static.
 	if value.tag == "interpolatedstring" then
 		for _, expression in value.expressions do
 			if not isScalarLiteral(expression) then
@@ -46,16 +49,20 @@ local function isStatic(value: Syntax.CstExpr): boolean
 		return true
 	end
 
+	-- Evaluate whether the unary operand qualifies as a static value.
 	if value.tag == "unary" then
 		return value.operator.text == "-" and isStatic(value.operand)
 	end
+
 	if value.tag == "group" then
 		return isStatic(value.expression)
 	end
+
 	if value.tag ~= "table" then
 		return false
 	end
 
+	-- A table qualifies as static data only if its entries do too.
 	for _, entry in value.entries do
 		if entry.kind == "general" and not isStatic(entry.key) then
 			return false
@@ -68,6 +75,7 @@ local function isStatic(value: Syntax.CstExpr): boolean
 end
 
 -- A CST local reference identifies its original binding, including shadowed names.
+--- Resolve the local binding represented by this expression.
 local function bindingOf(expression: Syntax.CstExpr): Syntax.CstLocal?
 	if expression.tag == "local" then
 		return expression["local"]
@@ -79,6 +87,7 @@ local function bindingOf(expression: Syntax.CstExpr): Syntax.CstLocal?
 end
 
 -- Follow local aliases only when the alias binding is never reassigned.
+--- Follow aliases to the original local binding.
 local function resolveAlias(binding: Syntax.CstLocal, aliases: { [Syntax.CstLocal]: Syntax.CstLocal }): Syntax.CstLocal
 	local current = binding
 	local visited: { [Syntax.CstLocal]: boolean } = {}
@@ -89,12 +98,14 @@ local function resolveAlias(binding: Syntax.CstLocal, aliases: { [Syntax.CstLoca
 	return current
 end
 
+--- Check whether a source span is contained within another.
 local function isInside(outer: Syntax.Span, inner: Syntax.Span): boolean
 	local startsAfter = inner.beginLine > outer.beginLine or (inner.beginLine == outer.beginLine and inner.beginColumn >= outer.beginColumn)
 	local endsBefore = inner.endLine < outer.endLine or (inner.endLine == outer.endLine and inner.endColumn <= outer.endColumn)
 	return startsAfter and endsBefore
 end
 
+--- Check whether a location belongs to a runtime scope.
 local function inRuntimeScope(location: Syntax.Span, scopes: { Syntax.Span }): boolean
 	for _, scope in scopes do
 		if isInside(scope, location) then
@@ -104,6 +115,7 @@ local function inRuntimeScope(location: Syntax.Span, scopes: { Syntax.Span }): b
 	return false
 end
 
+--- Recognize declarations that can introduce local bindings.
 local function findDeclaration(node: Syntax.CstNode): (Syntax.CstStatLocal | Syntax.CstStatConst)?
 	local declaration = Utils.isStatLocal(node)
 	if declaration then
@@ -112,6 +124,7 @@ local function findDeclaration(node: Syntax.CstNode): (Syntax.CstStatLocal | Syn
 	return Utils.isStatConst(node)
 end
 
+--- Recognize statements that introduce loop scopes.
 local function findLoop(node: Syntax.CstNode): (Syntax.CstStatFor | Syntax.CstStatForIn | Syntax.CstStatWhile | Syntax.CstStatRepeat)?
 	local numeric = Utils.isStatFor(node)
 	if numeric then
@@ -128,6 +141,7 @@ local function findLoop(node: Syntax.CstNode): (Syntax.CstStatFor | Syntax.CstSt
 	return Utils.isStatRepeat(node)
 end
 
+--- Collect static data findings from a parsed Luau block.
 local function lint(ast: Syntax.CstStatBlock, sourcepath: string?, _: unknown): { LintViolation }
 	local candidates: { Candidate } = {}
 	local scopes: { Syntax.Span } = {}
@@ -174,6 +188,7 @@ local function lint(ast: Syntax.CstStatBlock, sourcepath: string?, _: unknown): 
 			end
 		end
 	end
+	-- Record function scopes before distinguishing static tables from runtime data.
 	for _, statement in Query.findAllFromRoot(ast, Utils.isStatLocalFunction).nodes do
 		table.insert(scopes, statement.func.body.location)
 		knownFunctions[statement.name] = true
@@ -208,6 +223,7 @@ local function lint(ast: Syntax.CstStatBlock, sourcepath: string?, _: unknown): 
 		end
 	end
 
+	-- Look for compound writes that establish that a local table owns mutable state.
 	for _, statement in Query.findAllFromRoot(ast, Utils.isStatCompoundAssign).nodes do
 		local original = bindingOf(statement.variable)
 		if original then
@@ -247,6 +263,7 @@ local function lint(ast: Syntax.CstStatBlock, sourcepath: string?, _: unknown): 
 		end
 	end
 
+	-- Evaluate the candidates after collecting bindings, scopes, and writes.
 	for _, candidate in candidates do
 		local binding = candidate.binding
 		local initial = candidate.initial
@@ -289,12 +306,14 @@ end
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local path = context.path:gsub("\\", "/")
 
+	-- Skip paths reserved for fixtures, examples, dependencies, or generated code.
 	for segment in path:gmatch("[^/]+") do
 		if segment == "tests" or segment == "examples" or segment == "vendor" or segment == "generated" or segment == "build" or segment == "node_modules" then
 			return {}
 		end
 	end
 
+	-- Parse the eligible source before evaluating its declarations.
 	local parsed, ast = pcall(Parser.parseBlock, context.source)
 	if not parsed then
 		-- Lute reports Syntax errors separately.
@@ -302,6 +321,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	end
 	local findings: { Diagnostic.Finding } = {}
 
+	-- Convert internal source spans to editor diagnostic ranges.
 	for _, violation in lint(ast, path, nil) do
 		local span = violation.location
 		local related: { Diagnostic.Span } = {}

@@ -1,12 +1,13 @@
 -- dependencies/packages/checks/ruleLinter/comments.luau
 --!strict
 
-local Parser = require("@std/syntax/parser")
-local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+const Parser = require("@std/syntax/parser")
+const Syntax = require("@std/syntax")
+const Visitor = require("@std/syntax/visitor")
 
 type CommentCallback = (string, Syntax.Span, boolean) -> ()
 
+--- Visit comment spans from the parsed syntax tree in source order.
 local function visitComments(file: Syntax.CstParseResult, callback: CommentCallback)
 	local seen: { [string]: boolean } = {}
 
@@ -38,6 +39,7 @@ local function visitComments(file: Syntax.CstParseResult, callback: CommentCallb
 	visitToken(file.eof)
 end
 
+--- Visit line comments and provide their source spans to the callback.
 local function visitLineComments(source: string, callback: (string, Syntax.Span) -> ())
 	local parsed, file = pcall(Parser.parse, source)
 	if parsed then

@@ -1,7 +1,7 @@
 -- .github/components/distribution/packages/build/init.luau
 --!strict
 
-local PackageBuilder = require("@self/packageBuilder")
+const PackageBuilder = require("@self/packageBuilder")
 
 local Component = {}
 Component.__index = Component
@@ -10,11 +10,14 @@ type Fields = { builder: PackageBuilder.PackageBuilder }
 
 export type Component = setmetatable<Fields, typeof(Component)>
 
+--- Create the component and its package staging builder.
 function Component.new(): Component
-	return setmetatable({ builder = PackageBuilder.new() }, Component)
+	const fields: Fields = { builder = PackageBuilder.new() }
+	return setmetatable(fields, Component)
 end
 
-function Component.Run(self: Component, _context: { event: string }): string?
+--- Stage the configured packages and return the builder's skip result when applicable.
+function Component.Run(self: Component, _: { event: string }): string?
 	return self.builder:Run()
 end
 

@@ -1,7 +1,7 @@
 phase = "publish"
 provides = ["pages.deployment-ready"]
 requires = ["build.completed", "pages.generated"]
-inputs = ["build/github/pages/**"]
+inputs = ["build/artifacts/pages/production/**", "build/github/pages/index.html"]
 outputs = []
 events = ["push"]
 boundary = "privileged"

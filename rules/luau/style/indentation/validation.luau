@@ -1,11 +1,11 @@
 -- rules/luau/style/indentation/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Rule = require("@ruleLinter/rule")
-local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Rule = require("@ruleLinter/rule")
+const Syntax = require("@std/syntax")
+const Visitor = require("@std/syntax/visitor")
 
 return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local parsed, block = pcall(Parser.parseBlock, context.source)

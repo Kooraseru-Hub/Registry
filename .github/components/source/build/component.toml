@@ -2,6 +2,6 @@ phase = "build"
 provides = ["build.completed"]
 requires = []
 inputs = ["source/Registry.luau", "LICENSE", ".github/components/source/build/archive.sh"]
-outputs = ["build/artifacts/**"]
+outputs = ["build/artifacts/source/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

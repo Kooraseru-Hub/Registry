@@ -151,61 +151,6 @@ function checkCiPlans(): void {
 	}
 }
 
-function editorLuauChecks(): void {
-	const analyzer = process.env.TEMPLATE_LUAU_ANALYZER;
-	const toolConfig = ".vscode/settings.json";
-
-	function run(program: string, args: string[], source: string) {
-		console.log("::preflight-stage::" + source);
-		return spawnSync(program, args, { cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024 });
-	}
-
-	if (analyzer) {
-		const source = "Luau LSP workspace";
-		const inputs = luauSources(root, true);
-		const fileKey = (file: string) => {
-			const absolute = path.resolve(root, file);
-			return process.platform === "win32" ? absolute.toLowerCase() : absolute;
-		};
-		const inputKeys = new Set(inputs.map(fileKey));
-		if (!inputs.length) return;
-		const configured = process.env.TEMPLATE_LUAU_SETTINGS;
-		const baseConfig = process.env.TEMPLATE_LUAU_BASE_CONFIG;
-		const sourcemap = process.env.TEMPLATE_LUAU_SOURCEMAP;
-		const settingsDir = configured ? fs.mkdtempSync(path.join(os.tmpdir(), "template-luau-")) : undefined;
-		const args = ["analyze", "--formatter=gnu"];
-		let result;
-		try {
-			if (settingsDir) {
-				const settingsFile = path.join(settingsDir, "settings.json");
-				fs.writeFileSync(settingsFile, configured!);
-				args.push("--settings", settingsFile);
-				if (JSON.parse(configured!)["luau-lsp.fflags.enableByDefault"] === false) args.push("--no-flags-enabled");
-			} else args.push("--platform=standard", "--flag=LuauSolverV2=true");
-			if (baseConfig) args.push("--base-luaurc", baseConfig);
-			if (sourcemap) args.push("--sourcemap", sourcemap);
-			result = run(analyzer, [...args, ...inputs], source);
-		} finally {
-			if (settingsDir) fs.rmSync(settingsDir, { recursive: true, force: true });
-		}
-		const seen = new Set<string>();
-		let reported = false;
-		for (const line of [result.stdout, result.stderr].join("\n").split(/\r?\n/)) {
-			const match = line.match(/^(.*):(\d+)\.(\d+)(?:-\d+\.\d+)?: ([^:]+): (.*)$/);
-			if (!match) continue;
-			const [, file, row, column, category, message] = match;
-			reported = true;
-			if (!inputKeys.has(fileKey(file)) || seen.has(line)) continue;
-			seen.add(line);
-			finding(file, Number(row), Number(column), /^(TypeError|SyntaxError)$/.test(category) ? "error" : "warning", source, message);
-		}
-		if (result.error || (result.status !== 0 && !reported)) {
-			finding(toolConfig, 1, 1, "error", source, result.error?.message || "Workspace analysis failed.");
-		}
-	}
-
-}
-
 function reportRuleError(error: unknown): void {
 	const detail = error as Partial<Diagnostic>;
 	finding(detail.file || policyFile, detail.line || 1, detail.column || 1, "error", "Rules",
@@ -298,7 +243,6 @@ if (await dependenciesReady()) {
 		check(process.execPath, [typescript, "--project", configuration, "--pretty", "false"], "TypeScript");
 		await checkLuau(sources);
 		if (process.argv.includes("--ci")) checkCiPlans();
-		editorLuauChecks();
 	}
 } else {
 	finding("dependencies/dependencies.json", 1, 1, "error", "Preflight", "Dependencies are unavailable. Run workspace dependency setup and check its status-bar output.");

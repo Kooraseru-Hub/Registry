@@ -142,7 +142,9 @@ The sample release and package conflict policies default to `skip`, not `replace
 
 The default is `workflow_dispatch` with `operation=validation`. Explicit events, `--input operation=...`, dotenv input files, and event payloads are honored. Local Build runs the same read-only controller and exports verified ordinary files. Publish is unavailable locally.
 
-Current compiled outputs live under `build/artifacts/`; generated products stay under `build/github/`. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.
+Repository outputs live under `build/artifacts/`, grouped by publication target. `releases/<version>/` contains release metadata, notes, and assets. `pages/production/` and `pages/previews/<head-sha>/` contain the static sites. `branches/<branch>/` contains generated branch trees. Review diagnostics and summaries go under `pull-requests/<number>/<head-sha>/` in PR runs and under `quality/` locally. Studio test runs go under `tests/`. `build/local/` holds the Starlight project, caches, and temporary upload files.
+
+The pinned CI Engine retains its own transport layout. Native Pages checks, diagnostic uploads, and optional attestations use compatibility files at the paths that version of the engine expects. Each invocation retains its own `build/run/<id>/outputs/` snapshot, Start and execution logs, stage reports, generated workflows, and internal transport archives. The previous successful current outputs remain intact after a failed run or export. Unowned or user-modified files cause an ownership conflict instead of being overwritten. The output manifest records paths, sizes, hashes, source revision, and the tracked working-copy digest.
 
 Current-output ownership and v2 pipeline records live under ignored `.workspace/ci/`. Old v1 invocation records remain readable. Do not delete `.workspace/` as build cleanup. Archives are transport state; consumers inspect or launch the exported files directly.
 
@@ -152,7 +154,7 @@ Pull requests into the default branch run the configured `review` operation thro
 
 The external engine's read-only job uploads Code Review diagnostics as `code-review-findings/diagnostics.json` plus `summary.md`; Rules Audit produces its own `rules-audit-findings` artifact. To avoid flooding review pages with existing warnings, only the first 50 findings affecting PR-changed files are annotated; the full report retains the rest. Errors in changed files or checker failures block the relevant check; pre-existing errors in unrelated files are reported without blocking an unrelated pull request. Rules Audit excludes expected invalid rule-fixture findings, while unexpected fixture outcomes remain errors. A manual workflow dispatch reviews the whole repository.
 
-Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node .github/components/quality/code-review/review.cjs` and `node .github/components/quality/rules-audit/audit.cjs` to audit both locally. The reports are written to `build/code-review/` and `build/rules-audit/`. Manual dispatch with `operation=rules-audit` executes only the rules job.
+Run `node dependencies/packages/core/dependencyLoader/index.ts`, then `node .github/components/quality/code-review/review.cjs` and `node .github/components/quality/rules-audit/audit.cjs` to audit both locally. Local reports are written to `build/artifacts/quality/code-review/` and `build/artifacts/quality/rules-audit/`. Manual dispatch with `operation=rules-audit` executes only the rules job.
 
 
 ## Local act compatibility

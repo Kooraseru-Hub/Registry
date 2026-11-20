@@ -1,18 +1,19 @@
 -- rules/luau/style/phase-comments/validation.luau
 --!strict
 
-local Comments = require("@ruleLinter/comments")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local PhaseLayout = require("@ruleLinter/phaseLayout")
-local Rule = require("@ruleLinter/rule")
-local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+const Comments = require("@ruleLinter/comments")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const PhaseLayout = require("@ruleLinter/phaseLayout")
+const Rule = require("@ruleLinter/rule")
+const Syntax = require("@std/syntax")
+const Visitor = require("@std/syntax/visitor")
 
 const MIN_STATEMENT_LINES = 12
 
 type Comment = { span: Syntax.Span, prose: boolean }
 
+--- Determine whether a comment contains explanatory prose.
 local function hasProse(text: string, block: boolean): boolean
 	local body = if block then text:gsub("^%-%-%[=*%[", ""):gsub("%]=*%]%s*$", "") else text:gsub("^%-+", "")
 	for _, line in body:split("\n") do
@@ -27,11 +28,13 @@ local function hasProse(text: string, block: boolean): boolean
 	return false
 end
 
+--- Identify statements that count toward the executable body size.
 local function isExecutable(statement: Syntax.CstStat): boolean
 	return statement.tag ~= "typealias" and statement.tag ~= "typefunction" and statement.tag ~= "block"
 		and statement.tag ~= "localfunction" and statement.tag ~= "function"
 end
 
+--- Count distinct statement starts to decide whether phase checks apply.
 local function hasEnoughCode(body: Syntax.CstStatBlock): boolean
 	local seen: { [number]: boolean } = {}
 	local count = 0
@@ -51,6 +54,7 @@ local function hasEnoughCode(body: Syntax.CstStatBlock): boolean
 	return count >= MIN_STATEMENT_LINES
 end
 
+--- Check whether prose immediately explains the target statement.
 local function explained(comments: { [number]: Comment }, target: Syntax.Span): boolean
 	local line = target.beginLine - 1
 	while comments[line] do
@@ -90,6 +94,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		local statements = func.body.statements
 		local reported = 0
+		-- Inspect neighboring statements for unexplained phase boundaries.
 		for index = 2, #statements do
 			local before, after = statements[index - 1], statements[index]
 			if not isExecutable(before) or not isExecutable(after) or PhaseLayout.IsShortExit(after)

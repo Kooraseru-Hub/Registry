@@ -1,20 +1,21 @@
 -- .github/components/governance/branches/build/branchBuilder.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Toml = require("@formats/toml")
-local Glob = require("@ci/bootstrap/discovery/glob")
-local Process = require("@lute/process")
+const Fs = require("@std/fs")
+const Toml = require("@formats/toml")
+const Glob = require("@ci/bootstrap/discovery/glob")
+const Process = require("@lute/process")
 
-local CONFIG_ROOT = "config/branches"
-local CONTENT_ROOT = "content/docs/repository"
-local OUTPUT_ROOT = "build/github/branches"
+const CONFIG_ROOT = "config/branches"
+const CONTENT_ROOT = "content/docs/repository"
+const OUTPUT_ROOT = "build/artifacts/branches"
 
 local BranchBuilder = {}
 BranchBuilder.__index = BranchBuilder
 
 export type BranchBuilder = setmetatable<{}, typeof(BranchBuilder)>
 
+--- Ensure the branch staging path is a directory before writing to it.
 local function ensureDirectory(path: string): ()
 	local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 	if metadata == "link" then
@@ -27,15 +28,18 @@ local function ensureDirectory(path: string): ()
 	end
 end
 
+--- Validate a branch name before deriving its staging paths.
 local function validateBranch(name: string, path: string): ()
 	if not name:match("^[%w][%w_-]*$") then
 		error(`{path}: invalid branch name {name}`, 0)
 	end
 end
 
+--- Copy selected source paths into a branch tree and return the number copied.
 local function copySource(patterns: { string }, branchRoot: string, recordPath: string): number
 	local copied = 0
 	local seen: { [string]: boolean } = {}
+	-- Expand source patterns and stage the eligible matches.
 	for _, pattern in patterns do
 		if pattern == "" or pattern:sub(1, 1) == "/" or pattern:find("\\", 1, true) then
 			error(`{recordPath}: source entries must be safe repository-relative globs`, 0)
@@ -51,11 +55,13 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 
 		for _, source in Glob.Find(pattern) do
 			local metadata = (if Fs.exists(source) then Fs.type(source) else nil)
+
 			if metadata == "dir" then
 				continue
 			elseif metadata ~= "file" then
 				error(`unsupported repository source entry: {source}`, 0)
 			end
+
 			matched = true
 			if source == ".gitkeep" or source:match("/%.gitkeep$") or seen[source] then
 				continue
@@ -77,6 +83,7 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 end
 
 -- Repository documents use explicit English placeholders, independent of site i18n.
+--- Resolve supported template substitutions for a generated branch.
 local function renderTemplate(content: string, source: string, branchName: string): string
 	local repository = Process.env.GITHUB_REPOSITORY or ""
 	local projectName = repository:match("^[%w_.-]+/([%w_.-]+)$") or "Project"
@@ -94,6 +101,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 	return rendered
 end
 
+--- Copy an authored file into the branch tree, rendering template content when needed.
 local function copyAuthoredFile(source: string, destination: string, branchName: string): ()
 	local parent = destination:match("^(.*)/[^/]+$")
 	if parent then ensureDirectory(parent) end
@@ -104,12 +112,14 @@ local function copyAuthoredFile(source: string, destination: string, branchName:
 	end
 end
 
+--- Overlay the authored repository templates on the staged branch tree.
 local function overlayTemplates(
 	sourceRoot: string,
 	destinationRoot: string,
 	branchName: string
 ): number
 	local copied = 0
+	-- Walk authored templates and preserve their relative destinations.
 	for _, source in Glob.Find(`{sourceRoot}/**`) do
 		if source == sourceRoot then
 			continue
@@ -129,16 +139,20 @@ local function overlayTemplates(
 	return copied
 end
 
+--- Create a branch builder with no per-run state.
 function BranchBuilder.new(): BranchBuilder
 	return setmetatable({}, BranchBuilder)
 end
 
-function BranchBuilder.Run(_self: BranchBuilder): ()
+--- Build the configured branch trees for the publication step.
+function BranchBuilder.Run(_: BranchBuilder): ()
 	if not (Fs.exists(CONTENT_ROOT) and Fs.type(CONTENT_ROOT) == "dir") then
 		error(`missing repository content directory: {CONTENT_ROOT}`, 0)
 	end
 
 	local outputMetadata = (if Fs.exists(OUTPUT_ROOT) then Fs.type(OUTPUT_ROOT) else nil)
+
+	-- Validate the existing branch staging path before replacing it.
 	if outputMetadata == "link" then
 		error(`refusing to replace a symlink: {OUTPUT_ROOT}`, 0)
 	elseif outputMetadata == "dir" then
@@ -146,13 +160,17 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 	elseif outputMetadata ~= nil then
 		error(`expected a directory at {OUTPUT_ROOT}`, 0)
 	end
+
+	-- Create the output directories before staging branch content.
 	ensureDirectory("build")
-	ensureDirectory("build/github")
+	ensureDirectory("build/artifacts")
 	ensureDirectory(OUTPUT_ROOT)
 
 	local branchCount = 0
 	local records = Glob.Find(`{CONFIG_ROOT}/*.toml`)
 	table.sort(records)
+
+	-- Read each branch definition and stage its publication tree.
 	for _, path in records do
 		if (if Fs.exists(path) then Fs.type(path) else nil) ~= "file" then
 			error(`{path}: branch record must be a regular file`, 0)
@@ -185,6 +203,8 @@ function BranchBuilder.Run(_self: BranchBuilder): ()
 		branchCount += 1
 		print(`Built repository branch {name} with {copied} files`)
 	end
+
+	-- Report when the configuration produced no publishable branches.
 	if branchCount == 0 then
 		print(`No repository branches are configured under {CONFIG_ROOT}`)
 	end

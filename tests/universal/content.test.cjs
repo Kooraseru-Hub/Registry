@@ -65,5 +65,5 @@ test("builders stage the authored docs into branch and Pages outputs", () => {
   assert.ok(fs.existsSync(path.join(root, "content/theme.css")));
   assert.match(branches, /CONTENT_ROOT = "content\/docs\/repository"/);
   assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);
-  assert.match(branches, /OUTPUT_ROOT = "build\/github\/branches"/);
+  assert.match(branches, /OUTPUT_ROOT = "build\/artifacts\/branches"/);
 });

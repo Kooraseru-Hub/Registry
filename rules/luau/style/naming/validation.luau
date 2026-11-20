@@ -1,13 +1,14 @@
 -- rules/luau/style/naming/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Parser = require("@std/syntax/parser")
-local Syntax = require("@std/syntax")
-local Query = require("@std/syntax/query")
-local Utils = require("@std/syntax/utils")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Syntax = require("@std/syntax")
+const Query = require("@std/syntax/query")
+const Utils = require("@std/syntax/utils")
 
+--- Recognize literals that use the scalar binding naming convention.
 local function isScalarLiteral(value: Syntax.CstExpr): boolean
 	while value.tag == "group" do
 		value = value.expression
@@ -37,6 +38,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 
 	local reassigned: { [Syntax.CstLocal]: boolean } = {}
 
+	-- Track writes to bindings before enforcing stable-name conventions.
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatAssign).nodes do
 		for _, target in assignment.variables do
 			if target.tag == "local" then
@@ -45,6 +47,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Count compound assignments as writes to the original binding.
 	for _, assignment in Query.findAllFromRoot(block, Utils.isStatCompoundAssign).nodes do
 		local target = assignment.variable
 		if target.tag == "local" then
@@ -52,6 +55,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Check aliases separately from value bindings.
 	for _, alias in Query.findAllFromRoot(block, Utils.isStatTypeAlias).nodes do
 		local name = alias.name
 		if not name.text:match("^[A-Z][A-Za-z0-9]*$") then
@@ -59,6 +63,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Validate parameter names against the function parameter convention.
 	for _, declaration in Query.findAllFromRoot(block, Utils.isExprFunction).nodes do
 		for _, parameter in declaration.parameters do
 			local name = parameter.name
@@ -68,6 +73,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Check local helper names after checking their parameters.
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatLocalFunction).nodes do
 		local name = declaration.name.name
 		if not name.text:match("^[a-z][A-Za-z0-9]*$") then
@@ -98,6 +104,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Check immutable bindings using the roles inferred from their values.
 	for _, declaration in Query.findAllFromRoot(block, Utils.isStatConst).nodes do
 		for index, variable in declaration.variables do
 			local name = variable.name
@@ -158,6 +165,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local exportedBinding = if exported and exported.tag == "local" then exported["local"] else nil
 	local ownedExport: Syntax.CstLocal?
 
+	-- Identify the module's exported binding from its top-level return.
 	for _, statement in block.statements do
 		if statement.tag ~= "local" and statement.tag ~= "const" then
 			continue
@@ -191,6 +199,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Apply module naming rules only to stable exported bindings.
 	if ownedExport and not reassigned[ownedExport] then
 		local hasPublicFunction = false
 

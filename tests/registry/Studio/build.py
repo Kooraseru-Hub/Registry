@@ -51,4 +51,4 @@ def build(output):
 
 
 if __name__ == "__main__":
-    build(Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "build" / "studio")
+    build(Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "build" / "artifacts" / "tests" / "studio")

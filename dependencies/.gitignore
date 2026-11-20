@@ -1,0 +1,3 @@
+# Installed tools and interrupted migrations.
+/managed/
+/.managed-migration-*/
