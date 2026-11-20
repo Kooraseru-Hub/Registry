@@ -34,3 +34,7 @@
 # Favicon staged into Starlight's public assets for Astro.
 /.github/components/documentation/pages/build/starlight/public/images/favicon.png
 /.github/components/documentation/pages/build/starlight/.astro/
+
+# Local Roblox DataModel map and Studio place lock.
+/sourcemap.json
+*.rbxlx.lock

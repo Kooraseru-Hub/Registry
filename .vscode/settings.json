@@ -1,13 +1,12 @@
-
 {
 	// Generic Workbench Bridge external workspace client.
-	"githubLocalActions.actCommand": "node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine",
+	"githubLocalActions.actCommand": "node dependencies/packages/ci/localActions/run.cjs",
 	"workbenchBridge.workspaceCommands": [
 		["node", "dependencies/packages/editor/editorIntegration/client.cjs"]
 	],
 	// File Associations
 	"files.associations": {
-		"**/config/credentials.json": "jsonc",
+		"**/.github/config/credentials.json": "jsonc",
 		".luaurc": "jsonc"
 	},
 
@@ -30,7 +29,7 @@
 	},
 
 	// Luau Language Server
-	"luau-lsp.platform.type": "standard",
+	"luau-lsp.platform.type": "roblox",
 	"luau-lsp.analyzeLuaFiles": false,
 	"luau-lsp.ignoreGlobs": [
 		"**/_Index/**",
@@ -39,8 +38,10 @@
 		"rules-old/**"
 	],
 	"luau-lsp.diagnostics.workspace": true,
-	"luau-lsp.sourcemap.enabled": false,
+	"luau-lsp.sourcemap.enabled": true,
 	"luau-lsp.sourcemap.autogenerate": false,
+	"luau-lsp.sourcemap.sourcemapFile": "sourcemap.json",
+	"luau-lsp.diagnostics.strictDatamodelTypes": true,
 	"luau-lsp.server.baseLuaurc": ".vscode/config/luau/.luaurc",
 	"luau-lsp.fflags.enableNewSolver": true,
 	"luau-lsp.fflags.sync": false,
@@ -48,6 +49,7 @@
 	// Luau Editor
 	"[luau]": {
 		"editor.formatOnSave": false,
+		"editor.quickSuggestions": { "strings": "on" },
 		"editor.codeActionsOnSave": {
 			"source.fixAll": "never",
 			"source.organizeImports": "never"
@@ -58,7 +60,7 @@
 
 	// JSON Schemas
 	"json.schemas": [
-		{ "fileMatch": ["/config/credentials.json"], "url": "./config/credentials.schema.json" },
+		{ "fileMatch": ["/.github/config/credentials.json"], "url": "./.github/config/credentials.schema.json" },
 		{
 			"fileMatch": ["/dependencies/dependencies.json"],
 			"url": "./dependencies/dependencies.schema.json"
@@ -73,9 +75,9 @@
 		},
 		{
 			"fileMatch": [
-				"config/projects/**/project.json"
+				".github/config/projects/**/project.json"
 			],
-			"url": "./config/projects/project.schema.json"
+			"url": "./.github/config/projects/project.schema.json"
 		}
 	]
 }

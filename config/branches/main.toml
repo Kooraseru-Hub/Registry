@@ -1,2 +1,2 @@
 [branch]
-source = ["source/Registry/**", "LICENSE"]
+source = ["source/Registry.luau", "LICENSE"]

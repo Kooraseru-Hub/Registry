@@ -1,0 +1,4 @@
+{
+  "@game/ReplicatedStorage/Registry": "source/Registry.luau",
+  "@game/ReplicatedStorage/tests/registry": "tests/registry"
+}

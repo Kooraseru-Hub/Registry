@@ -2,4 +2,4 @@
 set -euo pipefail
 
 mkdir -p build/artifacts
-git archive --format=zip --output=build/artifacts/Registry.zip HEAD source/Registry LICENSE
+git archive --format=zip --output=build/artifacts/Registry.zip HEAD source/Registry.luau LICENSE
