@@ -2,6 +2,6 @@ phase = "build"
 provides = ["github.rulesets.planned"]
 requires = []
 inputs = ["config/rulesets/**"]
-outputs = ["build/github/ruleset-plans/**"]
+outputs = ["build/artifacts/rulesets/plans/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

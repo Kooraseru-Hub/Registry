@@ -2,6 +2,6 @@ phase = "build"
 provides = ["github.projects.planned"]
 requires = []
 inputs = ["config/projects/**", "config/targets.toml"]
-outputs = ["build/github/project-plans/**"]
+outputs = ["build/artifacts/projects/plans/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

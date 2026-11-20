@@ -7,10 +7,9 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "predev": "node build.cjs --prepare",
-    "dev": "astro dev",
+    "dev": "node build.cjs dev",
     "build": "node build.cjs",
-    "preview": "astro preview"
+    "preview": "node build.cjs preview"
   },
   "dependencies": {
     "astro": "7.4.12",

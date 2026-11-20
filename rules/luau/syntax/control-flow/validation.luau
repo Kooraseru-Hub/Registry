@@ -1,13 +1,14 @@
 -- rules/luau/syntax/control-flow/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Parser = require("@std/syntax/parser")
-local Query = require("@std/syntax/query")
-local Syntax = require("@std/syntax")
-local Utils = require("@std/syntax/utils")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Query = require("@std/syntax/query")
+const Syntax = require("@std/syntax")
+const Utils = require("@std/syntax/utils")
 
+--- Recognize expressions that can be used as boolean conditions.
 local function isBooleanExpression(expression: Syntax.CstExpr): boolean
 	if expression.tag == "group" then
 		return isBooleanExpression(expression.expression)
@@ -26,6 +27,7 @@ local function isBooleanExpression(expression: Syntax.CstExpr): boolean
 		or operator == ">" or operator == ">="
 end
 
+--- Determine whether a statement group can be moved out of its enclosing branch.
 local function canUnnest(statements: { Syntax.CstStat }): boolean
 	for _, statement in statements do
 		if statement.tag == "assign" or statement.tag == "compoundassign" then
@@ -38,6 +40,7 @@ local function canUnnest(statements: { Syntax.CstStat }): boolean
 	return #statements > 0
 end
 
+--- Recognize a direct call that exits by throwing an error.
 local function isErrorCall(statement: Syntax.CstStat): boolean
 	if statement.tag ~= "expression" or statement.expression.tag ~= "call" then
 		return false
@@ -46,6 +49,7 @@ local function isErrorCall(statement: Syntax.CstStat): boolean
 	return callee.tag == "global" and callee.name.text == "error"
 end
 
+--- Convert a source line and byte column into a source offset.
 local function offsetAt(source: string, line: number, column: number): number
 	local offset = 1
 	for _ = 1, line - 1 do
@@ -65,6 +69,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	end
 	local findings: { Diagnostic.Finding } = {}
 
+	-- Look for conditional expressions that can use simpler control flow.
 	for _, node in Query.findAllFromRoot(block, Utils.isExprIfElse).nodes do
 		local yes, no = node.thenExpr, node.elseExpr
 		if node.conditionLocal or #node.elseifs > 0 or yes.tag ~= "boolean" or no.tag ~= "boolean" or yes.value == no.value then
@@ -102,6 +107,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		}
 	end
 
+	-- Inspect call expressions for control-flow patterns handled by this rule.
 	for _, call in Query.findAllFromRoot(block, Utils.isExprCall).nodes do
 		local callee = call.func
 		local protected = call.arguments[1]
@@ -116,6 +122,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Check statement conditionals after processing expression-level candidates.
 	for _, node in Query.findAllFromRoot(block, Utils.isStatIf).nodes do
 		local fallback = node.elseBlock
 		if node.conditionLocal or #node.elseifs ~= 0 or not fallback then

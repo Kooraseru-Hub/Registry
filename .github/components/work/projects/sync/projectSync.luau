@@ -1,16 +1,20 @@
 -- .github/components/work/projects/sync/projectSync.luau
 --!strict
 
-local Publication = require("@ci/github/publication")
-local Catalog = require("@ci/github/resources/projects/projectCatalog")
-local Client = require("@ci/github/resources/projects/projectClient")
+const Publication = require("@ci/github/publication")
+const Catalog = require("@ci/github/resources/projects/projectCatalog")
+const Client = require("@ci/github/resources/projects/projectClient")
 
-local CUSTOM_TYPES =
-	{ TEXT = true, NUMBER = true, DATE = true, SINGLE_SELECT = true, MULTI_SELECT = true, ITERATION = true }
+--- Check whether GitHub permits this project field type to be managed as a custom field.
+local function isCustomType(dataType: string): boolean
+	return dataType == "TEXT" or dataType == "NUMBER" or dataType == "DATE"
+		or dataType == "SINGLE_SELECT" or dataType == "MULTI_SELECT" or dataType == "ITERATION"
+end
 
 local ProjectSync = {}
 export type Receipt = { identity: string, id: string, url: string }
 
+--- Validate and normalize an array from a Projects API response.
 local function array(value: unknown, label: string): { { [string]: unknown } }
 	if type(value) ~= "table" then
 		error(`Projects response: expected {label} array`, 0)
@@ -22,6 +26,7 @@ local function array(value: unknown, label: string): { { [string]: unknown } }
 	return result
 end
 
+--- Fetch the full contents of a paginated Projects GraphQL connection.
 local function connection(
 	query: Client.Query,
 	operation: string,
@@ -30,6 +35,7 @@ local function connection(
 ): { { [string]: unknown } }
 	local result: { { [string]: unknown } } = {}
 	local cursor: unknown = nil
+	-- Follow pagination cursors until the connection is exhausted.
 	repeat
 		variables.after = cursor
 		local data = select(query(operation, variables))
@@ -49,12 +55,14 @@ local function connection(
 	return result
 end
 
+--- Reconcile custom project fields against the declared blueprint.
 local function syncFields(projectId: string, desired: { Catalog.Field }, query: Client.Query): boolean
 	local existing = connection(query, "Fields", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).fields)
 	end)
 	local byName: { [string]: { [string]: unknown } } = {}
 
+	-- Index remote fields before matching the desired definitions.
 	for _, field in existing do
 		local name = Publication.Text(field.name):lower()
 		if byName[name] then
@@ -63,9 +71,11 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 		byName[name] = field
 	end
 
+	-- Track the declared field names to distinguish managed fields.
 	local declared: { [string]: boolean } = {}
 	local changed = false
 
+	-- Reconcile the declared fields against the normalized remote field index.
 	for _, field in desired do
 		local key = field.name:lower()
 		declared[key] = true
@@ -136,11 +146,12 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 		end
 	end
 
+	-- Examine existing fields for obsolete custom entries after processing the desired fields.
 	for _, field in existing do
 		local name = Publication.Text(field.name)
 		local dataType = Publication.Text(field.dataType)
 		-- GitHub system and organization issue fields are not owned by this project blueprint.
-		if declared[name:lower()] or not CUSTOM_TYPES[dataType] or field.isIssueField == true or name == "Status" then
+		if declared[name:lower()] or not isCustomType(dataType) or field.isIssueField == true or name == "Status" then
 			continue
 		end
 		query("DeleteField", { input = { fieldId = Publication.Text(field.id) } })
@@ -149,12 +160,14 @@ local function syncFields(projectId: string, desired: { Catalog.Field }, query: 
 	return changed
 end
 
+--- Reconcile project views against the declared blueprint.
 local function syncViews(projectId: string, desired: { Catalog.View }, query: Client.Query): boolean
 	local existing = connection(query, "Views", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).views)
 	end)
 	local byName: { [string]: { [string]: unknown } } = {}
 
+	-- Index existing views by name before processing the blueprint.
 	for _, view in existing do
 		local name = Publication.Text(view.name):lower()
 		if byName[name] then
@@ -163,11 +176,13 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		byName[name] = view
 	end
 
+	-- Load the project fields needed to resolve the view configuration.
 	local fields = connection(query, "Fields", { id = projectId }, function(data)
 		return Publication.Record(Publication.Record(data.node).fields)
 	end)
 	local fieldIds: { [string]: string } = {}
 
+	-- Index the fields that the declared views can reference.
 	for _, field in fields do
 		local name = Publication.Text(field.name):lower()
 		if fieldIds[name] then
@@ -176,8 +191,10 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		fieldIds[name] = Publication.Text(field.id)
 	end
 
+	-- Apply view changes after resolving the available fields.
 	local changed = false
 
+	-- Match each desired view to an existing view before applying its settings.
 	for _, view in desired do
 		local current = byName[view.name:lower()]
 		local visibleIds: { string }? = nil
@@ -248,12 +265,14 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		end
 	end
 
+	-- Track the declared views before reconciling obsolete entries.
 	local declared: { [string]: boolean } = {}
 	for _, view in desired do
 		declared[view.name:lower()] = true
 	end
 	local retainedViewId: string? = nil
 
+	-- Keep the existing views when the blueprint specifies no view changes.
 	if #desired == 0 and #existing > 0 then
 		local retainedName: string? = nil
 
@@ -270,6 +289,7 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 		)
 	end
 
+	-- Compare remote views against the set declared by the blueprint.
 	for _, current in existing do
 		local name = Publication.Text(current.name)
 		if declared[name:lower()] or (retainedViewId ~= nil and current.id == retainedViewId) then
@@ -282,6 +302,7 @@ local function syncViews(projectId: string, desired: { Catalog.View }, query: Cl
 	return changed
 end
 
+--- Synchronize blueprints for the nominated project owner and return receipts.
 function ProjectSync.Owner(
 	repository: string,
 	owner: string,
@@ -307,6 +328,7 @@ function ProjectSync.Owner(
 	local receipts: { Receipt } = {}
 	local changed = false
 
+	-- Index the owner's projects before matching the repository blueprints.
 	for _, project in projects do
 		if project.owner ~= owner then
 			continue
@@ -383,8 +405,10 @@ function ProjectSync.Owner(
 		print(`Reconciled GitHub Project {project.identity}: {Publication.Text(current.url)}`)
 	end
 
+	-- Identify owned projects by the repository marker in their descriptions.
 	local prefix = `<!-- repository-project:{repository}:`
 
+	-- Reconcile existing projects only after matching the repository ownership marker.
 	for _, project in existing do
 		if type(project.readme) ~= "string" or project.closed == true then
 			continue

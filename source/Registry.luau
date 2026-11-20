@@ -15,6 +15,7 @@ local function register<Entries>(entries: Entries): Registry<Resolvable<Entries>
 
 	const loaded: { [string]: { module: ModuleScript, value: unknown } } = {}
 
+	--- Get the current registration, loading and caching a ModuleScript export when needed.
 	local function get(_: Registry<Resolvable<Entries>>, path: Resolvable<Entries>): (unknown, boolean)
 		const key = (path :: unknown) :: string
 		const value = modules[key]
@@ -29,6 +30,7 @@ local function register<Entries>(entries: Entries): Registry<Resolvable<Entries>
 		if cached then
 			loaded[key] = nil
 		end
+		-- Protect the module load and cache the export only if the registration still points to this module.
 		if typeof(value) == "Instance" and value:IsA("ModuleScript") then
 			const success, result = xpcall(loadModule, function(reason: unknown): string
 				return debug.traceback(`Registry failed to load "{path}" ({value:GetFullName()}): {reason}`, 2)

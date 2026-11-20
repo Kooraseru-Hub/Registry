@@ -44,4 +44,4 @@ jobs:
       - run: bash .github/components/source/build/archive.sh
       - uses: actions/attest@v4.2.2
         with:
-          subject-path: build/artifacts/Registry.zip
+          subject-path: build/artifacts/source/Registry.zip

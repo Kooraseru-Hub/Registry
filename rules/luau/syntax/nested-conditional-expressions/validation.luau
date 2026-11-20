@@ -1,12 +1,13 @@
 -- rules/luau/syntax/nested-conditional-expressions/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local Rule = require("@ruleLinter/rule")
-local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const Rule = require("@ruleLinter/rule")
+const Syntax = require("@std/syntax")
+const Visitor = require("@std/syntax/visitor")
 
+--- Recognize a conditional expression nested inside another expression.
 local function isConditional(expression: Syntax.CstExpr): boolean
 	while expression.tag == "group" do
 		expression = expression.expression

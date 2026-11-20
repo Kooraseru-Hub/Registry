@@ -1,11 +1,12 @@
 -- rules/luau/files/init-files/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Parser = require("@std/syntax/parser")
-local Syntax = require("@std/syntax")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Syntax = require("@std/syntax")
 
+--- Recognize a require expression that loads a child of the module.
 local function isChildRequire(expression: Syntax.CstExpr): boolean
 	if expression.tag ~= "call" or #expression.arguments ~= 1 then
 		return false
@@ -23,16 +24,20 @@ local function isChildRequire(expression: Syntax.CstExpr): boolean
 	return child ~= nil and not child:find("\\", 1, true) and not ("/" .. child .. "/"):find("/../", 1, true)
 end
 
+--- Identify placeholder return shapes that should be replaced with a real module entry.
 local function placeholderIssue(expression: Syntax.CstExpr, isForward: (Syntax.CstExpr) -> boolean, hasBindings: boolean): string?
 	if isForward(expression) then
 		return "This directory head only forwards a child module. Give it a contract or expose the child directly."
 	end
+
 	if expression.tag ~= "table" then
 		return nil
 	end
+
 	if #expression.entries == 0 then
 		return if hasBindings then nil else "This directory head returns an empty table. Give it a contract or remove the placeholder."
 	end
+
 	for _, entry in expression.entries do
 		if entry.kind ~= "record" or not isForward(entry.value) then
 			return nil
@@ -55,6 +60,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 	local forwarded: { [Syntax.CstLocal]: boolean } = {}
+	-- Track bindings declared before the final module return.
 	for index = 1, #block.statements - 1 do
 		local declaration = block.statements[index]
 		if (declaration.tag ~= "local" and declaration.tag ~= "const")
@@ -82,12 +88,14 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		return {}
 	end
 
+	-- Check that the returned forwarding structure uses the child bindings it declared.
 	for _, used in forwarded do
 		if not used then
 			return {}
 		end
 	end
 
+	-- Build the diagnostic span after identifying the placeholder module structure.
 	local start = block.statements[1].location
 	local span = statement.location
 	return {{

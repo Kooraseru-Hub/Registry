@@ -46,7 +46,7 @@ function assertBranches(branches, parents) {
 	for (const branch of branches) {
 		const ref = "refs/heads/" + branch;
 		const tree = git("--git-dir", remote, "rev-parse", ref + "^{tree}");
-		assert.equal(tree, git("-C", "build/github/branches/" + branch, "write-tree"));
+		assert.equal(tree, git("-C", "build/artifacts/branches/" + branch, "write-tree"));
 		assert.ok(git("--git-dir", remote, "ls-tree", "-r", "--name-only", ref));
 		if (parents.has(branch)) assert.equal(git("--git-dir", remote, "rev-parse", ref + "^"), parents.get(branch));
 	}

@@ -1,25 +1,21 @@
 -- rules/luau/design/script-layout/validation.luau
 --!strict
 
-local Comments = require("@ruleLinter/comments")
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Parser = require("@std/syntax/parser")
-local Syntax = require("@std/syntax")
+const Fs = require("@std/fs")
+const Json = require("@formats/json")
+const Comments = require("@ruleLinter/comments")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Parser = require("@std/syntax/parser")
+const Syntax = require("@std/syntax")
 
 type Roles = { [string]: { string } }
 type Member = { owner: Syntax.CstLocal, name: string?, func: Syntax.CstExprFunction, method: boolean }
 type Declaration = { span: Syntax.Span, role: string?, member: Member?, binding: Syntax.CstLocal?, constructor: boolean? }
 type Marker = { name: string, span: Syntax.Span }
 
-local layouts: Roles = {
-	["function-module"] = { "Modules", "Types", "Constants", "Helpers", "Functions" },
-	["table-module"] = { "Modules", "Types", "Constants", "Variables", "Helpers", "Functions" },
-	object = { "Modules", "Types", "Constants", "Helpers", "Functions", "Constructor", "Methods" },
-	["entry-point"] = { "Modules", "Types", "Constants", "Helpers", "Initialization" },
-	["ecs-component"] = { "Types", "Constants" },
-	["ecs-system"] = { "Modules", "Types", "Constants", "Helpers", "Functions" },
-}
+const definitions = Json.decode(Fs.readFileToString("rules/luau/design/script-layout/layouts.json"))
+	:: { layouts: Roles, pathKinds: { [string]: string } }
 
 --- Identifies a callable member through its local receiver binding, even if another scope uses the same name.
 local function memberOf(target: Syntax.CstExpr, func: Syntax.CstExprFunction): Member?
@@ -43,6 +39,7 @@ local function constructsInstance(member: Member): boolean
 	if member.name ~= "new" then
 		return false
 	end
+	-- Inspect the method body for statements that establish instance state.
 	for _, statement in member.func.body.statements do
 		if statement.tag ~= "return" then
 			continue
@@ -71,6 +68,7 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 	local declarations: { Declaration } = {}
 	local exported: Syntax.CstExpr? = nil
 
+	-- Classify declarations in source order before checking section placement.
 	for _, statement in statements do
 		local declaration: Declaration = { span = statement.location }
 		if statement.tag == "local" or statement.tag == "const" then
@@ -87,7 +85,9 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 					callables[binding] = true
 				end
 			end
+
 			local value = statement.values[1]
+
 			if #statement.variables == 1 and value then
 				if value.tag == "call" and value.func.tag == "global" and value.func.name.text == "require" then
 					declaration.role = "Modules"
@@ -128,6 +128,7 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 		end
 
 		local member = declaration.member
+
 		if member then
 			members[member.owner] = true
 			declaration.constructor = constructsInstance(member)
@@ -135,10 +136,13 @@ local function inspect(statements: { Syntax.CstStat }): (string?, { Declaration 
 				constructors[member.owner] = true
 			end
 		end
+
 		table.insert(declarations, declaration)
 	end
 
+	-- Determine the script shape from its declarations and path context.
 	local shape: string? = nil
+	-- Use the exported local binding to distinguish the module shapes.
 	if exported and exported.tag == "local" then
 		local binding = exported["local"]
 		if tables[binding] and constructors[binding] then
@@ -173,9 +177,9 @@ end
 --- Builds the workspace path lookup once for each rule configuration.
 local function create(settings: unknown): Rule.Rule
 	local declared: { [string]: string } = {}
+	-- Read optional path settings before creating the validator.
 	if type(settings) == "table" then
-		local pathKinds: { [string]: string } = { entryPoints = "entry-point", ecsComponents = "ecs-component", ecsSystems = "ecs-system" }
-		for field, shape in pathKinds do
+		for field, shape in definitions.pathKinds do
 			local paths = (settings :: { [string]: unknown })[field]
 			if type(paths) == "table" then
 				for _, path in paths do
@@ -190,6 +194,7 @@ local function create(settings: unknown): Rule.Rule
 		end
 	end
 
+	-- Create a validator that applies the configured script roles.
 	return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		if not context.source:find("--#", 1, true) then
 			return {}
@@ -217,6 +222,7 @@ local function create(settings: unknown): Rule.Rule
 
 		local topLevelMarkers: { Marker } = {}
 		local statementIndex = 1
+		-- Match explicit section markers with the recognized layout sections.
 		for _, marker in markers do
 			while declarations[statementIndex] and declarations[statementIndex].span.endLine < marker.span.beginLine do
 				statementIndex += 1
@@ -227,6 +233,7 @@ local function create(settings: unknown): Rule.Rule
 			end
 		end
 
+		-- Accumulate layout findings after identifying the script shape and section boundaries.
 		local findings: { Diagnostic.Finding } = {}
 		local function report(span: Syntax.Span, message: string)
 			findings[#findings + 1] = {
@@ -237,14 +244,16 @@ local function create(settings: unknown): Rule.Rule
 		end
 
 		local order: { [string]: number } = {}
-		for index, name in layouts[shape] do
+		for index, name in definitions.layouts[shape] do
 			order[name] = index
 		end
 		local seen: { [string]: boolean } = {}
 		local latest = 0
 		local cursor = 1
+		-- Match each marker to the required order for the selected script shape.
 		for index, marker in topLevelMarkers do
 			local position = order[marker.name]
+
 			if not position then
 				report(marker.span, `Section {marker.name} does not belong in a {shape}.`)
 			elseif seen[marker.name] then
@@ -252,9 +261,11 @@ local function create(settings: unknown): Rule.Rule
 			elseif position < latest then
 				report(marker.span, `Section {marker.name} is out of order for a {shape}.`)
 			end
+
 			seen[marker.name] = true
 			latest = math.max(latest, position or 0)
 			local nextMarker = topLevelMarkers[index + 1]
+
 			while cursor <= #declarations do
 				local declaration = declarations[cursor]
 				if nextMarker and declaration.span.beginLine >= nextMarker.span.beginLine then

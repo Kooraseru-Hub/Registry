@@ -2,6 +2,6 @@ phase = "build"
 provides = ["branches.generated"]
 requires = []
 inputs = ["config/branches/**", "source/**", "content/docs/repository/**"]
-outputs = ["build/github/branches/**"]
+outputs = ["build/artifacts/branches/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

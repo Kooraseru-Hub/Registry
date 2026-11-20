@@ -4,7 +4,6 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = resolve(here, '../../../../../..');
 const repository = process.env.GITHUB_REPOSITORY || '';
 const [owner, name] = repository.split('/');
 const title = process.env.DOCS_TITLE || name || 'Project';
@@ -23,7 +22,7 @@ export default defineConfig({
   srcDir: resolve(here, 'src'),
   // Prerendered server chunks must resolve dependencies from this package.
   outDir: resolve(here, 'dist'),
-  cacheDir: resolve(repositoryRoot, 'build/cache/astro'),
+  cacheDir: resolve(here, '../cache/astro'),
   site,
   base,
   integrations: [starlight({

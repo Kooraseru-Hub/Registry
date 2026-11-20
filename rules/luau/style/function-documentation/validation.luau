@@ -1,28 +1,33 @@
 -- rules/luau/style/function-documentation/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
-local Comments = require("@ruleLinter/comments")
-local Parser = require("@std/syntax/parser")
-local Query = require("@std/syntax/query")
-local Syntax = require("@std/syntax")
-local Utils = require("@std/syntax/utils")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
+const Comments = require("@ruleLinter/comments")
+const Parser = require("@std/syntax/parser")
+const Query = require("@std/syntax/query")
+const Syntax = require("@std/syntax")
+const Utils = require("@std/syntax/utils")
 
+--- Check an annotation line for unsupported documentation forms.
 local function annotationIssue(text: string): string?
 	local tag, body = text:match("^%-%-%-?%s*@([%a]+)%s*(.*)$")
 	if not tag then
 		return nil
 	end
+
 	if tag ~= "param" and tag ~= "return" and tag ~= "generic" and tag ~= "class" and tag ~= "field" and tag ~= "type" and tag ~= "enum" then
 		return nil
 	end
+
 	if not text:match("^%-%-%-") then
 		return "Start a LuaCATS @" .. tag .. " annotation with three dashes."
 	end
+
 	if not body or body == "" or (tag == "param" and not body:match("^%S+%s+%S")) then
 		return "Complete the LuaCATS @" .. tag .. " annotation or remove it."
 	end
+
 	return nil
 end
 
@@ -75,6 +80,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		local opening = lines[span.beginLine]:sub(span.beginColumn):gsub("^%-%-%[=*%[", "")
 		local hasProse = opening:match("^%s*[^%s@%]]") ~= nil
 		local fenced, checkedSpacing = false, false
+		-- Collect the interior comment lines so prose and annotations can be checked together.
 		for line = span.beginLine + 1, span.endLine - 1 do
 			local content = lines[line]:match("^%s*(.-)%s*$") or ""
 			if content:match("^```") then
@@ -109,6 +115,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 		local hasProse = checkBlockDocs(declarationLine, names)
 		local line = declarationLine - 1
+		-- Walk contiguous documentation lines to locate the attached comment.
 		while docLines[line] do
 			local doc = docLines[line]
 			if doc.text:match("^%-%-%-%s*[^%s@%-]") then
@@ -129,12 +136,17 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 			line -= 1
 		end
 
+		-- Count substantive branches before requiring helper documentation.
 		local branches = 0
+
+		-- Count branches in the body before applying the helper threshold.
 		for _, statement in func.body.statements do
 			if statement.tag == "conditional" then
 				branches += 1 + #statement.elseifs
 			end
 		end
+
+		-- Require explanatory prose for public functions and substantial helpers.
 		if not hasProse and (public or moduleHelper or branches >= 3 or #func.body.statements >= 20) then
 			local firstLine = lines[declarationLine]
 			reportRange(declarationLine, declaration.beginColumn, declarationLine, #firstLine:gsub("\r$", "") + 1,
@@ -146,6 +158,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 	local exported: { [Syntax.CstLocal]: boolean } = {}
 	local moduleHelpers: { [Syntax.CstLocal]: boolean } = {}
 	local publicNames: { [Syntax.CstExpr]: boolean } = {}
+	-- Inspect top-level declarations that expose functions from the module.
 	for _, statement in file.root.statements do
 		if statement.tag == "return" then
 			for _, expression in statement.expressions do
@@ -160,15 +173,20 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		end
 	end
 
+	-- Inspect local functions whose complexity warrants documentation.
 	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatLocalFunction).nodes do
 		checkFunctionDocs(declaration.func, declaration.location, false, moduleHelpers[declaration.name])
 	end
+
+	-- Inspect named declarations that may expose methods through the module.
 	for _, declaration in Query.findAllFromRoot(file.root, Utils.isStatFunction).nodes do
 		local name = declaration.name
 		local public = publicNames[name] == true and (name.tag == "indexname" or name.tag == "index")
 			and name.expression.tag == "local" and exported[name.expression["local"]] == true
 		checkFunctionDocs(declaration.func, declaration.location, public)
 	end
+
+	-- Inspect the returned exports before checking private helper documentation.
 	for _, statement in file.root.statements do
 		if (statement.tag == "local" or statement.tag == "const") and #statement.variables == 1 then
 			local value = statement.values[1]
@@ -176,10 +194,12 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				checkFunctionDocs(value, statement.location, false, true)
 			end
 		end
+
 		if statement.tag ~= "assign" or #statement.variables ~= 1 or #statement.values ~= 1 then
 			continue
 		end
 		local name, value = statement.variables[1], statement.values[1]
+
 		if (name.tag == "indexname" or name.tag == "index")
 			and name.expression.tag == "local" and exported[name.expression["local"] :: Syntax.CstLocal]
 			and value.tag == "function" then

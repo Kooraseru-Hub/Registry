@@ -1,7 +1,7 @@
 -- dependencies/packages/checks/ruleLinter/rule.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
+const Diagnostic = require("@ruleLinter/diagnostic")
 
 export type Context = {
 	path: string,
@@ -16,11 +16,13 @@ Rule.__index = Rule
 type RuleFields = { validate: Validation }
 export type Rule = setmetatable<RuleFields, typeof(Rule)>
 
+--- Wrap a validator in the rule interface used by the lint runner.
 function Rule.new(validate: Validation): Rule
 	local fields: RuleFields = { validate = validate }
 	return setmetatable(fields, Rule)
 end
 
+--- Evaluate this rule against a source context and return its findings.
 function Rule.Check(self: Rule, context: Context): { Diagnostic.Finding }
 	return self.validate(context)
 end

@@ -1,9 +1,10 @@
 -- dependencies/packages/checks/ruleLinter/runner.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Rule = require("@ruleLinter/rule")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Rule = require("@ruleLinter/rule")
 
+--- Load a validator module from its declared entry point.
 local function loadRule(entry: string): unknown
 	local modulePath = "@workspace/" .. entry:gsub("/init%.luau$", ""):gsub("%.luau$", "")
 	local loaded, result = pcall(require, modulePath)
@@ -13,6 +14,7 @@ local function loadRule(entry: string): unknown
 	return result
 end
 
+--- Resolve a validator from the module and its settings.
 local function configure(module: unknown, settings: unknown): Rule.Rule
 	local result = module
 
@@ -29,6 +31,7 @@ local function configure(module: unknown, settings: unknown): Rule.Rule
 	return result :: Rule.Rule
 end
 
+--- Apply the validator to each source and collect diagnostic records.
 local function check(validator: Rule.Rule, identity: string, sources: { Rule.Context }): { Diagnostic.Diagnostic }
 	local diagnostics: { Diagnostic.Diagnostic } = {}
 	for _, source in sources do
@@ -43,6 +46,7 @@ local function check(validator: Rule.Rule, identity: string, sources: { Rule.Con
 	return diagnostics
 end
 
+--- Run the configured rule entry points against the supplied sources.
 local function run(entries: { string }, sources: { Rule.Context }): { Diagnostic.Diagnostic }
 	local diagnostics: { Diagnostic.Diagnostic } = {}
 	for _, entry in entries do

@@ -20,8 +20,8 @@ function plan(config, candidate, requested) {
   };
   if (candidate.remove) return { jobs: [job] };
   return {
-    artifact: 'build/ci-candidate/build/github/pages',
-    destination: 'build/preview-candidate',
+    artifact: 'build/ci-candidate/build/artifacts/pages/production',
+    destination: 'build/artifacts/pages/previews/' + candidate.sha,
     prepare: { ref: candidate.sha, command: ['node', '.github/components/documentation/pages/build/starlight/build.cjs'],
       env: { DOCS_BASE: config.base, DOCS_SITE: 'https://' + candidate.alias + '.' + previewHost(config) } },
     jobs: [job]

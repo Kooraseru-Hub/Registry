@@ -1,16 +1,17 @@
 -- .github/components/governance/branches/publish/init.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Process = require("@lute/process")
-local Publication = require("@ci/github/publication")
-local GitFailure = require("@ci/github/publication/gitFailure")
-local Glob = require("@ci/bootstrap/discovery/glob")
+const Fs = require("@std/fs")
+const Process = require("@lute/process")
+const Publication = require("@ci/github/publication")
+const GitFailure = require("@ci/github/publication/gitFailure")
+const Glob = require("@ci/bootstrap/discovery/glob")
 
 local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
+--- Invoke Git in the selected checkout and surface failures with operation context.
 local function git(arguments: { string }, directory: string, operation: string?, ref: string?): string
 	local environment = table.clone(Process.env)
 	environment.GIT_TERMINAL_PROMPT = "0"
@@ -25,10 +26,20 @@ local function git(arguments: { string }, directory: string, operation: string?,
 	return (result.stdout:gsub("%s+$", ""))
 end
 
+--- Run a remote Git operation with the CI credential helper isolated from local helpers.
+local function authenticatedGit(arguments: { string }, directory: string, operation: string?, ref: string?): string
+	const command = table.move(arguments, 1, #arguments, 5, {
+		"-c", "credential.helper=", "-c", 'credential.helper=!bash "$CI_GIT_CREDENTIAL_HELPER"',
+	})
+	return git(command, directory, operation or arguments[1], ref)
+end
+
+--- Create the component used to publish staged branch trees.
 function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
+--- Publish the staged branch trees to their configured refs.
 function Component.Run(self: Component, _: { event: string }): string?
 	local repository = Publication.Begin("BRANCHES")
 	if not repository then
@@ -40,7 +51,8 @@ function Component.Run(self: Component, _: { event: string }): string?
 	Publication.RequireSuccess(status, "Read default branch", details)
 	local remote = if Process.env.TEMPLATE_PUBLICATION_REHEARSAL == "1"
 		then "/tmp/template-preflight.git" else `https://github.com/{repository}.git`
-	for _, directory in Glob.Find("build/github/branches/*") do
+	-- Process each staged branch independently using its recorded publication settings.
+	for _, directory in Glob.Find("build/artifacts/branches/*") do
 		if not (Fs.exists(directory) and Fs.type(directory) == "dir") then
 			error("Expected a generated branch directory", 0)
 		end
@@ -57,12 +69,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		end
 		git({ "init", "--quiet" }, directory)
 		git({ "remote", "add", "origin", remote }, directory)
-		local credential = { "-c", "credential.helper=", "-c", 'credential.helper=!bash "$CI_GIT_CREDENTIAL_HELPER"' }
-		local lookup = git({
-			credential[1],
-			credential[2],
-			credential[3],
-			credential[4],
+		local lookup = authenticatedGit({
 			"ls-remote",
 			remote,
 			`refs/heads/{branch}`,
@@ -70,11 +77,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		local parent: string? = nil
 
 		if lookup ~= "" then
-			git({
-				credential[1],
-				credential[2],
-				credential[3],
-				credential[4],
+			authenticatedGit({
 				"fetch",
 				"--quiet",
 				"origin",
@@ -104,11 +107,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 		table.insert(arguments, "-m")
 		table.insert(arguments, "Publish generated repository output")
 		local commit = git(arguments, directory)
-		git({
-			credential[1],
-			credential[2],
-			credential[3],
-			credential[4],
+		authenticatedGit({
 			"push",
 			"origin",
 			`{commit}:refs/heads/{branch}`,

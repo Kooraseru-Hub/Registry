@@ -1,8 +1,9 @@
 "use strict";
 
 const fs = require("node:fs");
+
 const path = require("node:path");
-const { execute, reviewBase, changedFiles, review, annotation } = require("../code-review/review.cjs");
+const { execute, reviewBase, changedFiles, review, annotation, writeReport } = require("../code-review/review.cjs");
 const { execFileSync } = require("node:child_process");
 const { addedLines } = require("../code-review/diff.cjs");
 const root = path.resolve(__dirname, "../../../..");
@@ -47,8 +48,6 @@ function enforceConst(findings, changed, base) {
 }
 
 function main() {
-	const directory = path.join(root, "build/rules-audit");
-	fs.mkdirSync(directory, { recursive: true });
 	let changed = null, baseFailure = null, base = null;
 	try { base = reviewBase(); changed = changedFiles(base); }
 	catch (error) { baseFailure = String(error.message || error); }
@@ -59,12 +58,11 @@ function main() {
 	});
 	if (changed) enforceConst(findings, changed, base);
 	const checked = review(findings, changed);
-	fs.writeFileSync(path.join(directory, "diagnostics.json"), JSON.stringify({
+	const report = summary(findings, checked, base);
+	writeReport("rules-audit", {
 		version: 1, audit: "rules", base,
 		changedFiles: changed ? [...changed].sort() : null, diagnostics: findings, blocking: checked.blocking.length,
-	}, null, 2) + "\n");
-	const report = summary(findings, checked, base);
-	fs.writeFileSync(path.join(directory, "summary.md"), report);
+	}, report);
 	if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, report);
 	for (const item of checked.annotations) annotation(item);
 	console.log("Rules audit: " + findings.length + " findings, " + checked.blocking.length + " blocking");

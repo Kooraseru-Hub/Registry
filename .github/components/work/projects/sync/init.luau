@@ -1,24 +1,26 @@
 -- .github/components/work/projects/sync/init.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Json = require("@formats/json")
-local Publication = require("@ci/github/publication")
-local Configuration = require("@ci/github/configuration")
-local Catalog = require("@ci/github/resources/projects/projectCatalog")
-local Client = require("@ci/github/resources/projects/projectClient")
-local ProjectAuthentication = require("@ci/github/authentication/projectAuthentication")
-local Authentication = require("@ci/github/authentication/authentication")
-local ProjectSync = require("@self/projectSync")
+const Fs = require("@std/fs")
+const Json = require("@formats/json")
+const Publication = require("@ci/github/publication")
+const Configuration = require("@ci/github/configuration")
+const Catalog = require("@ci/github/resources/projects/projectCatalog")
+const Client = require("@ci/github/resources/projects/projectClient")
+const ProjectAuthentication = require("@ci/github/authentication/projectAuthentication")
+const Authentication = require("@ci/github/authentication/authentication")
+const ProjectSync = require("@self/projectSync")
 
 local Component = {}
 Component.__index = Component
 export type Component = setmetatable<{}, typeof(Component)>
 
+--- Create the component that synchronizes planned GitHub Projects.
 function Component.new(): Component
 	return setmetatable({}, Component)
 end
 
+--- Reconcile all project blueprints and write a receipt for the synchronized projects.
 function Component.Run(self: Component, _: { event: string }): string?
 	local supplied = ProjectAuthentication.Read()
 	local projects = Catalog.Read()
@@ -44,6 +46,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 	end
 	table.sort(orderedOwners)
 
+	-- Process the owner groups in a stable order.
 	for _, owner in orderedOwners do
 		local access = ProjectAuthentication.Acquire(supplied, repository, owner)
 		if not access then
@@ -84,9 +87,10 @@ function Component.Run(self: Component, _: { event: string }): string?
 		end
 	end
 
-	Fs.createDirectory("build/github/project-sync", { makeParents = true })
+	-- Write the publication receipt after all project owners have been processed.
+	Fs.createDirectory("build/artifacts/projects/receipts", { makeParents = true })
 	Fs.writeStringToFile(
-		"build/github/project-sync/index.json",
+		"build/artifacts/projects/receipts/index.json",
 		Json.encode({ applied = not skipped, projects = receipts })
 	)
 	if skipped then

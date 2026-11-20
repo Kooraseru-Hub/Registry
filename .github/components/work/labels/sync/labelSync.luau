@@ -1,12 +1,13 @@
 -- .github/components/work/labels/sync/labelSync.luau
 --!strict
 
-local Json = require("@formats/json")
-local Publication = require("@ci/github/publication")
-local LabelCatalog = require("./labelCatalog")
+const Json = require("@formats/json")
+const Publication = require("@ci/github/publication")
+const LabelCatalog = require("./labelCatalog")
 
 local LabelSync = {}
 
+--- Compare repository labels with the catalog and apply the configured changes.
 function LabelSync.Sync(
 	repository: string,
 	labels: { LabelCatalog.Label },
@@ -17,6 +18,7 @@ function LabelSync.Sync(
 	local remote: { string } = {}
 	local page = 1
 
+	-- Read all pages before comparing the remote labels with the catalog.
 	while true do
 		local items = read(`repos/{repository}/labels?per_page=100&page={page}`)
 		for _, value in items do
@@ -28,12 +30,14 @@ function LabelSync.Sync(
 		page += 1
 	end
 
+	-- Track declared labels as the reference set for reconciliation.
 	local declared: { [string]: boolean } = {}
 	for _, label in labels do
 		declared[label.name:lower()] = true
 	end
 	local changed = false
 
+	-- Compare the configured labels to the remote snapshot before applying changes.
 	for _, label in labels do
 		local path = `repos/{repository}/labels/{Publication.Encode(label.name)}`
 		local status, current = request("GET", path, nil)

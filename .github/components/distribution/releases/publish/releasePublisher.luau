@@ -1,10 +1,10 @@
 -- .github/components/distribution/releases/publish/releasePublisher.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Publication = require("@ci/github/publication")
-local ConflictPolicy = require("@ci/github/publication/conflictPolicy")
-local ReleaseAssetPublisher = require("./releaseAssetPublisher")
+const Fs = require("@std/fs")
+const Publication = require("@ci/github/publication")
+const ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+const ReleaseAssetPublisher = require("./releaseAssetPublisher")
 
 type Request = (
 	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
@@ -14,6 +14,7 @@ type Request = (
 
 local ReleasePublisher = {}
 
+--- Publish one staged release and synchronize its configured assets.
 function ReleasePublisher.Publish(
 	repository: string,
 	entry: { [string]: unknown },
@@ -49,14 +50,16 @@ function ReleasePublisher.Publish(
 	local assets = ReleaseAssetPublisher.Read(entry.assets)
 	local body = ""
 
+	-- Resolve authored release notes when the record supplies a notes file.
 	if entry.notes then
 		local notes = Publication.Text(entry.notes)
 		if notes:find("..", 1, true) or notes:sub(1, 1) == "/" or notes:find("\\", 1, true) then
 			error("Unsafe staged release notes path", 0)
 		end
-		body = Fs.readFileToString(`build/github/releases/{notes}`)
+		body = Fs.readFileToString(`build/artifacts/releases/{notes}`)
 	end
 
+	-- Apply the previous tag when requesting generated release notes.
 	if entry.previousTag then
 		local previousTag = Publication.Text(entry.previousTag)
 		local notesStatus, generated = request("POST", `repos/{repository}/releases/generate-notes`, {
@@ -68,6 +71,7 @@ function ReleasePublisher.Publish(
 		body ..= "\n\n" .. Publication.Text(generated.body)
 	end
 
+	-- Check the existing tag before deciding how to publish the release.
 	if tagStatus == 200 then
 		local object = Publication.Record(reference.object)
 		local depth = 0
@@ -94,6 +98,7 @@ function ReleasePublisher.Publish(
 		end
 	end
 
+	-- Assemble the GitHub release payload from the staged record.
 	local payload = {
 		tag_name = tag,
 		target_commitish = commit,
@@ -105,14 +110,17 @@ function ReleasePublisher.Publish(
 	local status: number
 	local published: { [string]: unknown }
 
+	-- Update a known release or create one when the tag is new to releases.
 	if releaseStatus == 200 and type(releaseId) == "number" then
 		status, published = request("PATCH", `repos/{repository}/releases/{releaseId}`, payload)
 	else
 		status, published = request("POST", `repos/{repository}/releases`, payload)
 	end
 
+	-- Surface publication errors with the prior tag update in context.
 	Publication.RequireSuccess(status, `Publish release {tag}; a tag update may already have succeeded`)
 
+	-- Synchronize the assets only after GitHub accepts the release.
 	if #assets > 0 then
 		local id = if releaseStatus == 200 then releaseId else published.id
 		if type(id) ~= "number" then
@@ -126,6 +134,7 @@ function ReleasePublisher.Publish(
 		end
 	end
 
+	-- Report the release URL after publication and asset synchronization.
 	print(`Published release https://github.com/{repository}/releases/tag/{tag} (on_existing = {policy})`)
 	return true
 end

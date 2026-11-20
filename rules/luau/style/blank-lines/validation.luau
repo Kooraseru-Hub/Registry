@@ -1,17 +1,19 @@
 -- rules/luau/style/blank-lines/validation.luau
 --!strict
 
-local Diagnostic = require("@ruleLinter/diagnostic")
-local Parser = require("@std/syntax/parser")
-local PhaseLayout = require("@ruleLinter/phaseLayout")
-local Rule = require("@ruleLinter/rule")
-local Syntax = require("@std/syntax")
-local Visitor = require("@std/syntax/visitor")
+const Diagnostic = require("@ruleLinter/diagnostic")
+const Parser = require("@std/syntax/parser")
+const PhaseLayout = require("@ruleLinter/phaseLayout")
+const Rule = require("@ruleLinter/rule")
+const Syntax = require("@std/syntax")
+const Visitor = require("@std/syntax/visitor")
 
+--- Recognize statements that introduce a named function.
 local function isNamedFunction(statement: Syntax.CstStat): boolean
 	return statement.tag == "function" or statement.tag == "localfunction"
 end
 
+--- Recognize a conditional consisting of a simple return guard.
 local function isReturnGuard(statement: Syntax.CstStat): boolean
 	if statement.tag ~= "conditional" or #statement.elseifs > 0 or statement.elseBlock then
 		return false
@@ -32,6 +34,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 		local pending: { { span: Syntax.Span, standalone: boolean } } = {}
 		local guardBoundaries: { [number]: boolean } = {}
 		local firstGuard = 1
+		-- Compare adjacent statements while tracking runs that belong together.
 		for index = 1, #scope.statements + 1 do
 			local statement = scope.statements[index]
 			if not statement or not isReturnGuard(statement) then
@@ -84,6 +87,7 @@ return Rule.new(function(context: Rule.Context): { Diagnostic.Finding }
 				}
 			end
 		end
+		-- Flush the final statement run after scanning the scope.
 		finishRun()
 		return true
 	end

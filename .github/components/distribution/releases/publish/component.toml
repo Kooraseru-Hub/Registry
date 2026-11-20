@@ -1,7 +1,7 @@
 phase = "publish"
 provides = ["releases.published"]
 requires = ["releases.generated"]
-inputs = ["build/github/releases/**"]
+inputs = ["build/artifacts/releases/**"]
 outputs = []
 events = ["push"]
 boundary = "privileged"

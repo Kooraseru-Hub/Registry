@@ -1,40 +1,14 @@
-# Keep legacy local agent state private.
-/.codex/
-
-# CI and local build outputs.
+# Local workspace and build output.
+/.workspace/
 /build/
 
-# Installed dependencies and persistent machine-local workspace state.
-/dependencies/managed/
-/.workspace/
-
-# Installed Node packages used by the dependency loader and editor tooling.
-**/node_modules/
-
-# Generated TypeScript incremental build state.
-*.tsbuildinfo
-
-# Tool discovery files generated from the canonical configs in .vscode/config/.
+# Root files generated for tool discovery.
+/.actrc
 /.luaurc
 /tsconfig.json
-
-# Interrupted dependency layout migration copies.
-/dependencies/.managed-migration-*/
-
-# act discovery file generated from .vscode/config/act/actrc.
-/.actrc
-
-# Starlight's local prerender staging tree.
-/.github/components/documentation/pages/build/starlight/dist/
-
-# Documentation content and project CSS staged for the Starlight renderer.
-/.github/components/documentation/pages/build/starlight/src/content/docs/
-/.github/components/documentation/pages/build/starlight/src/styles/project.css
-
-# Favicon staged into Starlight's public assets for Astro.
-/.github/components/documentation/pages/build/starlight/public/images/favicon.png
-/.github/components/documentation/pages/build/starlight/.astro/
-
-# Local Roblox DataModel map and Studio place lock.
 /sourcemap.json
+
+# Local tooling artifacts.
+node_modules/
+*.tsbuildinfo
 *.rbxlx.lock

@@ -1,2 +1,2 @@
 [branch]
-source = ["source/Registry.luau", "LICENSE"]
+source = ["source/Registry.luau", "content/images/banner.png", "LICENSE"]
