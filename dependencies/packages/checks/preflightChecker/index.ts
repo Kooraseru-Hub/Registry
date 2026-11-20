@@ -91,12 +91,24 @@ function check(program: string, args: string[], source: string): void {
 }
 
 async function checkLuau(sources: string[]): Promise<void> {
-	const robloxRoot = path.join(root, "source", "Registry") + path.sep;
-	const isRoblox = (file: string) => path.resolve(root, file).startsWith(robloxRoot);
+	const isRoblox = (file: string) => {
+		const relative = path.relative(root, path.resolve(root, file)).split(path.sep).join("/");
+		return relative === "source/Registry.luau" || relative.startsWith("tests/registry/");
+	};
 	const tooling = sources.filter(file => !isRoblox(file));
 	const registry = sources.filter(isRoblox);
 	if (tooling.length) check(lute, ["check", ...tooling], "Lute");
 	if (!registry.length) return;
+
+	const sourcemap = "sourcemap.json";
+	const generated = spawnSync(process.execPath, [".vscode/config/luau/generate-sourcemap.cjs"], {
+		cwd: root, encoding: "utf8", windowsHide: true, timeout: 30000,
+	});
+	if (generated.status !== 0) {
+		finding(sourcemap, 1, 1, "error", "Roblox Luau",
+			generated.error?.message || generated.stderr?.trim() || "Sourcemap generation failed");
+		return;
+	}
 
 	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "registry-roblox-types-"));
 	try {
@@ -108,7 +120,7 @@ async function checkLuau(sources: string[]): Promise<void> {
 		}
 		const definitions = path.join(temporary, "roblox.d.luau");
 		fs.writeFileSync(definitions, bytes);
-		check(robloxAnalyzer, ["analyze", "--platform=roblox", "--formatter=gnu", "--definitions", definitions, ...registry], "Roblox Luau");
+		check(robloxAnalyzer, ["analyze", "--platform=roblox", "--formatter=gnu", "--flag=LuauSolverV2=true", "--sourcemap", sourcemap, "--definitions", definitions, ...registry], "Roblox Luau");
 	} catch (error) {
 		finding("dependencies/dependencies.json", 1, 1, "error", "Roblox Luau", error instanceof Error ? error.message : String(error));
 	} finally {
