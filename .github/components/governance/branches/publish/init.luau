@@ -67,6 +67,13 @@ function Component.Run(self: Component, _: { event: string }): string?
 		if Fs.exists(`{directory}/.git`) then
 			error("Refusing to reuse a branch publication Git directory", 0)
 		end
+		-- Attach the benchmark from the trusted publication request before creating the branch tree.
+		if Process.env.CI_ORIGIN_INPUTS and Fs.exists(`{directory}/README.md`) then
+			const result = Process.run({ "node", ".github/components/governance/branches/publish/benchmark-readme.cjs", directory }, {
+				stdio = "inherit",
+			})
+			if not result.ok then error(`Benchmark README staging failed (exit {result.exitcode})`, 0) end
+		end
 		git({ "init", "--quiet" }, directory)
 		git({ "remote", "add", "origin", remote }, directory)
 		local lookup = authenticatedGit({

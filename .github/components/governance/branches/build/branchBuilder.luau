@@ -111,7 +111,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 			const changes = if checkout == "dirty" then "uncommitted changes present" else "clean checkout"
 			const studioLabel = if digest then "Roblox Studio executable" else "Roblox Studio version"
 			measurement = string.format(
-				'Measured <relative-time datetime="%s">%s</relative-time> · %s `%s` on Windows · Source commit `%s` (%s)',
+				'Measured <relative-time datetime="%s">%s</relative-time><br>\n%s <code>%s</code> on Windows<br>\nSource commit <code>%s</code> (%s)',
 				started, started, studioLabel, studio, commit, changes
 			)
 		elseif Fs.exists(timestampPath) and Fs.type(timestampPath) == "file" then
