@@ -1,6 +1,9 @@
 ---
 title: Registrations and editor setup
 description: Choose registry paths and configure the repository editor fixture.
+slug: configuration
+sidebar:
+  order: 3
 ---
 
 ## Choose paths

@@ -1,6 +1,8 @@
 ---
 title: Tests and benchmarks
 description: Reproduce Registry lookup tests and compare cold and warm module access.
+sidebar:
+  order: 5
 ---
 
 Run these suites from the repository root with Node.js and Windows Roblox Studio installed. Use MSYS2, Git Bash, or WSL with Windows interop.
@@ -17,6 +19,6 @@ bash tests/registry/Studio/run.sh RequireForms
 bash tests/registry/Studio/run.sh Matrix
 ```
 
-Each run builds a fresh fixture and writes its Studio log under `build/studio-runner`.
+Each run builds a fresh fixture and writes its Studio log under `build/artifacts/tests/`.
 
 Cold trials load fresh ModuleScripts. Warm trials prime both implementations before timing. Check the [benchmark methodology, raw trials, and heatmaps](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks) for the workload, timing boundaries, and the Studio version used for the published samples.

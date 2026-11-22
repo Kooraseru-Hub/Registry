@@ -1,6 +1,9 @@
 ---
 title: Getting started
 description: Install Registry in Studio and look up a ModuleScript from a separate script.
+slug: getting-started
+sidebar:
+  order: 2
 ---
 
 ## Install
@@ -43,4 +46,4 @@ else
 end
 ```
 
-The first call loads `Settings` and returns its export. See the [API reference](../api/) for the return contract.
+The first call loads `Settings` and returns its export. Next, [organize your registrations](../configuration/) or check the [API reference](../api/) for return values and errors.

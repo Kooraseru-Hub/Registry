@@ -22,26 +22,31 @@ function sitePages(directory = documentation, pages = []) {
 
 test("published documentation has predictable Markdown metadata", () => {
   const pages = sitePages();
+  const routes = new Map(pages.map(file => {
+    const source = fs.readFileSync(file, "utf8");
+    const slug = source.split("---")[1]?.match(/^slug: ([^\r\n]+)$/m)?.[1];
+    const relative = path.relative(documentation, file).split(path.sep).join("/");
+    const route = "/" + (slug ? slug + "/" : relative.replace(/(?:^|\/)index\.md$/, "/").replace(/\.md$/, "/")).replace(/^\/+/, "");
+    return [file, route];
+  }));
+  assert.equal(new Set(routes.values()).size, routes.size, "Duplicate documentation route");
   assert.ok(pages.length >= 5, "Expected actual user documentation");
   assert.ok(pages.includes(path.join(documentation, "index.md")));
   for (const file of pages) {
     const source = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
-    const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n---\n/);
+    const metadata = source.match(/^---\ntitle: ([^\n]+)\ndescription: ([^\n]+)\n[\s\S]*?^---\n/m);
     assert.ok(metadata, file + ": requires title/description YAML front matter");
     assert.ok(metadata[1].trim() && metadata[2].trim(), file + ": empty metadata");
     assert.equal((source.match(/^# /gm) || []).length, 0, file + ": Starlight renders the frontmatter title as H1");
     // Starlight emits directory URLs, not raw Markdown source filenames.
-    const route = '/' + path.relative(documentation, file).replace(/\\/g, '/')
-      .replace(/(?:^|\/)index\.md$/, '/').replace(/\.md$/, '/').replace(/^\/+/, '');
+    const route = routes.get(file);
     for (const match of source.matchAll(/\]\(([^)\s]+)\)/g)) {
       const link = match[1];
       if (/^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(link)) continue;
       assert.ok(!/\.md(?:$|[?#])/.test(link), file + ": raw Markdown URL " + link);
       if (!link.startsWith('.')) continue;
       const resolved = new URL(link, 'https://docs.example' + route);
-      const target = resolved.pathname.replace(/^\//, '').replace(/\/$/, '');
-      const candidates = [path.join(documentation, target + '.md'), path.join(documentation, target, 'index.md')];
-      assert.ok(candidates.some(candidate => pages.includes(candidate)), file + ": broken guide route " + link);
+      assert.ok([...routes.values()].includes(resolved.pathname), file + ": broken guide route " + link);
     }
   }
 });

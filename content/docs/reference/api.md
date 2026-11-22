@@ -1,6 +1,9 @@
 ---
 title: API reference
 description: Registry registration, typed lookup, cache behavior, and failures.
+slug: api
+sidebar:
+  order: 4
 ---
 
 ## Registry.Register(entries)
