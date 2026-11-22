@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="content/images/banner.png" alt="Registry">
+  <img src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/source/content/images/banner.png" alt="Registry">
   <p><strong>Typed module lookup for Roblox Luau</strong></p>
 </div>
 
