@@ -1,4 +1,4 @@
-name: Remote
+name: Remote Checks
 
 on:
   repository_dispatch:

@@ -4,7 +4,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { color, median, text, svg } = require("./plot-matrix.cjs");
 
-const results = path.resolve(__dirname, "../../results/benchmarks");
 const columns = [
     ["cold", "require", "Direct require"], ["cold", "registry", "Registry:Get"],
     ["warm", "require", "Direct require"], ["warm", "registry", "Registry:Get"],
@@ -15,7 +14,7 @@ const samples = new Map();
 for (const [size, access] of workloads) {
     for (const [phase, method] of columns) samples.set(`${phase}/${method}/${size}/${access}`, new Map());
 }
-const lines = fs.readFileSync(path.join(results, "samples.csv"), "utf8").trim().split(/\r?\n/);
+const lines = fs.readFileSync(process.argv[2], "utf8").trim().split(/\r?\n/);
 if (lines.shift() !== "phase,access,modules,calls,trial,method,seconds") throw new Error("Invalid compact sample header");
 for (const line of lines) {
     const [phase, access, size, calls, trial, method, seconds] = line.split(",");
@@ -58,6 +57,6 @@ for (const exponent of [-4, -2, -1, 0, 1, 2]) {
 }
 markup += text(514, 690, "Color: latency relative to direct require within each phase", middle);
 markup += text(514, 715, "Six trials per cell · cold: one load per module · warm: 65,536 calls", middle + ' font-size="13"');
-const output = process.argv[2] || path.resolve(__dirname, "../../build/artifacts/benchmarks/compact");
+const output = process.argv[3] || path.resolve("build/artifacts/benchmarks/compact");
 fs.mkdirSync(output, { recursive: true });
 fs.writeFileSync(path.join(output, "heatmap.svg"), svg(markup, "0 0 900 750"));

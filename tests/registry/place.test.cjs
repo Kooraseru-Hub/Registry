@@ -3,10 +3,9 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
-const { build } = require("../../registry/Studio/build.cjs");
+const { build } = require("./Studio/build.cjs");
 
-const root = path.resolve(__dirname, "../../..");
-const registryTests = path.join(root, "tests/registry");
+const root = path.resolve(__dirname, "../..");
 const entities = { amp: "&", lt: "<", gt: ">", quot: '"' };
 const decode = value => value.replace(/&(amp|lt|gt|quot);/g, (_, entity) => entities[entity]);
 const normalizeSource = value => value.replace(/^\uFEFF/, "").replaceAll("\r\n", "\n").replace(/\n+$/, "");
@@ -71,12 +70,15 @@ function verifyStorage(items) {
     const registry = tests?.children.get("registry");
     assert.equal(tests?.kind, "Folder");
     assert.equal(registry?.kind, "Folder");
-    verifyDirectory(registry, registryTests);
+    assert.deepEqual([...registry.children.keys()], ["Lookup"]);
+    const lookup = registry.children.get("Lookup");
+    assert.equal(lookup?.kind, "Folder");
+    verifyDirectory(lookup, path.join(__dirname, "Lookup"));
     const benchmarks = items.get("benchmarks");
     const workloads = benchmarks?.children.get("registry");
     assert.equal(benchmarks?.kind, "Folder");
     assert.equal(workloads?.kind, "Folder");
-    verifyDirectory(workloads, path.join(root, "benchmarks/registry"));
+    verifyDirectory(workloads, path.join(root, "tests/registry/benchmarks"));
 }
 
 test("Registry test place matches its source tree", () => {

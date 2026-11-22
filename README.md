@@ -5,7 +5,7 @@ Use the `source` branch to propose changes. The `main` branch is generated from 
 - [Public README](content/docs/repository/README.md) is the editable source for the README published on `main`.
 - [Registry.luau](source/Registry.luau) is the library.
 - [Registry documentation](content/docs/index.md) is the source for GitHub Pages.
-- [Studio tests](tests/registry/Studio/README.md) and [benchmarks](benchmarks/registry/README.md) describe how to reproduce results.
+- [Studio tests](tests/registry/Studio/README.md) and [benchmarks](tests/registry/benchmarks/README.md) describe how to reproduce results.
 
 ## Verify changes
 

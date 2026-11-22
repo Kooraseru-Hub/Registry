@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "checks": {
+    "place": { "runtime": "node", "entry": "place.test.cjs", "timeoutSeconds": 60 },
+    "lookup": { "runtime": "bash", "entry": "Studio/run.sh", "args": ["Lookup"], "timeoutSeconds": 660, "optIn": true }
+  },
+  "benchmarks": {
+    "matrix": { "runtime": "bash", "entry": "Studio/benchmark-build.sh", "timeoutSeconds": 1200 },
+    "cloud": { "runtime": "node", "entry": "benchmarks/cloud.cjs", "timeoutSeconds": 2400, "optIn": true }
+  }
+}

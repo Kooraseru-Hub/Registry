@@ -1,5 +1,5 @@
 {
   "@game/ReplicatedStorage/Registry": "source/Registry.luau",
-  "@game/ReplicatedStorage/tests/registry": "tests/registry",
-  "@game/ReplicatedStorage/benchmarks/registry": "benchmarks/registry"
+  "@game/ReplicatedStorage/tests/registry/Lookup": "tests/registry/Lookup",
+  "@game/ReplicatedStorage/benchmarks/registry": "tests/registry/benchmarks"
 }

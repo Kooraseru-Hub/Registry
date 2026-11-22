@@ -69,11 +69,14 @@ local function indices(size: number, orderType: string): { number }
 end
 
 --- Runs the full matrix in one phase and emits paired raw timings.
-local function run(cold: boolean): boolean
+local function run(cold: boolean, firstGroup: number?, lastGroup: number?): boolean
 	const phase = if cold then "cold" else "warm"
 	const types = if cold then bodies else orders
 	const levels = if cold then coldSteps else warmSizes
-	for group, testType in types do
+
+	-- Run each requested workload group with the same paired trial structure.
+	for group = firstGroup or 1, lastGroup or #types do
+		const testType = types[group]
 		for level, amount in levels do
 			for row = 1, 30 do
 				const calls = if cold then math.floor(16 * 1.16 ^ (row - 1)) else math.floor(256 * 1.33 ^ (row - 1))
@@ -92,21 +95,25 @@ local function run(cold: boolean): boolean
 				for trial = 1, 4 do
 					local requireTime, registryTime = 0, 0
 					local requireSum, registrySum = 0, 0
+
 					for _, useRegistry in { trial % 2 == 0, trial % 2 ~= 0 } do
 						local batch, keys, active = modules, paths, registry
 						if cold then
 							batch, keys, active = setup(size, testType, amount)
 						end
 						const seconds, sum = measure(batch, keys, active, order, calls, useRegistry)
+
 						if useRegistry then
 							registryTime, registrySum = seconds, sum
 						else
 							requireTime, requireSum = seconds, sum
 						end
+
 						if cold then
 							for _, moduleScript in batch do moduleScript:Destroy() end
 						end
 					end
+
 					if requireSum ~= registrySum or requireSum == 0 then
 						warn("REGISTRY_GRID checksum mismatch")
 						return false
@@ -119,6 +126,8 @@ local function run(cold: boolean): boolean
 			end
 		end
 	end
+
+	-- Emit the completion marker only after every paired trial succeeds.
 	print("REGISTRY_GRID COMPLETE " .. phase)
 	return true
 end

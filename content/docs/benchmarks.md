@@ -19,4 +19,4 @@ bash tests/registry/Studio/run.sh Matrix
 
 Each run builds a fresh fixture and writes its Studio log under `build/studio-runner`.
 
-Cold trials load fresh ModuleScripts. Warm trials prime both implementations before timing. Check the [benchmark methodology, raw trials, and heatmaps](https://github.com/Kooraseru-Hub/Registry/tree/source/benchmarks/registry) for the workload, timing boundaries, and the Studio version used for the published samples.
+Cold trials load fresh ModuleScripts. Warm trials prime both implementations before timing. Check the [benchmark methodology, raw trials, and heatmaps](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks) for the workload, timing boundaries, and the Studio version used for the published samples.

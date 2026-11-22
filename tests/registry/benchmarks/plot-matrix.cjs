@@ -3,8 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const results = path.resolve(__dirname, "../../results/benchmarks");
-const outputDirectory = path.resolve(__dirname, "../../build/artifacts/benchmarks/matrix");
+const outputDirectory = path.resolve("build/artifacts/benchmarks/matrix");
 const width = 30;
 const phases = {
     cold: { title: "First loads", groups: ["Arithmetic", "Table", "Mixed"],
@@ -38,8 +37,9 @@ function svg(body, dimensions = "0 0 800 800") {
 }
 
 function readSamples(log) {
-    if (log) return [...fs.readFileSync(log, "utf8").matchAll(samplePattern)].map(record => record.slice(1));
-    return fs.readFileSync(path.join(results, "matrix-samples.csv"), "utf8").trim().split(/\r?\n/).slice(1).map(line => {
+    const input = fs.readFileSync(log, "utf8");
+    if (!log.endsWith(".csv")) return [...input.matchAll(samplePattern)].map(record => record.slice(1));
+    return input.trim().split(/\r?\n/).slice(1).map(line => {
         const [phase, row, column, , , trial, calls, direct, registry] = line.split(",");
         return [phase, column, row, calls, trial, direct, registry];
     });
@@ -142,4 +142,4 @@ function render(log, output = outputDirectory) {
 }
 
 if (require.main === module) render(process.argv[2], process.argv[3]);
-module.exports = { color, median, text, svg };
+module.exports = { color, median, render, text, svg };

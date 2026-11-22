@@ -1,5 +1,5 @@
 # The sole engine pin. Event handlers submit requests instead of owning the engine.
-name: CI Engine
+name: CI Pipeline
 on:
   repository_dispatch:
     types: [ci-request]

@@ -85,7 +85,7 @@ To reproduce, check out the revision of interest and run **Registry: Benchmark a
   <!-- Documentation -->
   <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" src="https://shieldcn.dev/badge/documentation-its%20a%20single%20script%20idfk%20why%20you%20need%20this%20bro.svg?variant=secondary&amp;logo=outline&amp;labelColor=000000&amp;gradient=2c6cbc%2C+195dba"></a>
   <!-- Benchmark -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/benchmarks/registry"><img alt="How to benchmark" src="https://shieldcn.dev/badge/how%20to%20bench%20Mark.svg?variant=secondary&amp;logo=speedtest&amp;labelColor=000000&amp;gradient=ffa585%2C+f68080"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" src="https://shieldcn.dev/badge/how%20to%20bench%20Mark.svg?variant=secondary&amp;logo=speedtest&amp;labelColor=000000&amp;gradient=ffa585%2C+f68080"></a>
   <!-- Contribute -->
   <a href="CONTRIBUTING.md"><img alt="Contribute" src="https://shieldcn.dev/badge/contribute-plz.svg?variant=secondary&amp;logo=lu%3AHandHelping&amp;labelColor=000000&amp;gradient=5da92f%2C+9bd46a"></a>
   <!-- License -->

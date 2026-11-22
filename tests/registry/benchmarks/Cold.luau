@@ -9,6 +9,7 @@ local function measure(size: number, shuffled: boolean, throughRegistry: boolean
 	const modules: { ModuleScript } = {}
 	const paths: { string } = {}
 	const entries: { [string]: ModuleScript } = {}
+	-- Clone one module for every first load in the trial.
 	for index = 1, size do
 		const moduleScript = fixture:Clone()
 		const path = `Data/{index}`
@@ -17,6 +18,7 @@ local function measure(size: number, shuffled: boolean, throughRegistry: boolean
 		entries[path] = moduleScript
 	end
 
+	-- Use the same seeded permutation for both lookup methods.
 	if shuffled then
 		const random = Random.new(42)
 		for index = size, 2, -1 do
@@ -26,8 +28,10 @@ local function measure(size: number, shuffled: boolean, throughRegistry: boolean
 		end
 	end
 
+	-- Accumulate returned values and time only the selected lookup loop.
 	local sum = 0
 	local elapsed = 0
+	-- Register the clones before starting the Registry timer.
 	if throughRegistry then
 		const registry = Registry.Register(entries)
 		const started = os.clock()
@@ -43,6 +47,7 @@ local function measure(size: number, shuffled: boolean, throughRegistry: boolean
 		elapsed = os.clock() - started
 	end
 
+	-- Discard these clones so the next trial starts cold.
 	for _, moduleScript in modules do
 		moduleScript:Destroy()
 	end

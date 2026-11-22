@@ -28,8 +28,8 @@ root=$(cd -- "$studio_dir/../../.." && pwd)
 
 case "$suite" in
     Lookup) script="$studio_dir/run-lookup.lua"; marker=REGISTRY_LOOKUP_OK ;;
-    RequireForms) script="$root/benchmarks/run-require-forms.lua"; marker=REQUIRE_FORMS_OK ;;
-    Matrix) script="$root/benchmarks/run-matrix.lua"; marker=REGISTRY_MATRIX_OK ;;
+    RequireForms) script="$root/tests/registry/benchmarks/run-require-forms.lua"; marker=REQUIRE_FORMS_OK ;;
+    Matrix) script="$root/tests/registry/benchmarks/run-matrix.lua"; marker=REGISTRY_MATRIX_OK ;;
     *) printf 'Usage: %s [Lookup|RequireForms|Matrix]\n' "$0" >&2; exit 2 ;;
 esac
 
@@ -81,6 +81,6 @@ printf 'Passed %s. Log: %s\n' "$suite" "$log"
 
 if [[ $suite == Matrix && -n ${2:-} ]]; then
     printf 'Rendering benchmark charts\n'
-    node "$root/benchmarks/registry/plot-matrix.cjs" "$log" "$2"
+    node "$root/tests/registry/benchmarks/plot-matrix.cjs" "$log" "$2"
     printf '%s\n%s\n%s\nsha256:%s\n' "$started_at" "$revision" "$checkout" "${studio_digest%% *}" > "$2/measurement.txt"
 fi

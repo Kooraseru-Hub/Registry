@@ -9,10 +9,7 @@ const Process = require("@lute/process")
 const CONFIG_ROOT = "config/branches"
 const CONTENT_ROOT = "content/docs/repository"
 const OUTPUT_ROOT = "build/artifacts/branches"
-const ARCHIVED_RESULTS = "results/benchmarks"
 const LOCAL_RESULTS = Process.env.REGISTRY_BENCHMARK_RESULTS
-const PUBLISHING = Process.env.CI_OPERATION == "publish" or Process.env.CI_ENGINE_SELECTED_OPERATION == "publish"
-const BENCHMARK_RESULTS = LOCAL_RESULTS or (if PUBLISHING then ARCHIVED_RESULTS else nil)
 
 local BranchBuilder = {}
 BranchBuilder.__index = BranchBuilder
@@ -91,11 +88,9 @@ end
 local function renderTemplate(content: string, source: string, branchName: string): string
 	local repository = Process.env.GITHUB_REPOSITORY or ""
 	local projectName = repository:match("^[%w_.-]+/([%w_.-]+)$") or "Project"
-	const results = BENCHMARK_RESULTS
+	const results = LOCAL_RESULTS
 	const imageExtension = if results and Fs.exists(`{results}/require-cold-matrix.svg`) then "svg" else "png"
-	local measurement = if results == ARCHIVED_RESULTS
-		then "Archived Roblox Studio benchmark baseline. These measurements predate this publication."
-		else "Measured in local Roblox Studio. Run metadata unavailable for these saved charts."
+	local measurement = "Measured in local Roblox Studio. Run metadata unavailable for these saved charts."
 
 	-- Use provenance recorded with the charts and retain support for archived runs.
 	if results then
@@ -249,7 +244,7 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 			table.insert(sources, source)
 		end
 		local copied = copySource(sources, branchRoot, path)
-		const benchmarkResults = BENCHMARK_RESULTS
+		const benchmarkResults = LOCAL_RESULTS
 
 		if benchmarkResults then
 			if LOCAL_RESULTS and not benchmarkResults:match("^build/artifacts/benchmarks/local%-%w+$") then

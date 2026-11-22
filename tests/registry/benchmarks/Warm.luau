@@ -10,6 +10,7 @@ local function measure(size: number, calls: number, shuffled: boolean): boolean
 	const order: { number } = table.create(size, 0)
 	const modules: { ModuleScript } = {}
 	const entries: { [string]: ModuleScript } = {}
+	-- Create matching module, key, and order arrays outside the timer.
 	for index = 1, size do
 		const path = `Data/{index}`
 		const moduleScript = game:GetService("ReplicatedStorage").tests.registry.Lookup.Fixtures.Scalar:Clone()
@@ -19,7 +20,10 @@ local function measure(size: number, calls: number, shuffled: boolean): boolean
 		entries[path] = moduleScript
 	end
 
+	-- Populate both caches before timing repeated access.
 	const registry = Registry.Register(entries)
+
+	-- Resolve and validate every export before measuring cached calls.
 	for index, path in paths do
 		const value, loaded = registry:Get(path)
 		if not loaded or type(value) ~= "number" then
@@ -28,6 +32,8 @@ local function measure(size: number, calls: number, shuffled: boolean): boolean
 		end
 		values[index] = value
 	end
+
+	-- Share one deterministic order across all three access methods.
 	if shuffled then
 		const random = Random.new(42)
 		for index = size, 2, -1 do
@@ -36,6 +42,7 @@ local function measure(size: number, calls: number, shuffled: boolean): boolean
 		end
 	end
 
+	-- Repeat the full access order enough times to reach the requested call count.
 	const passes = calls / size
 	local function direct(): (number, number)
 		local sum = 0
@@ -77,21 +84,27 @@ local function measure(size: number, calls: number, shuffled: boolean): boolean
 	end
 
 	local passed = true
+
+	-- Rotate the first method across six paired samples.
 	for sample = 1, 6 do
 		for offset = 0, 2 do
 			const index = (sample + offset - 1) % #methods + 1
 			const seconds, sum = methods[index]()
+
 			if sum ~= calls then
 				warn("REGISTRY_BENCH checksum mismatch")
 				passed = false
 				break
 			end
+
 			print(string.format(
 				"REGISTRY_BENCH warm %s %d %d %d %s %.9f",
 				if shuffled then "shuffled" else "sequential", size, calls, sample, names[index], seconds
 			))
 		end
 	end
+
+	-- Release the warmed modules after the final sample.
 	for _, moduleScript in modules do
 		moduleScript:Destroy()
 	end
