@@ -63,7 +63,20 @@ The benchmarks compare direct `require` and `Registry:Get` for first loads and r
 
 <div align="center">
 
-benchmark image would be here
+<p align="center">
+  <img width="49%" src="benchmarks/require-cold-matrix.svg" alt="Direct require first loads">
+  <img width="49%" src="benchmarks/require-warm-matrix.svg" alt="Direct require cached lookups">
+</p>
+
+<p align="center">
+  <img width="49%" src="benchmarks/registry-cold-matrix.svg" alt="Registry first loads">
+  <img width="49%" src="benchmarks/registry-warm-matrix.svg" alt="Registry cached lookups">
+</p>
+
+Measured <time datetime="2026-11-22T03:07:01Z">2026-11-22 03:07:01 UTC</time><br>
+Roblox Open Cloud<br>
+Test place version <code>603</code><br>
+Source commit <code>e6b50434215c28370730f6225b33c753cf556112</code>
 
 </div>
 
