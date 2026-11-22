@@ -120,7 +120,7 @@ See the [Rules settings contract](../rules/general/workflows/review/checker-cont
 
 ## Local GitHub Actions
 
-Use **Registry: Build** (Ctrl+Shift+B) for a fast native build. It writes to the workspace build directory.
+Use **Registry: Benchmark and Build** (Ctrl+Shift+B) on Windows to run Studio benchmarks and embed the resulting charts in the generated README.
 
 Use **Registry: Validate in Docker** in VS Code or run `bash .vscode/config/act/validate.sh` from the repository root. The task runs native validation in one Docker container named `kooraseru-hub-registry-ci`, with hostname `registry-ci`. It copies tracked working-tree files into the container and streams output to the terminal. The container and its local build output are removed on exit.
 

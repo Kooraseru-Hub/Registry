@@ -94,7 +94,7 @@ function check(program: string, args: string[], source: string): void {
 async function checkLuau(sources: string[]): Promise<void> {
 	const isRoblox = (file: string) => {
 		const relative = path.relative(root, path.resolve(root, file)).split(path.sep).join("/");
-		return relative === "source/Registry.luau" || relative.startsWith("tests/registry/");
+		return relative === "source/Registry.luau" || relative.startsWith("tests/registry/") || relative.startsWith("benchmarks/registry/");
 	};
 	const tooling = sources.filter(file => !isRoblox(file));
 	const registry = sources.filter(isRoblox);

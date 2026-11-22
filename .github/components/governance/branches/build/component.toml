@@ -1,7 +1,7 @@
 phase = "build"
 provides = ["branches.generated"]
 requires = []
-inputs = ["config/branches/**", "source/**", "content/docs/repository/**", "content/images/banner.png", "tests/registry/Benchmark/Results/*-cold-matrix.png", "tests/registry/Benchmark/Results/*-warm-matrix.png"]
+inputs = ["config/branches/**", "source/**", "content/docs/repository/**", "content/images/banner.png"]
 outputs = ["build/artifacts/branches/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

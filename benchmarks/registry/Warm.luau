@@ -12,7 +12,7 @@ local function measure(size: number, calls: number, shuffled: boolean): boolean
 	const entries: { [string]: ModuleScript } = {}
 	for index = 1, size do
 		const path = `Data/{index}`
-		const moduleScript = script.Parent.Parent.Lookup.Fixtures.Scalar:Clone()
+		const moduleScript = game:GetService("ReplicatedStorage").tests.registry.Lookup.Fixtures.Scalar:Clone()
 		order[index] = index
 		paths[index] = path
 		modules[index] = moduleScript

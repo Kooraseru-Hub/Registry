@@ -1,5 +1,5 @@
 local loadModule: (ModuleScript) -> { Measure: (string, number) -> (number, boolean) } = require
-local template = game.ReplicatedStorage.tests.registry.Benchmark.RequireForms
+local template = game.ReplicatedStorage.benchmarks.registry.RequireForms
 local forms = {"literalPath", "dynamicPath", "directInstance", "boundInstance", "indirectInstance", "registry"}
 for _, calls in {1, 100000} do
 	for trial = 1, 6 do

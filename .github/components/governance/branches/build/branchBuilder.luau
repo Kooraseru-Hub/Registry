@@ -87,10 +87,56 @@ end
 local function renderTemplate(content: string, source: string, branchName: string): string
 	local repository = Process.env.GITHUB_REPOSITORY or ""
 	local projectName = repository:match("^[%w_.-]+/([%w_.-]+)$") or "Project"
+	const results = Process.env.REGISTRY_BENCHMARK_RESULTS
+	const imageExtension = if results and Fs.exists(`{results}/require-cold-matrix.svg`) then "svg" else "png"
+	local measurement = "Measured in local Roblox Studio. Run metadata unavailable for these saved charts."
+
+	-- Use provenance recorded with the charts and retain support for archived runs.
+	if results then
+		const metadataPath = `{results}/measurement.txt`
+		const timestampPath = `{results}/measured-at.txt`
+		if Fs.exists(metadataPath) and Fs.type(metadataPath) == "file" then
+			const metadata = Fs.readFileToString(metadataPath):gsub("\r\n", "\n")
+			const started, commit, checkout, studio = metadata:match(
+				"^(%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d:%d%dZ)\n(%x+)\n(%a+)\n([%w.:]+)%s*$"
+			)
+			if not (started and commit and #commit == 40 and (checkout == "clean" or checkout == "dirty") and studio) then
+				error(`invalid benchmark metadata: {metadataPath}`, 0)
+			end
+			const digest = studio:match("^sha256:(%x+)$")
+			if not ((digest and #digest == 64) or studio:match("^%d[%d.]*$")) then
+				error(`invalid Studio build identifier: {metadataPath}`, 0)
+			end
+			const changes = if checkout == "dirty" then "uncommitted changes present" else "clean checkout"
+			const studioLabel = if digest then "Roblox Studio executable" else "Roblox Studio version"
+			measurement = string.format(
+				'Measured <relative-time datetime="%s">%s</relative-time> · %s `%s` on Windows · Source commit `%s` (%s)',
+				started, started, studioLabel, studio, commit, changes
+			)
+		elseif Fs.exists(timestampPath) and Fs.type(timestampPath) == "file" then
+			const timestamp = Fs.readFileToString(timestampPath):match("^(%d+)%s*$")
+			if not timestamp then error(`invalid benchmark timestamp: {timestampPath}`, 0) end
+			measurement = `Measured in local Roblox Studio. Run started at Unix timestamp {timestamp} (seconds since the Unix epoch).`
+		end
+	end
+
+	-- Resolve the template with either the benchmark grid or its local placeholder.
 	local values = {
 		["project.name"] = projectName,
 		["branch.name"] = branchName,
 		["branch.source"] = "source",
+		["registry.benchmarks"] = if results then ([[
+<p align="center">
+  <img width="49%" src="benchmarks/require-cold-matrix.png" alt="Direct require first load">
+  <img width="49%" src="benchmarks/require-warm-matrix.png" alt="Direct require repeated lookup">
+</p>
+
+<p align="center">
+  <img width="49%" src="benchmarks/registry-cold-matrix.png" alt="Registry first load">
+  <img width="49%" src="benchmarks/registry-warm-matrix.png" alt="Registry repeated lookup">
+</p>
+
+]]):gsub("%.png", "." .. imageExtension) .. measurement else "benchmark image would be here",
 	}
 
 	local rendered = content:gsub("{{([%w_.-]+)}}", function(key: string): string
@@ -197,10 +243,29 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 			table.insert(sources, source)
 		end
 		local copied = copySource(sources, branchRoot, path)
+		local benchmarkResults = Process.env.REGISTRY_BENCHMARK_RESULTS
+
+		if benchmarkResults then
+			if not benchmarkResults:match("^build/artifacts/benchmarks/local%-%w+$") then
+				error("invalid local benchmark results directory", 0)
+			end
+			ensureDirectory(`{branchRoot}/benchmarks`)
+			const extension = if Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then "svg" else "png"
+			for _, file in { `require-cold-matrix.{extension}`, `require-warm-matrix.{extension}`, `registry-cold-matrix.{extension}`, `registry-warm-matrix.{extension}`, "matrix-samples.csv" } do
+				local source = `{benchmarkResults}/{file}`
+				if not Fs.exists(source) or Fs.type(source) ~= "file" then
+					error(`missing local benchmark output: {source}`, 0)
+				end
+				Fs.copy(source, `{branchRoot}/benchmarks/{file}`)
+				copied += 1
+			end
+		end
+
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
 		if copied == 0 then
 			error(`branch {name} has no source files or templates`, 0)
 		end
+
 		branchCount += 1
 		print(`Built repository branch {name} with {copied} files`)
 	end

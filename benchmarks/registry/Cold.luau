@@ -2,7 +2,7 @@
 
 const Registry = require("@game/ReplicatedStorage/Registry")
 const loadModule: (ModuleScript) -> unknown = require
-const fixture = script.Parent.Parent.Lookup.Fixtures.Scalar
+const fixture = game:GetService("ReplicatedStorage").tests.registry.Lookup.Fixtures.Scalar
 
 --- Times one first load for each fresh ModuleScript, with setup outside the timer.
 local function measure(size: number, shuffled: boolean, throughRegistry: boolean): (number, number)

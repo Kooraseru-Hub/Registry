@@ -2,21 +2,24 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Registry: Build",
-      "detail": "Build artifacts directly in the workspace without Docker.",
+      "label": "Registry: Benchmark and Build",
+      "detail": "Run the Studio benchmark and build the README with its heatmaps.",
       "type": "process",
-      "command": "node",
-      "args": ["dependencies/packages/core/dependencyLoader/index.ts", "--exec", "tools.ciEngine", "native", "--stage", "build"],
-      "options": {
-        "cwd": "${workspaceFolder}",
-        "env": {
-          "CI_EVENT": "workflow_dispatch",
-          "CI_OPERATION": "build",
-          "CI_GRAPH_RUN": "true",
-          "CI_PHASE": "build"
-        }
-      },
+      "command": "bash",
+      "windows": { "command": "C:/msys64/usr/bin/bash.exe" },
+      "args": ["tests/registry/Studio/benchmark-build.sh"],
+      "options": { "cwd": "${workspaceFolder}" },
       "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Registry: Verify in Studio",
+      "detail": "Run the Registry API smoke test on Windows.",
+      "type": "process",
+      "command": "bash",
+      "windows": { "command": "C:/msys64/usr/bin/bash.exe" },
+      "args": ["tests/registry/Studio/run.sh", "Lookup"],
+      "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },
     {
