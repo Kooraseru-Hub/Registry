@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="content/images/banner.png" alt="Registry">
+  <img src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/source/content/images/banner.png" alt="Registry">
   <p><strong>Typed module lookup for Roblox Luau</strong></p>
 </div>
 
@@ -63,7 +63,17 @@ The benchmarks compare direct `require` and `Registry:Get` for first loads and r
 
 <div align="center">
 
-benchmark image would be here
+<p align="center">
+  <img width="49%" src="benchmarks/require-cold-matrix.png" alt="Direct require first load">
+  <img width="49%" src="benchmarks/require-warm-matrix.png" alt="Direct require repeated lookup">
+</p>
+
+<p align="center">
+  <img width="49%" src="benchmarks/registry-cold-matrix.png" alt="Registry first load">
+  <img width="49%" src="benchmarks/registry-warm-matrix.png" alt="Registry repeated lookup">
+</p>
+
+Archived Roblox Studio benchmark baseline. These measurements predate this publication.
 
 </div>
 
