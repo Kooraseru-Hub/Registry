@@ -1,0 +1,53 @@
+---
+title: API reference
+description: Functions, registry methods, and public types available in Registry.
+sidebar:
+  label: Overview
+---
+
+import ApiMember from '../../../components/ApiMember.astro';
+
+Registry is a Luau ModuleScript library. It exports one constructor-like function, `Register`, which returns a frozen object exposing one method, `Get`.
+
+Unlike Roblox Engine classes, Registry does not expose `Instance` properties, events, or an inheritance hierarchy. This reference lists only members implemented in [the source](https://github.com/Kooraseru-Hub/Registry/blob/source/source/Registry.luau).
+
+## Summary
+
+### Functions
+
+<ApiMember kind="function" name="Register" signature="Register(entries: Entries): Registry&lt;Resolvable&lt;Entries&gt;&gt;" description="Creates a registry from a table of named values and ModuleScripts." href="./functions/register/" />
+
+### Registry methods
+
+<ApiMember kind="method" name="Get" signature="Get(path: Path): (unknown, boolean)" description="Reads a registered value or loads and caches a ModuleScript export." href="./registry/get/" />
+
+### Types
+
+<ApiMember kind="type" name="Registry" signature="Registry&lt;Path&gt;" description="The typed interface of a registry returned by Register." href="./types/registry/" />
+
+<ApiMember kind="type" name="Resolvable" signature="Resolvable&lt;Entries&gt;" description="The set of keys accepted as paths by the registry." href="./types/resolvable/" />
+
+## Usage
+
+```luau
+--!strict
+const Registry = require("@game/ReplicatedStorage/Registry")
+const registry = Registry.Register({
+    ["Game/Settings"] = script.Parent.Settings,
+    ["Game/Ready"] = true,
+})
+
+const result, ok = registry:Get("Game/Settings")
+if not ok then
+    warn(result)
+    return
+end
+
+print(result)
+```
+
+The path parameter is checked against the registration keys. The retrieved result remains `unknown`, so its shape must be checked or narrowed separately.
+
+## Related guides
+
+[Getting started](../getting-started/), [registrations and editor setup](../configuration/), and [lookup results and errors](../learn/lookup-results/).

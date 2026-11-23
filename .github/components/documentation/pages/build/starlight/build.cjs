@@ -101,6 +101,8 @@ function prepareRuntime() {
     { recursive: true });
   fs.copyFileSync(path.join(__dirname, 'src/styles/layout.css'), path.join(site, 'src/styles/layout.css'));
   prepareSite();
+  // Astro/MDX needs documentation icons available before it compiles pages.
+  copyAssets(images, path.join(site, 'public/images'));
 }
 
 function astroCli() {

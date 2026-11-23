@@ -1,25 +1,27 @@
 ---
 title: Getting started
-description: Install Registry in Studio and look up a ModuleScript from a separate script.
+description: Install Registry and make a first typed path lookup in Roblox Studio.
 slug: getting-started
 sidebar:
-  order: 2
+  label: Getting started
 ---
 
 ## Install
 
-Copy [Registry.luau](https://github.com/Kooraseru-Hub/Registry/blob/source/source/Registry.luau) into a ModuleScript named `Registry` in `ReplicatedStorage`. Enable the new Luau type solver in Studio under **Workspace > Scripting > UseNewLuauTypeSolver**.
+Copy [`source/Registry.luau`](https://github.com/Kooraseru-Hub/Registry/blob/source/source/Registry.luau) into a ModuleScript named `Registry` under `ReplicatedStorage`.
 
-## Register a ModuleScript
+Enable the new Luau type solver in Studio under **Workspace > Scripting > UseNewLuauTypeSolver**.
 
-Create a ModuleScript named `Settings` in `ReplicatedStorage` and give it this body.
+## Create an entry
+
+Create a ModuleScript named `Settings` under `ReplicatedStorage`:
 
 ```luau
 --!strict
 return table.freeze({ RoundLength = 60 })
 ```
 
-Create a sibling ModuleScript named `Registrations`.
+Create a sibling ModuleScript named `Registrations`:
 
 ```luau
 --!strict
@@ -30,9 +32,9 @@ return Registry.Register({
 })
 ```
 
-## Look up the result
+## Look up the export
 
-From a separate script, require the shared registration and pass one of its keys to `Get`.
+From another script:
 
 ```luau
 --!strict
@@ -46,4 +48,8 @@ else
 end
 ```
 
-The first call loads `Settings` and returns its export. Next, [organize your registrations](../configuration/) or check the [API reference](../api/) for return values and errors.
+The first lookup requires `Settings`; later lookups reuse the cached export while the registration points to the same ModuleScript.
+
+The path is type-checked from the registration keys, but the result is still `unknown`. Check [lookup results and errors](../learn/lookup-results/) before accessing members of an export.
+
+Continue with [registrations and editor setup](../configuration/) or the [API reference](../reference/).

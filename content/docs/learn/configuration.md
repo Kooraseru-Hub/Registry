@@ -1,23 +1,37 @@
 ---
 title: Registrations and editor setup
-description: Choose registry paths and configure the repository editor fixture.
+description: Choose exact registry paths and configure repository editor completion.
 slug: configuration
 sidebar:
-  order: 3
+  label: Registrations and editor setup
 ---
 
 ## Choose paths
 
-Use string keys such as `"Game/Settings"` or `"UI/Theme"`. Slashes let you group related entries by convention. Each key is an exact lookup, so `"UI/Theme"` and `"ui/theme"` are different keys.
+Use string keys such as `"Game/Settings"` or `"UI/Theme"`. Slashes group names by convention only. Each key is an exact lookup; `"UI/Theme"` and `"ui/theme"` are different keys.
 
-A shared ModuleScript can return a registry to any consumer that requires it. Call `Registry.Register` again with a different table when you need an independent set of paths. Use instances that are accessible from the environment where consumers run.
+```luau
+const Registry = require("@game/ReplicatedStorage/Registry")
+return Registry.Register({
+    ["Game/Settings"] = script.Parent.Settings,
+    ["UI/Theme"] = "dark",
+})
+```
 
-## Generate the repository sourcemap
+Require this registration ModuleScript from consumers instead of calling `Register` separately in every script. Each `Register` invocation creates its own registry instance and cache.
 
-For this repository in VS Code, run the following from its root.
+Use ModuleScripts that are accessible from the environment where consumers run. Do not assume client and server share a require cache.
+
+## Type inference
+
+Known table keys give `Get` an inferred union of valid paths. A generic string-keyed dictionary weakens editor completion. The lookup result is still `unknown`, as detailed in [`Resolvable<Entries>`](../reference/types/resolvable/).
+
+## VS Code repository fixture
+
+For this repository, generate the Luau sourcemap from the root:
 
 ```sh
 node .vscode/config/luau/generate-sourcemap.cjs
 ```
 
-The Luau language server reads the generated root `sourcemap.json`. It maps the library and Studio test tree using `tests/registry/Studio/aliases.json`. Rerun the generator after moving or adding test scripts. The map is ignored by Git and is only needed for repository tooling.
+The generated `sourcemap.json` maps the library and Studio fixtures using `tests/registry/Studio/aliases.json`. Rerun it after moving or adding test scripts. It is ignored by Git and is needed only for repository tooling.
