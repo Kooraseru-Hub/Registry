@@ -27,7 +27,7 @@ export default defineConfig({
   base,
   integrations: [starlight({
     title,
-    favicon: base + 'images/favicon.png',
+    favicon: '/images/favicon.png',
     // The reference has stable, intentionally ordered groups like Creator Hub.
     customCss: [
       './src/styles/layout.css',
@@ -38,7 +38,7 @@ export default defineConfig({
     ],
     social: repository ? [{ icon: 'github', label: 'GitHub', href: 'https://github.com/' + repository }] : [],
     sidebar: [
-      { label: 'Overview', link: base },
+      { label: 'Overview', link: '/' },
       { label: 'Learn', items: [
         { slug: 'getting-started' },
         { slug: 'configuration' },
