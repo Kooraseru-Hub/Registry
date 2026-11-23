@@ -2,7 +2,7 @@
   "schema": 1,
   "upstream": "Kooraseru/Template",
   "installed": "0.0.0",
-  "revision": null,
+  "revision": "17e9d20a28066a924fb44264cb473fbe576a56fc",
   "channel": "stable",
   "managed": [
     ".github/**",
@@ -10,5 +10,8 @@
     "rules/**",
     ".vscode/**",
     "config/**"
-  ]
+  ],
+  "conformance": {
+    "mode": "consumer"
+  }
 }

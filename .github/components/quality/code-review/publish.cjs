@@ -27,7 +27,7 @@ function commentsFor(findings, files) {
       path: item.file,
       line: item.line,
       side: "RIGHT",
-      body: "<!-- registry-review:" + key + " -->\n~~~text\n" + text + "\n~~~",
+      body: "<!-- template-review:" + key + " -->\n~~~text\n" + text + "\n~~~",
     });
   }
   return comments;
@@ -56,7 +56,7 @@ function main(env = process.env) {
   const findings = [];
   for (const name of reportNames) {
     if (!artifacts.some(item => item.name === name && !item.expired && item.size_in_bytes <= 4 * 1024 * 1024)) continue;
-    const directory = fs.mkdtempSync(path.join(temp, "registry-diagnostics-"));
+    const directory = fs.mkdtempSync(path.join(temp, "template-diagnostics-"));
     try {
       gh(["run", "download", run, "--repo", repository, "--name", name, "--dir", directory]);
       const file = path.join(directory, "diagnostics.json");
@@ -73,14 +73,14 @@ function main(env = process.env) {
   if (!comments.size) return;
   for (const comment of api(endpoint + "/comments?per_page=100", true)) {
     if (comment.user?.login !== "github-actions[bot]" || comment.original_commit_id !== sha) continue;
-    const key = /^<!-- registry-review:([a-f0-9]{64}) -->/.exec(comment.body)?.[1];
+    const key = /^<!-- template-review:([a-f0-9]{64}) -->/.exec(comment.body)?.[1];
     if (key) comments.delete(key);
   }
   submitReviews([...comments.values()], isCurrent, comments => {
     gh(["api", "--method", "POST", endpoint + "/reviews", "--input", "-"], JSON.stringify({
       commit_id: sha,
       event: "COMMENT",
-      body: "Registry Code Review. See CI artifacts for the full report.",
+      body: "Code Review. See CI artifacts for the full report.",
       comments,
     }));
   });

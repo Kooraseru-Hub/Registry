@@ -12,7 +12,7 @@ test("independent PR reviews scope findings to the admitted default branch", () 
 });
 
 test("review comments point only to added lines and deduplicate findings", () => {
-  const file = "source/Registry/init.luau";
+  const file = "source/Example/init.luau";
   const files = [{ filename: file, patch: "@@ -2,3 +2,4 @@\n context\n-old\n+new\n+extra\n context" }];
   const finding = { file, line: 3, source: "luau/const-bindings", severity: "error", message: "Use const." };
   const comments = [...commentsFor([
