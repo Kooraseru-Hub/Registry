@@ -73,10 +73,10 @@ The benchmarks compare direct `require` and `Registry:Get` for first loads and r
   <img width="49%" src="benchmarks/registry-warm-matrix.svg" alt="Registry cached lookups">
 </p>
 
-Measured <time datetime="2026-11-22T03:35:23Z">2026-11-22 03:35:23 UTC</time><br>
+Measured <time datetime="2026-11-23T16:12:34Z">2026-11-23 16:12:34 UTC</time><br>
 Roblox Open Cloud<br>
 Test place version <code>603</code><br>
-Source commit <code>81c17024361b6acd2af760cbe197cb8c752ace4c</code>
+Source commit <code>a7b8e61c842d939000da21b91ebf0f100d6825f1</code>
 
 </div>
 
