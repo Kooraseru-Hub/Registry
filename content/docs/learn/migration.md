@@ -24,4 +24,4 @@ Import the shared registration ModuleScript and use `registry:Get("Game/Settings
 
 Any initialization sequence, dependencies between services, and teardown must be managed by application code. Registry lazily loads ModuleScripts only; it does not call an initialization method on their exports.
 
-See [the reference](../reference/) for the supported API and [lookup results and errors](./lookup-results/) for behavior changes to account for.
+See [the reference](../../reference/) for the supported API and [lookup results and errors](../lookup-results/) for behavior changes to account for.

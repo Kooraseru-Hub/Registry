@@ -23,4 +23,4 @@ Logs are written under `build/artifacts/tests/`.
 
 Cold lookups include the initial ModuleScript `require`. Warm lookups use already loaded modules. Results depend on the workload, machine, and Studio version; neither measurement is interchangeable with the other.
 
-The [benchmark methodology](./resources/benchmark-methodology/) describes timed loops and output, and the [source tests](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry) provide the fixtures.
+The [benchmark methodology](../resources/benchmark-methodology/) describes timed loops and output, and the [source tests](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry) provide the fixtures.

@@ -41,4 +41,4 @@ Plain values do not enter Registry's ModuleScript cache.
 
 The return type is `unknown`, even on success. Narrow it before dereferencing or calling. A valid path does not automatically imply the return type of its registered value.
 
-For exact behavior and signatures, see [`Get(path)`](../reference/registry/get/).
+For exact behavior and signatures, see [`Get(path)`](../../reference/registry/get/).
