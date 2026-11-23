@@ -1,4 +1,7 @@
-# Template conformance
+---
+title: Template conformance
+description: Verify inherited infrastructure against a pinned parent revision.
+---
 
 Registry directly inherits `Kooraseru/Template` at the immutable revision specified in `config/template.json`. The parent defines protected shared paths in `config/template-contract.json`.
 
