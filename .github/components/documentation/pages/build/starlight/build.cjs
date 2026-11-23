@@ -100,6 +100,14 @@ function prepareRuntime() {
   fs.cpSync(path.join(__dirname, 'src/styles/theme'), path.join(site, 'src/styles/theme'),
     { recursive: true });
   fs.copyFileSync(path.join(__dirname, 'src/styles/layout.css'), path.join(site, 'src/styles/layout.css'));
+  // The authored MDX reference imports the component from the staged Astro src directory.
+  const components = path.join(__dirname, 'src/components');
+  const stagedComponents = path.join(site, 'src/components');
+  if (fs.existsSync(stagedComponents)) {
+    if (fs.lstatSync(stagedComponents).isSymbolicLink()) throw new Error('Refusing linked staged components directory');
+    fs.rmSync(stagedComponents, { recursive: true });
+  }
+  if (fs.existsSync(components)) fs.cpSync(components, stagedComponents, { recursive: true });
   prepareSite();
   // Astro/MDX needs documentation icons available before it compiles pages.
   copyAssets(images, path.join(site, 'public/images'));

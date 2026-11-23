@@ -137,3 +137,13 @@ test('Reference navigation lists every published Registry member', () => {
   assert.ok(source.includes('Register = register'));
   assert.ok(source.includes('Get = get'));
 });
+
+test('Authored API summary component is staged into the Astro runtime', () => {
+  const builder = fs.readFileSync(path.join(__dirname, 'build.cjs'), 'utf8');
+  const component = path.join(__dirname, 'src/components/ApiMember.astro');
+  const reference = path.join(root, 'content/docs/reference/index.mdx');
+  assert.ok(fs.existsSync(component));
+  assert.ok(builder.includes("path.join(site, 'src/components')"));
+  assert.ok(builder.includes('fs.cpSync(components, stagedComponents'));
+  assert.ok(fs.readFileSync(reference, 'utf8').includes("import ApiMember"));
+});
