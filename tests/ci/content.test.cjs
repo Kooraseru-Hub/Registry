@@ -13,7 +13,7 @@ function sitePages(directory = documentation, pages = []) {
     const location = path.join(directory, entry.name);
     if (entry.isDirectory()) {
       if (location !== repositoryTemplates) sitePages(location, pages);
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+    } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
       pages.push(location);
     }
   }
@@ -26,7 +26,7 @@ test("published documentation has predictable Markdown metadata", () => {
     const source = fs.readFileSync(file, "utf8");
     const slug = source.split("---")[1]?.match(/^slug: ([^\r\n]+)$/m)?.[1];
     const relative = path.relative(documentation, file).split(path.sep).join("/");
-    const route = "/" + (slug ? slug + "/" : relative.replace(/(?:^|\/)index\.md$/, "/").replace(/\.md$/, "/")).replace(/^\/+/, "");
+    const route = "/" + (slug ? slug + "/" : relative.replace(/(?:^|\/)index\.mdx?$/, "/").replace(/\.mdx?$/, "/")).replace(/^\/+/, "");
     return [file, route];
   }));
   assert.equal(new Set(routes.values()).size, routes.size, "Duplicate documentation route");
@@ -40,10 +40,10 @@ test("published documentation has predictable Markdown metadata", () => {
     assert.equal((source.match(/^# /gm) || []).length, 0, file + ": Starlight renders the frontmatter title as H1");
     // Starlight emits directory URLs, not raw Markdown source filenames.
     const route = routes.get(file);
-    for (const match of source.matchAll(/\]\(([^)\s]+)\)/g)) {
+    for (const match of source.matchAll(/(?:\]\(|\bhref=")([^)"\s]+)(?:\)|")/g)) {
       const link = match[1];
       if (/^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(link)) continue;
-      assert.ok(!/\.md(?:$|[?#])/.test(link), file + ": raw Markdown URL " + link);
+      assert.ok(!/\.mdx?(?:$|[?#])/.test(link), file + ": raw Markdown URL " + link);
       if (!link.startsWith('.')) continue;
       const resolved = new URL(link, 'https://docs.example' + route);
       assert.ok([...routes.values()].includes(resolved.pathname), file + ": broken guide route " + link);

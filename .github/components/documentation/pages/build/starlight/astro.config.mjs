@@ -27,9 +27,8 @@ export default defineConfig({
   base,
   integrations: [starlight({
     title,
-    favicon: '/images/favicon.png',
-    // Navigation stays filesystem-generated. Authored Markdown is staged into
-    // src/content/docs before each build or local preview.
+    favicon: base + 'images/favicon.png',
+    // The reference has stable, intentionally ordered groups like Creator Hub.
     customCss: [
       './src/styles/layout.css',
       './src/styles/theme/fallback.css',
@@ -38,7 +37,28 @@ export default defineConfig({
       './src/styles/theme/forced-colors.css',
     ],
     social: repository ? [{ icon: 'github', label: 'GitHub', href: 'https://github.com/' + repository }] : [],
-    // Omit sidebar: Starlight derives it from the staged Markdown tree.
+    sidebar: [
+      { label: 'Overview', link: base },
+      { label: 'Learn', items: [
+        { slug: 'getting-started' },
+        { slug: 'configuration' },
+        { slug: 'learn/lookup-results' },
+        { slug: 'learn/migration' },
+      ] },
+      { label: 'API reference', items: [
+        { slug: 'reference' },
+        { label: 'Functions', items: [{ slug: 'reference/functions/register' }] },
+        { label: 'Registry object', items: [{ slug: 'reference/registry/get' }] },
+        { label: 'Types', items: [
+          { slug: 'reference/types/registry' },
+          { slug: 'reference/types/resolvable' },
+        ] },
+      ] },
+      { label: 'Resources', items: [
+        { slug: 'benchmarks' },
+        { slug: 'resources/benchmark-methodology' },
+      ] },
+    ],
     editLink: projectSite ? { baseUrl: 'https://github.com/' + repository + '/edit/source/content/docs/' } : undefined,
   })],
 });

@@ -17,11 +17,12 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(astro.includes("resolve(here, 'dist')"));
   assert.ok(fs.readFileSync(path.join(site, 'build.cjs'), 'utf8').includes('build/artifacts/pages/production'));
   assert.ok(astro.includes('starlight({'));
-  assert.ok(!astro.includes('sidebar: ['));
+  assert.ok(astro.includes('sidebar: ['));
+  assert.ok(astro.includes("{ label: 'API reference', items: ["));
   assert.ok(collection.includes('docsLoader()'));
   assert.ok(!collection.includes('glob('));
   assert.ok(astro.includes('./src/styles/project.css'));
-  assert.ok(astro.includes("favicon: '/images/favicon.png'"));
+  assert.ok(astro.includes("favicon: base + 'images/favicon.png'"));
   const authoredFavicon = path.join(root, 'content/images/favicon.png');
   assert.ok(fs.existsSync(authoredFavicon));
   const signature = fs.readFileSync(authoredFavicon).subarray(0, 8).toString('hex');
@@ -30,6 +31,7 @@ test('Starlight site is configured as a component, not another workflow', () => 
   const layout = fs.readFileSync(path.join(site, 'src/styles/layout.css'), 'utf8');
   const projectTheme = fs.readFileSync(path.join(root, 'content/theme.css'), 'utf8');
   assert.ok(layout.includes('--sl-content-width: 52rem;'));
+  assert.ok(layout.includes('.api-member'));
   assert.ok(layout.includes('--sl-sidebar-width: 17rem;'));
   assert.ok(!layout.includes('--sl-color-bg:'));
   assert.ok(!projectTheme.includes('--sl-color-accent:'));
@@ -113,4 +115,35 @@ test('favicon is staged from authored assets and can be replaced per repository'
   assert.deepEqual(fs.readFileSync(destination), fs.readFileSync(source));
   assert.throws(() => stageFavicon(path.join(temp, 'missing.png'), destination),
     /Missing or invalid authored favicon/);
+});
+
+test('Reference navigation lists every published Registry member', () => {
+  const astro = fs.readFileSync(path.join(__dirname, 'astro.config.mjs'), 'utf8');
+  const pages = [
+    'reference/index.mdx',
+    'reference/functions/register.md',
+    'reference/registry/get.md',
+    'reference/types/registry.md',
+    'reference/types/resolvable.md',
+  ];
+  for (const page of pages) assert.ok(fs.existsSync(path.join(root, 'content/docs', page)), page);
+  for (const slug of [
+    'reference/functions/register', 'reference/registry/get',
+    'reference/types/registry', 'reference/types/resolvable',
+  ]) assert.ok(astro.includes("slug: '" + slug + "'"), slug);
+  const source = fs.readFileSync(path.join(root, 'source/Registry.luau'), 'utf8');
+  assert.ok(source.includes('export type Registry<Path>'));
+  assert.ok(source.includes('export type Resolvable<Entries>'));
+  assert.ok(source.includes('Register = register'));
+  assert.ok(source.includes('Get = get'));
+});
+
+test('Authored API summary component is staged into the Astro runtime', () => {
+  const builder = fs.readFileSync(path.join(__dirname, 'build.cjs'), 'utf8');
+  const component = path.join(__dirname, 'src/components/ApiMember.astro');
+  const reference = path.join(root, 'content/docs/reference/index.mdx');
+  assert.ok(fs.existsSync(component));
+  assert.ok(builder.includes("path.join(site, 'src/components')"));
+  assert.ok(builder.includes('fs.cpSync(components, stagedComponents'));
+  assert.ok(fs.readFileSync(reference, 'utf8').includes("import ApiMember"));
 });

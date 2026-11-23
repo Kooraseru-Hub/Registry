@@ -1,0 +1,25 @@
+---
+interface Props {
+  kind: 'function' | 'method' | 'type' | 'property' | 'event';
+  name: string;
+  signature: string;
+  description: string;
+  href: string;
+}
+const { kind, name, signature, description, href } = Astro.props;
+const asset = {
+  function: 'method.svg',
+  method: 'method.svg',
+  type: 'type.svg',
+  property: 'property.svg',
+  event: 'event.svg',
+}[kind];
+const iconSrc = import.meta.env.BASE_URL + 'images/api/' + asset;
+---
+<a class="api-member" href={href} aria-label={name + ': ' + description}>
+  <img src={iconSrc} width="21" height="21" alt="" aria-hidden="true" />
+  <span class="api-member-copy">
+    <span class="api-member-signature"><code>{signature}</code></span>
+    <span class="api-member-description">{description}</span>
+  </span>
+</a>

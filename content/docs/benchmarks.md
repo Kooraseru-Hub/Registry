@@ -2,16 +2,14 @@
 title: Tests and benchmarks
 description: Reproduce Registry lookup tests and compare cold and warm module access.
 sidebar:
-  order: 5
+  label: Tests and benchmarks
 ---
 
-Run these suites from the repository root with Node.js and Windows Roblox Studio installed. Use MSYS2, Git Bash, or WSL with Windows interop.
+The repository includes Studio tests for typed paths, real ModuleScripts, failed loads, and lookup performance.
 
-| Suite | What it exercises |
-| --- | --- |
-| `Lookup` | Typed paths, real ModuleScripts, and lookup after a module failure |
-| `RequireForms` | Direct require using different reference forms and Registry lookup |
-| `Matrix` | First loads and cached lookups across workloads |
+## Run the suites
+
+With Windows Roblox Studio and Node.js installed, use MSYS2 or Git Bash. WSL additionally needs Windows interop.
 
 ```sh
 bash tests/registry/Studio/run.sh Lookup
@@ -19,6 +17,10 @@ bash tests/registry/Studio/run.sh RequireForms
 bash tests/registry/Studio/run.sh Matrix
 ```
 
-Each run builds a fresh fixture and writes its Studio log under `build/artifacts/tests/`.
+Logs are written under `build/artifacts/tests/`.
 
-Cold trials load fresh ModuleScripts. Warm trials prime both implementations before timing. Check the [benchmark methodology, raw trials, and heatmaps](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks) for the workload, timing boundaries, and the Studio version used for the published samples.
+## Measurement notes
+
+Cold lookups include the initial ModuleScript `require`. Warm lookups use already loaded modules. Results depend on the workload, machine, and Studio version; neither measurement is interchangeable with the other.
+
+The [benchmark methodology](../resources/benchmark-methodology/) describes timed loops and output, and the [source tests](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry) provide the fixtures.
