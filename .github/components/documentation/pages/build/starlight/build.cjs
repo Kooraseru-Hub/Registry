@@ -145,59 +145,9 @@ function basePath(env = process.env) {
     ? '/' + name + '/' : '/';
 }
 
-// Validate the actual generated markup, not just the authored Astro configuration.
+// Validate generated navigation URLs, not just the authored Astro configuration.
 function verifyNavigationPaths(documentHtml, base = basePath()) {
-  if (!new RegExp('^/(?:[A-Za-z0-9._~-]+/)*
-    throw new Error('Invalid documentation base path: ' + base);
-  const iconHref = base + 'images/favicon.png';
-  if (!documentHtml.includes('href="' + iconHref + '"'))
-    throw new Error('Starlight favicon URL does not match the publication base: ' + iconHref);
-  const duplicated = base + base.slice(1);
-  if (base !== '/' && documentHtml.includes(duplicated))
-    throw new Error('Starlight generated a doubly-prefixed URL: ' + duplicated);
-  if (!documentHtml.includes('href="' + base + '"'))
-    throw new Error('Starlight homepage navigation does not target the publication base: ' + base);
-}
-
-function build() {
-  run(process.execPath, [astroCli(), 'build', '--root', site]);
-  if (fs.existsSync(output)) {
-    if (fs.lstatSync(output).isSymbolicLink()) throw new Error('Refusing symlinked Pages output');
-    fs.rmSync(output, { recursive: true });
-  }
-  // Keep dynamic prerender dependencies under the Starlight package while
-  // compiling, then export plain static assets into the CI output contract.
-  if (!fs.existsSync(path.join(staging, 'index.html'))) {
-    throw new Error('Starlight did not produce dist/index.html');
-  }
-  verifyNavigationPaths(fs.readFileSync(path.join(staging, 'index.html'), 'utf8'));
-  fs.cpSync(staging, output, { recursive: true, force: true });
-  copyAssets(images, path.join(output, 'images'));
-  if (!fs.existsSync(path.join(output, 'index.html'))) {
-    throw new Error('Starlight failed to produce build/artifacts/pages/production/index.html');
-  }
-  if (process.env.GITHUB_ACTIONS === 'true' || process.env.CI_GRAPH_RUN === 'true') {
-    const compatibility = path.join(root, 'build/github/pages');
-    if (fs.existsSync(compatibility) && fs.lstatSync(compatibility).isSymbolicLink())
-      throw new Error('Refusing symlinked native Pages staging directory');
-    fs.mkdirSync(compatibility, { recursive: true });
-    fs.copyFileSync(path.join(output, 'index.html'), path.join(compatibility, 'index.html'));
-  }
-  process.stdout.write('Starlight: built ' + output + '\n');
-}
-
-module.exports = { build, prepareSite, stageFavicon, copyAssets, basePath, verifyNavigationPaths, root, site, output, docs };
-if (require.main === module) {
-  try {
-    const [mode, ...args] = process.argv.slice(2);
-    if (mode === '--prepare') prepareRuntime();
-    else if (mode === 'dev' || mode === 'preview') {
-      run(process.execPath, [astroCli(), mode, '--root', site, ...args], site, 0);
-    } else build();
-  }
-  catch (error) { console.error(String(error)); process.exitCode = 1; }
-}
-).test(base))
+  if (!/^\/(?:[A-Za-z0-9._~-]+\/)*$/.test(base))
     throw new Error('Invalid documentation base path: ' + base);
   const iconHref = base + 'images/favicon.png';
   if (!documentHtml.includes('href="' + iconHref + '"'))
