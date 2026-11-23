@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { copyAssets, prepareSite, stageFavicon, root } = require('./build.cjs');
+const { copyAssets, prepareSite, stageFavicon, basePath, verifyNavigationPaths, root } = require('./build.cjs');
 
 test('Starlight site is configured as a component, not another workflow', () => {
   const site = __dirname;
@@ -18,11 +18,14 @@ test('Starlight site is configured as a component, not another workflow', () => 
   assert.ok(fs.readFileSync(path.join(site, 'build.cjs'), 'utf8').includes('build/artifacts/pages/production'));
   assert.ok(astro.includes('starlight({'));
   assert.ok(astro.includes('sidebar: ['));
+  assert.ok(astro.includes("{ label: 'Overview', link: '/' }"));
+  assert.ok(!astro.includes("{ label: 'Overview', link: base }"));
+  assert.ok(!astro.includes("favicon: base +"));
   assert.ok(astro.includes("{ label: 'API reference', items: ["));
   assert.ok(collection.includes('docsLoader()'));
   assert.ok(!collection.includes('glob('));
   assert.ok(astro.includes('./src/styles/project.css'));
-  assert.ok(astro.includes("favicon: base + 'images/favicon.png'"));
+  assert.ok(astro.includes("favicon: '/images/favicon.png'"));
   const authoredFavicon = path.join(root, 'content/images/favicon.png');
   assert.ok(fs.existsSync(authoredFavicon));
   const signature = fs.readFileSync(authoredFavicon).subarray(0, 8).toString('hex');
@@ -146,4 +149,17 @@ test('Authored API summary component is staged into the Astro runtime', () => {
   assert.ok(builder.includes("path.join(site, 'src/components')"));
   assert.ok(builder.includes('fs.cpSync(components, stagedComponents'));
   assert.ok(fs.readFileSync(reference, 'utf8').includes("import ApiMember"));
+});
+
+test('generated navigation paths use the Pages base exactly once', () => {
+  assert.equal(basePath({ GITHUB_REPOSITORY: 'Kooraseru-Hub/Registry' }), '/Registry/');
+  assert.equal(basePath({ GITHUB_REPOSITORY: 'owner/owner.github.io' }), '/');
+  assert.equal(basePath({ GITHUB_REPOSITORY: 'Kooraseru-Hub/Registry', DOCS_BASE: '/custom/' }), '/custom/');
+  const valid = '<a href="/Registry/">Overview</a><link rel="icon" href="/Registry/images/favicon.png">';
+  assert.doesNotThrow(() => verifyNavigationPaths(valid, '/Registry/'));
+  assert.throws(() => verifyNavigationPaths(valid.replace('/Registry/images/favicon.png', '/Registry/Registry/images/favicon.png'), '/Registry/'), /favicon URL/);
+  assert.throws(() => verifyNavigationPaths(valid.replace('href="/Registry/"', 'href="/Registry/Registry/"'), '/Registry/'), /doubly-prefixed URL/);
+  assert.throws(() => verifyNavigationPaths(valid.replace('href="/Registry/"', 'href="/other/"'), '/Registry/'), /homepage navigation/);
+  const root = '<a href="/">Overview</a><link rel="icon" href="/images/favicon.png">';
+  assert.doesNotThrow(() => verifyNavigationPaths(root, '/'));
 });
