@@ -1,17 +1,17 @@
 <div align="center">
-  <img src="upload://pdAjfEfxUeuNxokg1w2Bows46kC.png" alt="Registry">
+  <img src="{{devforum.banner}}" alt="Registry">
   <p><strong>Typed module lookup for Roblox Luau</strong></p>
 </div>
 
 <div align="center">
   <!-- Sponsor -->
-  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/sponsor.svg"></a>
+  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" src="{{devforum.sponsor}}"></a>
   <!-- Stars -->
-  <a href="https://github.com/kooraseru-hub/registry"><img alt="validate my ego" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/stars.svg"></a>
+  <a href="https://github.com/kooraseru-hub/registry"><img alt="validate my ego" src="{{devforum.stars}}"></a>
   <!-- Forks -->
-  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="steal mah source code" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/forks.svg"></a>
+  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="steal mah source code" src="{{devforum.forks}}"></a>
   <!-- USA! USA! USA! -->
-  <img alt="Fact checked by true American patriots" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/patriots.svg">
+  <img alt="Fact checked by true American patriots" src="{{devforum.patriots}}">
 </div>
 
 ---
@@ -22,11 +22,11 @@
 
 <div align="center">
   <!-- Documentation -->
-  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/documentation.svg"></a>
+  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" src="{{devforum.documentation}}"></a>
   <!-- Benchmark -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/benchmark.svg"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" src="{{devforum.benchmark}}"></a>
   <!-- Contribute -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/contribute.svg"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" src="{{devforum.contribute}}"></a>
   <!-- License -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/license.svg"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" src="{{devforum.license}}"></a>
 </div>

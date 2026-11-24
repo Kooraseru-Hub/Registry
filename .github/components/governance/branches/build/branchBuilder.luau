@@ -3,6 +3,7 @@
 
 const Fs = require("@std/fs")
 const Toml = require("@formats/toml")
+const Json = require("@formats/json")
 const Glob = require("@ci/bootstrap/discovery/glob")
 const Process = require("@lute/process")
 const SvgAssets = require("./svgAssets")
@@ -85,6 +86,41 @@ local function copySource(patterns: { string }, branchRoot: string, recordPath: 
 end
 
 -- Repository documents use explicit English placeholders, independent of site i18n.
+--- Render the pinned forum snapshot using its uploaded images and shared provenance layout.
+local function forumValues(): { [string]: string }
+	const record = Json.record(Json.decode(Fs.readFileToString("content/readme/devforum.json")))
+	const uploads = Json.record(record.uploads)
+	const metadata = Json.record(record.measurement)
+	const template = Fs.readFileToString("content/readme/measurement.html"):gsub("%s+$", "")
+	const values: { [string]: string } = {}
+
+	-- Validate upload references before inserting them into Markdown or HTML.
+	for name, url in uploads do
+		if not name:match("^[a-z%-]+$") or type(url) ~= "string" or not url:match("^upload://[%w]+%.png$") then
+			error(`Invalid DevForum upload reference: {name}`, 0)
+		end
+		values["devforum." .. name] = url
+	end
+
+	const measurement = template:gsub("{{([%a]+)}}", function(key: string): string
+		const value = metadata[key]
+		if type(value) ~= "string" or not value:match("^[%w .:%%-]+$") then
+			error(`Invalid DevForum measurement field: {key}`, 0)
+		end
+		return value
+	end)
+	const images = {
+		'[grid mode="carousel"]',
+		"![Direct require – first loads](" .. assert(values["devforum.require-cold-matrix"]) .. ")",
+		"![Direct require – cached lookups](" .. assert(values["devforum.require-warm-matrix"]) .. ")",
+		"![Registry – first loads](" .. assert(values["devforum.registry-cold-matrix"]) .. ")",
+		"![Registry – cached lookups](" .. assert(values["devforum.registry-warm-matrix"]) .. ")",
+		"[/grid]",
+	}
+	values["registry.benchmarks"] = table.concat(images, "\n") .. "\n\n" .. measurement
+	return values
+end
+
 --- Resolve supported template substitutions for a generated branch.
 local function renderTemplate(content: string, source: string, branchName: string): string
 	const devforum = source:match("README%.devforum%.md$") ~= nil
@@ -115,7 +151,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 			const changes = if checkout == "dirty" then "uncommitted changes present" else "clean checkout"
 			const studioLabel = if digest then "Roblox Studio executable" else "Roblox Studio version"
 			measurement = string.format(
-				'Measured %s\n%s `%s` on Windows\nSource commit `%s` (%s)',
+				'<div align="center">\n<p>Measured %s</p>\n<p>%s <code>%s</code> on Windows</p>\n<p>Source commit <code>%s</code> (%s)</p>\n</div>',
 				started, studioLabel, studio, commit, changes
 			)
 		elseif Fs.exists(timestampPath) and Fs.type(timestampPath) == "file" then
@@ -130,18 +166,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 		["project.name"] = projectName,
 		["branch.name"] = branchName,
 		["branch.source"] = "source",
-		["registry.benchmarks"] = if results and devforum then ([[
-
-[grid mode="carousel"]
-<img alt="Direct require – first loads" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-cold-matrix.svg">
-<img alt="Direct require – cached lookups" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-warm-matrix.svg">
-<img alt="Registry – first loads" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-cold-matrix.svg">
-<img alt="Registry – cached lookups" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-warm-matrix.svg">
-[/grid]
-
-]]):gsub("devforum/([^\n]+)%.svg", function(name: string): string
-			return if imageExtension == "svg" then "devforum/" .. name .. ".svg" else name .. ".png"
-		end) .. measurement elseif results then ([[
+		["registry.benchmarks"] = if results then ([[
 <p align="center">
   <img width="49%" src="benchmarks/require-cold-matrix.png" alt="Direct require first load">
   <img width="49%" src="benchmarks/require-warm-matrix.png" alt="Direct require repeated lookup">
@@ -154,6 +179,12 @@ local function renderTemplate(content: string, source: string, branchName: strin
 
 ]]):gsub("%.png", "." .. imageExtension) .. measurement else "benchmark image would be here",
 	}
+
+	if devforum then
+		for key, value in forumValues() do
+			values[key] = value
+		end
+	end
 
 	local rendered = content:gsub("{{([%w_.-]+)}}", function(key: string): string
 		return values[key] or error(`{source}: unknown repository placeholder {key}`, 0)
@@ -284,8 +315,6 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
 				SvgAssets.StageCharts(benchmarkResults, `{branchRoot}/benchmarks/devforum`)
 			end
-
-			SvgAssets.EmbedReadme(branchRoot)
 		end
 
 		if copied == 0 then

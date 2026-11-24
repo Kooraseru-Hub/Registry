@@ -1,0 +1,24 @@
+{
+  "uploads": {
+    "banner": "upload://pdAjfEfxUeuNxokg1w2Bows46kC.png",
+    "sponsor": "upload://qGhWkeWImdRht8GqAb3JRQ3FFYv.png",
+    "stars": "upload://tfj1WInxDsySdCQ9EdQaK3qqoSm.png",
+    "forks": "upload://r9Ucqqicj5qDSDQi9j94SBDlkSR.png",
+    "patriots": "upload://5dNUIGmLIvoAW6l4Uk76DW2YMNd.png",
+    "documentation": "upload://yAGCHhEzwgmL4OkYiZUeeTnyznQ.png",
+    "benchmark": "upload://xgDdXVskhvr9NoQ97cwECqUOyNR.png",
+    "contribute": "upload://rPU7zP18DlYvcayYIRDYOHAmyNF.png",
+    "license": "upload://aOV2EyROvqijOzJAwyh0k2alR7S.png",
+    "require-cold-matrix": "upload://k1sdsJcFGa0JnMaRpQkPmAc5CZi.png",
+    "require-warm-matrix": "upload://3QeJKnHCr46mhoyFoDy5Px2cBuA.png",
+    "registry-cold-matrix": "upload://rFIlO0diX3OWimUdPmD67dUUe4E.png",
+    "registry-warm-matrix": "upload://6deMluUGVgq2GGTrlRguMrEicW2.png"
+  },
+  "measurement": {
+    "started": "2026-11-24 05:35:04 UTC",
+    "runtime": "Roblox Open Cloud",
+    "version": "603",
+    "commit": "b19c023d5b3af579cb7059242521260cbb2872d4"
+  },
+  "benchmarkRevision": "c99818ec19eea68e28ef93cb6808a61bd0db6ff1"
+}

@@ -83,12 +83,12 @@ test("README variants share content and DevForum uses portable links", () => {
   assert.match(body, /ReplicatedFirst/);
   assert.doesNotMatch(forum + body, /shieldcn\.dev|href="(?!https?:)/);
   assert.match(body, /releases\/latest\)/);
-  assert.match(forum, /upload:\/\/pdAjfEfxUeuNxokg1w2Bows46kC\.png/);
+  assert.ok(forum.includes("{{devforum.banner}}"));
   const assets = JSON.parse(fs.readFileSync(path.join(root, "content/images/badges/sources.json"), "utf8"));
   assert.equal(Object.keys(assets).length, 8);
   assert.match(assets.stars, /badge\/validate%20my%20ego\.svg/);
   assert.match(assets.forks, /badge\/steal%20mah%20source%20code\.svg/);
-  for (const name of Object.keys(assets)) assert.ok(forum.includes("/content/images/badges/" + name + ".svg"));
+  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + "}}"));
   assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length);
   for (const file of [".github/components/governance/branches/build/branchBuilder.luau", ".github/components/governance/branches/publish/benchmark-readme.cjs"]) {
     assert.doesNotMatch(fs.readFileSync(path.join(root, file), "utf8"), /<br\s*\/?\s*>/i);
@@ -139,27 +139,26 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.doesNotMatch(fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8"), /python/);
 });
 
-test("DevForum embeds staged image bytes in both branch generation paths", () => {
+test("DevForum uses native uploads with pinned measurement provenance", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+  const names = ["banner", "sponsor", "stars", "forks", "patriots", "documentation", "benchmark", "contribute", "license",
+    "require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix"];
+  assert.deepEqual(Object.keys(manifest.uploads).sort(), names.sort());
+  for (const url of Object.values(manifest.uploads)) assert.match(url, /^upload:\/\/[A-Za-z0-9]+\.png$/);
+  assert.match(manifest.measurement.commit, /^[a-f0-9]{40}$/);
+  assert.match(manifest.benchmarkRevision, /^[a-f0-9]{40}$/);
   const directory = path.join(root, ".github/components/governance/branches");
   const helper = fs.readFileSync(path.join(directory, "build/svgAssets.luau"), "utf8");
   const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
   const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   const cloud = fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8");
-  assert.match(helper, /";base64,"/);
-  assert.match(helper, /README\.devforum\.md/);
-  assert.match(builder, /SvgAssets\.EmbedReadme\(branchRoot\)/);
-  assert.match(publisher, /SvgAssets\.EmbedReadme\(directory\)/);
-  assert.match(cloud, /<img alt=/);
-  assert.match(builder, /<img alt="Direct require – first loads"/);
-});
-
-test("DevForum asset reads occur outside non-yieldable string substitution", () => {
-  const source = fs.readFileSync(path.join(root, ".github/components/governance/branches/build/svgAssets.luau"), "utf8");
-  const embedding = source.slice(source.indexOf("function SvgAssets.EmbedReadme"));
-  const substitution = embedding.indexOf("content = content:gsub");
-  assert.ok(substitution > 0);
-  assert.match(embedding.slice(0, substitution), /Fs\.readFileToString\(image\)/);
-  const callback = embedding.slice(substitution, embedding.indexOf("\n\tend)", substitution));
-  assert.doesNotMatch(callback, /Fs\.|Net\.|Process\./);
-  assert.match(callback, /replacements\[url\] or url/);
+  assert.doesNotMatch(helper + builder + publisher, /EmbedReadme|function SvgAssets\.DataUri/);
+  assert.match(builder, /content\/readme\/devforum\.json/);
+  assert.match(builder, /\[grid mode="carousel"\]/);
+  assert.doesNotMatch(cloud, /README\.devforum\.md/);
+  assert.match(builder, /content\/readme\/measurement\.html/);
+  assert.match(cloud, /content\/readme\/measurement\.html/);
+  const template = fs.readFileSync(path.join(root, "content/readme/measurement.html"), "utf8");
+  assert.equal((template.match(/<p>/g) || []).length, 4);
+  assert.doesNotMatch(template, /<br\b/);
 });
