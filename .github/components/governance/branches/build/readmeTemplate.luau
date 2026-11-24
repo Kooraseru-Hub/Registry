@@ -41,7 +41,7 @@ function ReadmeTemplate.PngWidth(path: string, height: number): number
 end
 
 --- Render named images; DevForum requires both proportional width and target height.
-function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, height: number?, missing: string?, widthFor: ((string) -> number)?): string
+function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, height: number?, missing: string?, widths: { [string]: number }?): string
 	return (source:gsub("<img%s+[^>]+>", function(tag: string): string
 		const name = tag:match('src="{{readme%.image%.([%w%-]+)}}"')
 		if not name then
@@ -63,7 +63,7 @@ function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, heigh
 		local dimensions = ""
 
 		if height and name ~= "banner" then
-			const width = assert(widthFor, "Missing DevForum PNG dimension resolver")(name)
+			const width = assert(assert(widths, "Missing DevForum PNG dimensions")[name], "Missing DevForum PNG width: " .. name)
 			assert(width > 0 and width % 1 == 0, "Invalid badge display width")
 			dimensions = string.format('width="%d" height="%d" ', width, height)
 		end

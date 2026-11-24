@@ -58,10 +58,20 @@ function ForumReadme.Render(record: { [string]: unknown }, directory: string): s
 	const source = Fs.readFileToString("content/docs/repository/README.md")
 	const height = Json.record(ForumReadme.Read().render).badgeHeight
 	assert(type(height) == "number" and height >= 16 and height <= 32)
-	const shell = ReadmeTemplate.Portable(ReadmeTemplate.Images(source, Json.record(record.uploads), height, "patriots", function(name: string): number
-		return ReadmeTemplate.PngWidth(`{directory}/content/images/devforum/{name}.png`, height)
-	end))
 	const values = ForumReadme.Values(record)
+	const uploads = Json.record(record.uploads)
+	const widths: { [string]: number } = {}
+
+	-- Read image dimensions before entering the non-yieldable string substitution callback.
+	for name in source:gmatch('src="{{readme%.image%.([%w%-]+)}}"') do
+		if name == "banner" or (name == "patriots" and uploads[name] == nil) or widths[name] then
+			continue
+		end
+
+		widths[name] = ReadmeTemplate.PngWidth(`{directory}/content/images/devforum/{name}.png`, height)
+	end
+
+	const shell = ReadmeTemplate.Portable(ReadmeTemplate.Images(source, uploads, height, "patriots", widths))
 	values["registry.body"] = body
 	const content = shell:gsub("{{registry%.body}}", function(): string
 		return body
