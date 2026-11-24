@@ -73,28 +73,22 @@ test("builders stage the authored docs into branch and Pages outputs", () => {
   assert.match(branches, /OUTPUT_ROOT = "build\/artifacts\/branches"/);
 });
 
-test("README variants share content and DevForum uses portable links", () => {
+test("README variants derive from one authored source and declared asset inventory", () => {
   const github = fs.readFileSync(path.join(repositoryTemplates, "README.md"), "utf8");
-  const forum = fs.readFileSync(path.join(repositoryTemplates, "README.devforum.md"), "utf8");
   const body = fs.readFileSync(path.join(root, "content/readme/body.md"), "utf8");
-  for (const template of [github, forum]) assert.equal(template.split("{{registry.body}}").length, 2);
+  assert.ok(!fs.existsSync(path.join(repositoryTemplates, "README.devforum.md")));
+  assert.equal(github.split("{{registry.body}}").length, 2);
   assert.equal(body.split("{{registry.benchmarks}}").length, 2);
   assert.match(body, /Registry\.rbxm/);
   assert.match(body, /ReplicatedFirst/);
-  assert.doesNotMatch(forum + body, /shieldcn\.dev|href="(?!https?:)/);
-  assert.match(body, /releases\/latest\)/);
-  assert.ok(forum.includes("{{devforum.banner}}"));
   const assets = JSON.parse(fs.readFileSync(path.join(root, "content/images/badges/sources.json"), "utf8"));
   assert.equal(Object.keys(assets).length, 8);
   assert.match(assets.stars, /badge\/validate%20my%20ego\.svg/);
   assert.match(assets.forks, /badge\/steal%20mah%20source%20code\.svg/);
-  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + (name === "patriots" ? ".badge" : "") + "}}"));
+  for (const name of ["banner", ...Object.keys(assets)]) assert.equal(github.split("{{readme.image." + name + "}}").length, 2);
   assert.match(assets.patriots, /TRUE%20robloxian%20patriots/);
   assert.match(assets.patriots, /[?&]logo=roblox&/);
-  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length + 1);
-  for (const file of [".github/components/governance/branches/build/branchBuilder.luau", ".github/components/governance/branches/publish/benchmark-readme.cjs"]) {
-    assert.doesNotMatch(fs.readFileSync(path.join(root, file), "utf8"), /<br\s*\/?\s*>/i);
-  }
+  assert.doesNotMatch(github, /\b(?:width|height)="/);
 });
 test("release records preserve historical sources and publish both assets", () => {
   const directory = path.join(root, "config/publishing/releases");
@@ -134,7 +128,7 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.match(helper, /require\("@std\/net"\)/);
   assert.match(helper, /require\("@std\/fs"\)/);
   assert.ok(!fs.existsSync(path.join(directory, "build/prepare-images.py")));
-  assert.match(fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8"), /SvgAssets\.StageBadges/);
+  assert.match(fs.readFileSync(path.join(directory, "publish/forumPublisher.luau"), "utf8"), /SvgAssets\.StageBadges/);
   const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   assert.match(publisher, /SvgAssets\.StageCharts/);
   assert.match(publisher, /require\("@components\/governance\/branches\/build\/svgAssets"\)/);
@@ -174,6 +168,11 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   const component = fs.readFileSync(path.join(directory, "publish/component.toml"), "utf8");
   assert.match(component, /credentials = \["devforum_api_key", "devforum_client_id"\]/);
   assert.match(publisher, /git", "hash-object"/);
+  assert.match(publisher, /PNG_ROOT = "content\/images\/devforum"/);
+  assert.match(publisher, /record\.pngs = pngs/);
+  assert.match(publisher, /const blob = fingerprint\(png\)/);
+  assert.match(publisher, /entry\.blob == published/);
+  assert.match(publisher, /AssetCache\.Upload\(blob, published, uploads\[name\]\)/);
   assert.match(publisher, /status == "429"/);
   assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
   assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
@@ -188,7 +187,7 @@ test("new DevForum helpers use supported component aliases", () => {
   const init = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
   assert.match(init, /require\("@components\/governance\/branches\/publish\/forumPublisher"\)/);
-  assert.match(builder, /require\("@components\/governance\/branches\/build\/forumReadme"\)/);
+  assert.match(builder, /require\("@components\/governance\/branches\/build\/readmeTemplate"\)/);
 });
 
 test("DevForum inventories are authored data and Starlight has its native 404 and UI dictionary", () => {
@@ -200,4 +199,90 @@ test("DevForum inventories are authored data and Starlight has its native 404 an
   assert.ok(fs.existsSync(path.join(site, "src/pages/404.astro")));
   assert.match(fs.readFileSync(path.join(site, "astro.config.mjs"), "utf8"), /disable404Route: true/);
   assert.ok(!fs.existsSync(path.join(root, "content/docs/404.md")));
+});
+
+
+test("DevForum uses compact badges and declared environment bindings", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+  assert.equal(manifest.render.badgeHeight, 24);
+  assert.equal(manifest.render.chartDisplay, 690);
+  assert.equal(manifest.render.chartZoom, 2);
+  assert.equal(manifest.badgeWidths, undefined);
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/bootstrap.yml"), "utf8");
+  assert.match(workflow, /CI_BIND_SECRET_DEVFORUM_USER_API_KEY: .*matrix\.environment == 'ci-devforum'.*secrets\.DEVFORUM_USER_API_KEY/);
+  assert.doesNotMatch(workflow, /secrets: inherit|CI_SLOT_|CLOUDFLARE_API_TOKEN/);
+});
+
+test("the real Luau forum renderer applies compact badge and carousel sizes", t => {
+  const { spawnSync } = require("node:child_process");
+  const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/forum-render-test-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const script = path.join(temporary, "test.luau");
+  fs.writeFileSync(script, 'local F=require("@components/governance/branches/build/forumReadme")\nlocal r=F.Read()\nr.uploads.patriots="upload://TestPatriots.png"\nprint(F.Render(r))');
+  const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal((result.stdout.match(/height="24"/g) || []).length, 8);
+  assert.equal((result.stdout.match(/\|690x690\]\(upload:\/\//g) || []).length, 4);
+  assert.match(result.stdout, /this project has been fact checked by TRUE robloxian patriots/);
+  assert.doesNotMatch(result.stdout, /width="|shieldcn\.dev|href="(?!https?:|#)/);
+  assert.match(result.stdout, /https:\/\/github\.com\/Kooraseru-Hub\/Registry\/blob\/main\/LICENSE/);
+  assert.doesNotMatch(result.stdout, /{{[\w.-]+}}/);
+});
+
+test("the real Luau cache verifies SVG provenance and final PNG identity", t => {
+  const { spawnSync } = require("node:child_process");
+  const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/forum-cache-test-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const script = path.join(temporary, "test.luau");
+  fs.writeFileSync(script, `
+local C = require("@components/governance/branches/publish/assetCache")
+local H = require("@formats/hash")
+local url = "https://shieldcn.dev/badge/example.svg"
+local svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="24"><rect width="100" height="24"/></svg>'
+local hash = H.sha256(svg)
+assert(C.Source(url, url, svg, hash) == svg)
+assert(C.Source(url, url .. "?changed", svg, hash) == nil)
+assert(C.Source(url, url, svg .. " ", hash) == nil)
+assert(C.Source(url, url, nil, hash) == nil)
+assert(C.Source(url, url, svg, nil) == nil)
+local invalid = '<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>'
+assert(C.Source(url, url, invalid, H.sha256(invalid)) == nil)
+assert(C.Upload("png-blob-a", "png-blob-a", "upload://Example.png") == "upload://Example.png")
+assert(C.Upload("png-blob-a", "png-blob-b", "upload://Example.png") == nil)
+assert(C.Upload("png-blob-a", "png-blob-c", "upload://Example.png") == nil)
+assert(C.Upload("png-blob-a", "png-blob-a", "https://example.com/image.png") == nil)
+print("cache fixtures passed")
+`);
+  const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /cache fixtures passed/);
+});
+
+test("equivalent SVG sources generate identical PNGs using the pinned renderer", t => {
+  const { spawnSync } = require("node:child_process");
+  const renderer = path.join(root, "dependencies/managed/bin/resvg", process.platform === "win32" ? "resvg.exe" : "resvg");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/png-identity-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="24"><rect width="100" height="24" fill="red"/></svg>';
+  const inputs = [svg, svg.replace("<rect", "\n  <rect"), svg.replace('fill="red"', 'fill="blue"')];
+  const blobs = inputs.map((input, i) => {
+    const source = path.join(temporary, i + ".svg"), png = path.join(temporary, i + ".png");
+    fs.writeFileSync(source, input);
+    const render = spawnSync(renderer, ["--zoom", "3", source, png], { encoding: "utf8", timeout: 20000 });
+    assert.ifError(render.error);
+    assert.equal(render.status, 0, render.stdout + render.stderr);
+    const result = spawnSync("git", ["hash-object", png], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  });
+  assert.notEqual(inputs[0], inputs[1]);
+  assert.equal(blobs[0], blobs[1]);
+  assert.notEqual(blobs[0], blobs[2]);
 });

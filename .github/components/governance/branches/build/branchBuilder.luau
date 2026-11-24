@@ -3,7 +3,7 @@
 
 const Fs = require("@std/fs")
 const Toml = require("@formats/toml")
-const ForumReadme = require("@components/governance/branches/build/forumReadme")
+const ReadmeTemplate = require("@components/governance/branches/build/readmeTemplate")
 const Glob = require("@ci/bootstrap/discovery/glob")
 const Process = require("@lute/process")
 const SvgAssets = require("./svgAssets")
@@ -88,7 +88,6 @@ end
 -- Repository documents use explicit English placeholders, independent of site i18n.
 --- Resolve supported template substitutions for a generated branch.
 local function renderTemplate(content: string, source: string, branchName: string): string
-	const devforum = source:match("README%.devforum%.md$") ~= nil
 	const body = Fs.readFileToString("content/readme/body.md"):gsub("%s+$", "")
 	content = content:gsub("{{registry%.body}}", function(): string return body end)
 	local repository = Process.env.GITHUB_REPOSITORY or ""
@@ -145,11 +144,9 @@ local function renderTemplate(content: string, source: string, branchName: strin
 ]]):gsub("%.png", "." .. imageExtension) .. measurement else "benchmark image would be here",
 	}
 
-	-- DevForum uses the pinned uploaded charts rather than the local benchmark grid.
-	if devforum then
-		for key, value in ForumReadme.Values(ForumReadme.Read()) do
-			values[key] = value
-		end
+	-- Resolve the canonical image references for GitHub.
+	if source:match("/README%.md$") then
+		content = ReadmeTemplate.Images(content, ReadmeTemplate.Github())
 	end
 
 	-- Resolve the complete placeholder set only after all variants have been selected.
@@ -278,7 +275,6 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
 
 		if name == "main" then
-			SvgAssets.StageBadges(`{branchRoot}/content/images/badges`)
 			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
 				SvgAssets.StageCharts(benchmarkResults, `{branchRoot}/benchmarks/devforum`)
 			end

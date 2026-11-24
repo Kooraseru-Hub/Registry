@@ -1,0 +1,9 @@
+{
+  "repository": "Kooraseru-Hub/Registry",
+  "branch": "main",
+  "github": {
+    "banner": "https://raw.githubusercontent.com/Kooraseru-Hub/Registry/source/content/images/banner.png",
+    "stars": "https://shieldcn.dev/github/kooraseru-hub/registry/stars.svg?variant=secondary&logo=lu%3AStar&label=my+ego+has+been+validated+by&gradient=b27b28%2C+bd623d",
+    "forks": "https://shieldcn.dev/github/Kooraseru-Hub/registry/forks.svg?variant=secondary&logo=ri%3APiGitFork&label=stolen+by&gradient=278c82%2C+376ca8"
+  }
+}

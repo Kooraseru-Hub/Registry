@@ -63,7 +63,9 @@ test("same-run delivery jobs cannot publish before Build and native Tests pass",
 test("authored events dispatch independently from the pinned engine", () => {
   const directory=path.join(root,".github/workflows");
   const bootstrap=fs.readFileSync(path.join(directory,"bootstrap.yml"),"utf8");
-  assert.match(bootstrap,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
+  const pkg=path.join(root,"dependencies/managed/packages/ci-engine");
+  assert.equal(require(path.join(pkg,"src/adapters/local/workflow.cjs")).syncWorkflow(root,pkg,true),false);
+  assert.doesNotMatch(bootstrap,/secrets: inherit|CI_SLOT_/);
   assert.match(bootstrap,/repository_dispatch:/);
   for(const file of ["review","manual","remote"]){
     const workflow=fs.readFileSync(path.join(directory,file+".yml"),"utf8");
