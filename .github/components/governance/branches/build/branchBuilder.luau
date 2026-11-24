@@ -278,12 +278,14 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 		end
 
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
+
 		if name == "main" then
 			SvgAssets.StageBadges(`{branchRoot}/content/images/badges`)
 			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
 				SvgAssets.StageCharts(benchmarkResults, `{branchRoot}/benchmarks/devforum`)
 			end
 		end
+
 		if copied == 0 then
 			error(`branch {name} has no source files or templates`, 0)
 		end

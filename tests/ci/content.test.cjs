@@ -133,6 +133,8 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.match(helper, /require\("@std\/fs"\)/);
   assert.ok(!fs.existsSync(path.join(directory, "build/prepare-images.py")));
   assert.match(fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8"), /SvgAssets\.StageBadges/);
-  assert.match(fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8"), /SvgAssets\.StageCharts/);
+  const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  assert.match(publisher, /SvgAssets\.StageCharts/);
+  assert.match(publisher, /require\("@components\/governance\/branches\/build\/svgAssets"\)/);
   assert.doesNotMatch(fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8"), /python/);
 });

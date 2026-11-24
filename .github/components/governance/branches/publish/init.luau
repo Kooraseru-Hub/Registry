@@ -7,7 +7,7 @@ const Publication = require("@ci/github/publication")
 const GitFailure = require("@ci/github/publication/gitFailure")
 const Glob = require("@ci/bootstrap/discovery/glob")
 const Json = require("@formats/json")
-const SvgAssets = require("../build/svgAssets")
+const SvgAssets = require("@components/governance/branches/build/svgAssets")
 
 local Component = {}
 Component.__index = Component
