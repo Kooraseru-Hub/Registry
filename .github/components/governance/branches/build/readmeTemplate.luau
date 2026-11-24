@@ -25,8 +25,23 @@ function ReadmeTemplate.Github(): { [string]: string }
 	return images
 end
 
---- Render explicitly named images; use intrinsic aspect ratio at the selected height.
-function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, height: number?, missing: string?): string
+--- Read the PNG IHDR dimensions and derive the nearest proportional display width.
+function ReadmeTemplate.PngWidth(path: string, height: number): number
+	const file = Fs.open(path, "r")
+	const header = buffer.create(33)
+	const count = Fs.readIntoBuffer(file, header, 0, 33)
+	Fs.close(file)
+	assert(count == 33 and buffer.readstring(header, 0, 8) == "\137PNG\r\n\26\n", "Invalid PNG signature or truncated header")
+	assert(buffer.readstring(header, 8, 8) == "\0\0\0\13IHDR", "Invalid PNG IHDR")
+	const width, intrinsicHeight = string.unpack(">I4I4", buffer.readstring(header, 16, 8))
+	assert(width > 0 and width <= 2147483647 and intrinsicHeight > 0 and intrinsicHeight <= 2147483647, "Invalid PNG dimensions")
+	assert(height > 0 and height % 1 == 0, "Invalid badge display height")
+
+	return math.max(1, math.round(width * height / intrinsicHeight))
+end
+
+--- Render named images; DevForum requires both proportional width and target height.
+function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, height: number?, missing: string?, widthFor: ((string) -> number)?): string
 	return (source:gsub("<img%s+[^>]+>", function(tag: string): string
 		const name = tag:match('src="{{readme%.image%.([%w%-]+)}}"')
 		if not name then
@@ -45,7 +60,15 @@ function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, heigh
 		end
 
 		const escaped = url:gsub("&", "&amp;")
-		const replacement = (if height and name ~= "banner" then 'height="' .. tostring(height) .. '" ' else "") .. 'src="' .. escaped .. '"'
+		local dimensions = ""
+
+		if height and name ~= "banner" then
+			const width = assert(widthFor, "Missing DevForum PNG dimension resolver")(name)
+			assert(width > 0 and width % 1 == 0, "Invalid badge display width")
+			dimensions = string.format('width="%d" height="%d" ', width, height)
+		end
+
+		const replacement = dimensions .. 'src="' .. escaped .. '"'
 
 		return (tag:gsub('src="{{readme%.image%.[%w%-]+}}"', function(): string
 			return replacement

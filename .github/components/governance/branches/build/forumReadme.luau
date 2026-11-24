@@ -53,12 +53,14 @@ function ForumReadme.Values(record: { [string]: unknown }): { [string]: string }
 end
 
 --- Render the complete forum document using its upload and measurement snapshot.
-function ForumReadme.Render(record: { [string]: unknown }): string
+function ForumReadme.Render(record: { [string]: unknown }, directory: string): string
 	const body = Fs.readFileToString("content/readme/body.md"):gsub("%s+$", "")
 	const source = Fs.readFileToString("content/docs/repository/README.md")
 	const height = Json.record(ForumReadme.Read().render).badgeHeight
 	assert(type(height) == "number" and height >= 16 and height <= 32)
-	const shell = ReadmeTemplate.Portable(ReadmeTemplate.Images(source, Json.record(record.uploads), height, "patriots"))
+	const shell = ReadmeTemplate.Portable(ReadmeTemplate.Images(source, Json.record(record.uploads), height, "patriots", function(name: string): number
+		return ReadmeTemplate.PngWidth(`{directory}/content/images/devforum/{name}.png`, height)
+	end))
 	const values = ForumReadme.Values(record)
 	values["registry.body"] = body
 	const content = shell:gsub("{{registry%.body}}", function(): string

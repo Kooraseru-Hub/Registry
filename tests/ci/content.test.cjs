@@ -176,7 +176,7 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   assert.match(publisher, /status == "429"/);
   assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
   assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
-  assert.match(publisher, /ForumReadme\.Render\(record\)/);
+  assert.match(publisher, /ForumReadme\.Render\(record, directory\)/);
   const spec = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.json"), "utf8"));
   const lock = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.lock"), "utf8"));
   assert.equal(spec.dependencies["tools.resvg"].options.version, lock.entries["tools.resvg"].resolution.version);
@@ -220,14 +220,42 @@ test("the real Luau forum renderer applies compact badge and carousel sizes", t 
   const temporary = fs.mkdtempSync(path.join(root, "build/forum-render-test-"));
   t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
   const script = path.join(temporary, "test.luau");
-  fs.writeFileSync(script, 'local F=require("@components/governance/branches/build/forumReadme")\nlocal r=F.Read()\nr.uploads.patriots="upload://TestPatriots.png"\nprint(F.Render(r))');
+  const renderer = path.join(root, "dependencies/managed/bin/resvg", process.platform === "win32" ? "resvg.exe" : "resvg");
+  const pngRoot = path.join(temporary, "content/images/devforum");
+  fs.mkdirSync(pngRoot, { recursive: true });
+  const widths = { sponsor: 570, stars: 456, forks: 594, patriots: 1380, documentation: 1341, benchmark: 525, contribute: 426, license: 513 };
+  for (const [name, width] of Object.entries(widths)) {
+    const source = path.join(temporary, name + ".svg");
+    fs.writeFileSync(source, '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="96"><rect width="' + width + '" height="96" fill="red"/></svg>');
+    const render = spawnSync(renderer, [source, path.join(pngRoot, name + ".png")], { encoding: "utf8", timeout: 20000 });
+    assert.ifError(render.error);
+    assert.equal(render.status, 0, render.stdout + render.stderr);
+  }
+  const invalid = path.join(temporary, "invalid.png");
+  fs.writeFileSync(invalid, "not a png");
+  const fixture = path.relative(root, temporary).split(path.sep).join("/");
+  fs.writeFileSync(script, [
+    'local F=require("@components/governance/branches/build/forumReadme")',
+    'local T=require("@components/governance/branches/build/readmeTemplate")',
+    'local root=' + JSON.stringify(fixture),
+    'local r=F.Read()',
+    'r.uploads.patriots="upload://TestPatriots.png"',
+    'assert(T.PngWidth(root .. "/content/images/devforum/sponsor.png", 24) == 143)',
+    'assert(not pcall(T.PngWidth, root .. "/invalid.png", 24))',
+    'print(F.Render(r, root))'
+  ].join("\n"));
   const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal((result.stdout.match(/height="24"/g) || []).length, 8);
   assert.equal((result.stdout.match(/\|690x690\]\(upload:\/\//g) || []).length, 4);
   assert.match(result.stdout, /this project has been fact checked by TRUE robloxian patriots/);
-  assert.doesNotMatch(result.stdout, /width="|shieldcn\.dev|href="(?!https?:|#)/);
+  assert.equal((result.stdout.match(/width="\d+" height="24"/g) || []).length, 8);
+  for (const [name, width] of Object.entries(widths)) {
+    const url = name === "patriots" ? "upload://TestPatriots.png" : JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8")).uploads[name];
+    assert.ok(result.stdout.includes('width="' + Math.round(width * 24 / 96) + '" height="24" src="' + url + '"'), name);
+  }
+  assert.doesNotMatch(result.stdout, /shieldcn\.dev|href="(?!https?:|#)/);
   assert.match(result.stdout, /https:\/\/github\.com\/Kooraseru-Hub\/Registry\/blob\/main\/LICENSE/);
   assert.doesNotMatch(result.stdout, /{{[\w.-]+}}/);
 });

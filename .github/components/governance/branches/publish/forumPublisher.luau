@@ -280,7 +280,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	record.charts = seed.charts
 	Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })
 	Fs.writeStringToFile(`{directory}/{MANIFEST}`, Json.encode(record) .. "\n")
-	Fs.writeStringToFile(`{directory}/README.devforum.md`, ForumReadme.Render(record))
+	Fs.writeStringToFile(`{directory}/README.devforum.md`, ForumReadme.Render(record, directory))
 	print(`DevForum badge sources: {sourceReused} reused, {fetched} fetched`)
 	print(`DevForum assets: {reused} reused, {uploaded} uploaded`)
 end
