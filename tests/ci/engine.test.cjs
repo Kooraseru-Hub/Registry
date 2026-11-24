@@ -76,3 +76,11 @@ test("Registry operations have no native host matrix", () => {
 test("Registry reviews have no publication delivery", () => {
   assert.equal(fs.existsSync(path.join(root, "config/ci/review-delivery.json")), false);
 });
+
+test("immutable engine pin retains named upstream lockfile provenance", () => {
+  const {enginePin} = require("../../.github/components/quality/template-conformance/check.cjs");
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/bootstrap.yml"));
+  const sha = enginePin(workflow);
+  const lock = fs.readFileSync(path.join(root, ".github/workflows/actions.lock"), "utf8");
+  assert.ok(lock.includes("'kooraseru-hub/ci-engine@" + sha + "':\n        ref: 'main'\n        commit: 'sha1-" + sha + "'"));
+});
