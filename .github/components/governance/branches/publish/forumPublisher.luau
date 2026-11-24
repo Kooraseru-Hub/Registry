@@ -115,6 +115,9 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const settings = Json.record(seed.render)
 	const policy, badgeZoom, chartZoom = settings.policy, settings.badgeZoom, settings.chartZoom
 	assert(type(policy) == "string" and type(badgeZoom) == "number" and type(chartZoom) == "number")
+	const lock = Json.record(Json.decode(Fs.readFileToString("dependencies/dependencies.lock")))
+	const renderer = Json.record(Json.record(lock.entries)["tools.resvg"]).fingerprint
+	assert(type(renderer) == "string" and #renderer == 64 and renderer:match("^%x+$"), "Invalid rasterizer lock fingerprint")
 	const priorDigests = if type(record.badgeSourceFingerprints) == "table" then Json.record(record.badgeSourceFingerprints) else {}
 	const sourceDigests: { [string]: string } = {}
 	local fetched = 0
@@ -127,7 +130,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	--- Reuse a verified upload only when the source and rasterization policy match.
 	local function refresh(name: string, source: string, scale: number?): ()
 		const hash = fingerprint(source)
-		const identity = if scale then `{hash}:{policy}:{scale}` else hash
+		const identity = if scale then `{hash}:{policy}:{renderer}:{scale}` else hash
 		const existing = uploads[name]
 
 		if AssetCache.Upload(identity, fingerprints[name], existing) then
@@ -254,6 +257,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	record.badgeWidths = nil
 	record.badgeSourceFingerprints = sourceDigests
 	record.render = settings
+	record.charts = seed.charts
 	Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })
 	Fs.writeStringToFile(`{directory}/{MANIFEST}`, Json.encode(record) .. "\n")
 	Fs.writeStringToFile(`{directory}/README.devforum.md`, ForumReadme.Render(record))
