@@ -182,3 +182,11 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   const lock = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.lock"), "utf8"));
   assert.equal(spec.dependencies["tools.resvg"].options.version, lock.entries["tools.resvg"].resolution.version);
 });
+
+test("new DevForum helpers use supported component aliases", () => {
+  const directory = path.join(root, ".github/components/governance/branches");
+  const init = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
+  assert.match(init, /require\("@components\/governance\/branches\/publish\/forumPublisher"\)/);
+  assert.match(builder, /require\("@components\/governance\/branches\/build\/forumReadme"\)/);
+});

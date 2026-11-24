@@ -3,7 +3,7 @@
 
 const Fs = require("@std/fs")
 const Toml = require("@formats/toml")
-const ForumReadme = require("./forumReadme")
+const ForumReadme = require("@components/governance/branches/build/forumReadme")
 const Glob = require("@ci/bootstrap/discovery/glob")
 const Process = require("@lute/process")
 const SvgAssets = require("./svgAssets")

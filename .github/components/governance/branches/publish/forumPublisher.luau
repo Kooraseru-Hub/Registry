@@ -40,7 +40,7 @@ local function upload(file: string, name: string, key: string, client: string): 
 	}
 	const command = [[
 printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEVFORUM_UPLOAD_CLIENT" |
-  curl --silent --show-error --max-time 60 --proto '=https' --header @- \
+  curl --disable --silent --show-error --max-time 60 --proto '=https' --header @- \
     --form "file=@$1;filename=$2.png;type=image/png" --form upload_type=composer \
     --form synchronous=true --write-out '\n%{http_code}' https://devforum.roblox.com/uploads.json
 ]]
@@ -58,7 +58,7 @@ printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEV
 		end
 		if status == "429" then
 			const details = Json.record(Json.decode(body))
-			const extras = Json.record(details.extras)
+			const extras = if type(details.extras) == "table" then Json.record(details.extras) else {}
 			const cooldown = extras.wait_seconds
 			if attempt == 4 or type(cooldown) ~= "number" or cooldown < 0 or cooldown > 300 then
 				error("DevForum upload rate limit: retry later", 0)
@@ -82,9 +82,10 @@ end
 
 --- Refresh changed artwork and persist its provenance alongside the generated branch.
 function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string): ()
+	assert(not key:find("[%c]") and not client:find("[%c]"), "Invalid DevForum credential format")
 	const seed = ForumReadme.Read()
 	const previous = if hasParent then previousManifest(directory) else nil
-	const record = if previous then previous else seed
+	const record = if previous and type(previous.fingerprints) == "table" then previous else seed
 	const uploads = Json.record(record.uploads)
 	const fingerprints = Json.record(record.fingerprints)
 	const seedUploads = Json.record(seed.uploads)
