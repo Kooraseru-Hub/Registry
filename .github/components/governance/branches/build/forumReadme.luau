@@ -7,7 +7,7 @@ const ReadmeTemplate = require("./readmeTemplate")
 
 const ForumReadme = {}
 
---- Read the authored seed and display policy.
+--- Read authored rendering policy; remote publication state is not source configuration.
 function ForumReadme.Read(): { [string]: unknown }
 	return Json.record(Json.decode(Fs.readFileToString("content/readme/devforum.json")))
 end
@@ -53,7 +53,7 @@ function ForumReadme.Values(record: { [string]: unknown }): { [string]: string }
 end
 
 --- Render the complete forum document using its upload and measurement snapshot.
-function ForumReadme.Render(record: { [string]: unknown }, directory: string): string
+function ForumReadme.Render(record: { [string]: unknown }, directory: string, pngRoot: string?): string
 	const body = Fs.readFileToString("content/readme/body.md"):gsub("%s+$", "")
 	const source = Fs.readFileToString("content/docs/repository/README.md")
 	const height = Json.record(ForumReadme.Read().render).badgeHeight
@@ -68,7 +68,7 @@ function ForumReadme.Render(record: { [string]: unknown }, directory: string): s
 			continue
 		end
 
-		widths[name] = ReadmeTemplate.PngWidth(`{directory}/content/images/devforum/{name}.png`, height)
+		widths[name] = ReadmeTemplate.PngWidth(`{directory}/{pngRoot or "content/images/devforum"}/{name}.png`, height)
 	end
 
 	const shell = ReadmeTemplate.Portable(ReadmeTemplate.Images(source, uploads, height, "patriots", widths))

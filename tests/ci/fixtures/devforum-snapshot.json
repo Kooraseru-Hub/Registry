@@ -1,0 +1,23 @@
+{
+  "uploads": {
+    "banner": "upload://Fixture1.png",
+    "sponsor": "upload://Fixture2.png",
+    "stars": "upload://Fixture3.png",
+    "forks": "upload://Fixture4.png",
+    "documentation": "upload://Fixture5.png",
+    "benchmark": "upload://Fixture6.png",
+    "contribute": "upload://Fixture7.png",
+    "license": "upload://Fixture8.png",
+    "require-cold-matrix": "upload://Fixture9.png",
+    "require-warm-matrix": "upload://Fixture10.png",
+    "registry-cold-matrix": "upload://Fixture11.png",
+    "registry-warm-matrix": "upload://Fixture12.png"
+  },
+  "measurement": {
+    "started": "2026-01-01 00:00:00 UTC",
+    "runtime": "Roblox Open Cloud",
+    "version": "603",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "benchmarkRevision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

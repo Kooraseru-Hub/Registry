@@ -102,8 +102,28 @@ async function availableUploads(post, request = fetch, checked = new Map()) {
   return Object.fromEntries(entries);
 }
 
-function digest(raw) {
-  return crypto.createHash("sha256").update(raw).digest("hex");
+function digest(raw, title) {
+  return crypto.createHash("sha256").update(JSON.stringify([raw, title])).digest("hex");
+}
+
+// Recover only byte-identical public originals, never guess from a storage identifier.
+async function recoverUploads(post, valid, known, request) {
+  const result = {};
+  const previous = new Set(Object.values(known));
+  for (const [reference, urls] of cookedImages(post.raw, post.cooked)) {
+    if (!valid[reference] || previous.has(reference)) continue;
+    const original = urls.find(url => !/\/optimized\/|_\d+_\d+x\d+\./.test(url));
+    if (!original) continue;
+    const response = await request(publicImageURL(original), {
+      credentials: "omit", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(15000),
+    });
+    requireThat(response.ok, "Public original recovery failed (HTTP " + response.status + ")");
+    const bytes = Buffer.from(await response.arrayBuffer());
+    requireThat(bytes.length <= 20 * 1024 * 1024 && bytes.subarray(0, 8).equals(PNG), "Invalid public original");
+    const hash = crypto.createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
+    result[hash] = reference;
+  }
+  return result;
 }
 
 function sameRaw(a, b) {
@@ -117,7 +137,9 @@ function destination(config) {
   return { topicId, postId };
 }
 
-function createPublisher(config, key, client, request = fetch) {
+function createPublisher(config, repository, key, client, request = fetch) {
+  requireThat(config.repository === repository && config.mode === "send", "DevForum send is not enabled for this repository");
+  requireThat(config.title == null || (typeof config.title === "string" && config.title.trim() === config.title && config.title.length > 0), "Invalid configured topic title");
   const { topicId, postId } = destination(config);
   requireThat(key && client && !/[\r\n]/.test(key + client), "Missing DevForum credentials");
   const auth = { "User-Api-Key": key, "User-Api-Client-Id": client };
@@ -145,6 +167,8 @@ function createPublisher(config, key, client, request = fetch) {
     requireThat(topic.id === topicId && topic.archetype === "regular" &&
       topic.post_stream?.posts?.some(p => p.id === postId && p.post_number === 1),
       "Configured destination is not the first post of an anonymously accessible regular topic");
+    requireThat(typeof topic.title === "string" && topic.title.length > 0, "Missing public topic title");
+    return topic;
   }
 
   async function authenticatedPost() {
@@ -158,22 +182,26 @@ function createPublisher(config, key, client, request = fetch) {
   }
 
   return {
-    async prepare() {
-      await publicTopic();
+    async prepare(known = {}) {
+      const topic = await publicTopic();
       const [authPost, anonymous] = await Promise.all([authenticatedPost(), publicPost()]);
       requireThat(sameRaw(authPost.raw, anonymous.raw), "Public and authenticated post contents differ");
-      return { digest: digest(authPost.raw), validUploads: await availableUploads(anonymous, request) };
+      const validUploads = await availableUploads(anonymous, request);
+      return { digest: digest(authPost.raw, topic.title), validUploads,
+        adoptable: await recoverUploads(anonymous, validUploads, known, request) };
     },
 
     async publish(raw, snapshot) {
       rawImages(raw);
-      const previous = await authenticatedPost();
-      requireThat(digest(previous.raw) === snapshot, "DevForum post changed during generation; refusing to overwrite it");
-      const changed = !sameRaw(previous.raw, raw);
+      const [previous, topic] = await Promise.all([authenticatedPost(), publicTopic()]);
+      requireThat(digest(previous.raw, topic.title) === snapshot, "DevForum post changed during generation; refusing to overwrite it");
+      const titleChanged = config.title != null && config.title !== topic.title;
+      const changed = !sameRaw(previous.raw, raw) || titleChanged;
       if (changed) {
         await api(postPath, {
           authenticated: true, method: "PUT",
-          payload: { post: { raw, original_text: previous.raw, edit_reason: "Synchronize Registry documentation" } },
+          payload: { ...(titleChanged ? { title: config.title } : {}), bypass_bump: true,
+            post: { raw, original_text: previous.raw, edit_reason: "Synchronize repository documentation" } },
         });
       }
       const checked = new Map();
@@ -184,7 +212,10 @@ function createPublisher(config, key, client, request = fetch) {
         if (!sameRaw(post.raw, raw)) continue;
         const uploads = await availableUploads(post, request, checked);
         const count = Object.values(uploads).filter(Boolean).length;
-        if (count === expected) return { changed, verified: count };
+        if (count === expected) {
+          if (config.title != null && (await publicTopic()).title !== config.title) continue;
+          return { changed, verified: count };
+        }
       }
       throw new Error("Saved DevForum post or its native PNGs failed anonymous verification");
     },
@@ -192,11 +223,11 @@ function createPublisher(config, key, client, request = fetch) {
 }
 
 async function main() {
-  const [mode, file, snapshot] = process.argv.slice(2);
-  const config = JSON.parse(fs.readFileSync("content/readme/devforum.json", "utf8"));
-  const publisher = createPublisher(config, process.env.DEVFORUM_UPLOAD_KEY, process.env.DEVFORUM_UPLOAD_CLIENT);
+  const [repository, mode, file, snapshot] = process.argv.slice(2);
+  const config = JSON.parse(fs.readFileSync("config/devforum.json", "utf8"));
+  const publisher = createPublisher(config, repository, process.env.DEVFORUM_UPLOAD_KEY, process.env.DEVFORUM_UPLOAD_CLIENT);
   if (mode === "prepare") {
-    console.log(JSON.stringify(await publisher.prepare()));
+    console.log(JSON.stringify(await publisher.prepare(JSON.parse(file || "{}"))));
   } else if (mode === "publish" && file && /^[a-f0-9]{64}$/.test(snapshot)) {
     const result = await publisher.publish(fs.readFileSync(file, "utf8"), snapshot);
     console.log("DevForum post: " + (result.changed ? "updated" : "unchanged") +

@@ -11,7 +11,9 @@ const ForumReadme = require("@components/governance/branches/build/forumReadme")
 const SvgAssets = require("@components/governance/branches/build/svgAssets")
 
 const Publisher = {}
-const MANIFEST = "content/readme/devforum.json"
+const MANIFEST = "content/readme/devforum-state.json"
+const LEGACY_MANIFEST = "content/readme/devforum.json"
+const DRAFT_PNG_ROOT = "content/images/devforum-draft"
 const PNG_ROOT = "content/images/devforum"
 const RENDERER = "dependencies/managed/bin/resvg/resvg"
 const POST_PUBLISHER = ".github/components/governance/branches/publish/forum-post.cjs"
@@ -33,7 +35,7 @@ end
 
 --- Read the previous upload snapshot if it exists.
 local function previousManifest(directory: string): { [string]: unknown }?
-	const data = previousFile(directory, MANIFEST)
+	const data = previousFile(directory, MANIFEST) or previousFile(directory, LEGACY_MANIFEST)
 
 	return if data then Json.record(Json.decode(data)) else nil
 end
@@ -104,8 +106,8 @@ local function fingerprint(source: string): string
 end
 
 --- Invoke the destination verifier without exposing credentials in command arguments.
-local function postCommand(arguments: { string }, key: string, client: string): string
-	const command = { "node", POST_PUBLISHER }
+local function postCommand(repository: string, arguments: { string }, key: string, client: string): string
+	const command = { "node", POST_PUBLISHER, repository }
 	for _, argument in arguments do
 		table.insert(command, argument)
 	end
@@ -125,20 +127,35 @@ local function postCommand(arguments: { string }, key: string, client: string): 
 end
 
 --- Refresh changed artwork and persist its provenance alongside the generated branch.
-function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string): ()
+function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string, repository: string): ()
 	assert(not key:find("[%c]") and not client:find("[%c]"), "Invalid DevForum credential format")
+	-- Bind mutation to an explicitly configured repository and existing public post.
 	const seed = ForumReadme.Read()
+	const policy = Json.record(Json.decode(Fs.readFileToString("config/devforum.json")))
+	assert(policy.repository == repository, "DevForum configuration belongs to another repository")
+	assert(policy.mode == "draft" or policy.mode == "send", "Invalid DevForum publication mode")
+	const draft = policy.mode == "draft"
+	const destination = Json.record(policy.destination)
+	const topicId, postId = destination.topicId, destination.postId
+	assert(type(topicId) == "number" and topicId > 0 and topicId % 1 == 0)
+	assert(type(postId) == "number" and postId > 0 and postId % 1 == 0)
+	const pngRoot = if draft then DRAFT_PNG_ROOT else PNG_ROOT
 	const previous = if hasParent then previousManifest(directory) else nil
-	const record = if previous and type(previous.uploads) == "table" then previous else seed
-	const uploads = Json.record(record.uploads)
-	const destination = Json.record(seed.destination)
+	const previousState = if previous then Json.encode(previous) else nil
+	const record: { [string]: unknown } = if previous and type(previous.uploads) == "table" then previous else {}
+	const uploads: { [string]: unknown } = if type(record.uploads) == "table" then Json.record(record.uploads) else {}
 	const priorDestination = if type(record.destination) == "table" then Json.record(record.destination) else nil
-	const sameDestination = not priorDestination or (priorDestination.topicId == destination.topicId and priorDestination.postId == destination.postId)
-	const preflight = Json.record(Json.decode(postCommand({ "prepare" }, key, client)))
-	const validUploads = Json.record(preflight.validUploads)
+	const sameDestination = (record.repository == nil or record.repository == repository) and (not priorDestination or (priorDestination.topicId == topicId and priorDestination.postId == postId))
+	-- Draft mode makes no forum requests; send mode requires a verified public destination.
+	if not draft and key == "" then
+		error("DevForum send requires the configured ci-devforum environment credential", 0)
+	end
+	const preflight: { [string]: unknown } = if draft then {} else Json.record(Json.decode(postCommand(repository, { "prepare", Json.encode(uploads) }, key, client)))
+	const validUploads: { [string]: unknown } = if draft then {} else Json.record(preflight.validUploads)
+	const adoption: { [string]: unknown } = if draft then {} else Json.record(preflight.adoptable)
 	const digest = preflight.digest
-	assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"), "Invalid DevForum post snapshot")
-	const adoption = if type(seed.adopt) == "table" then Json.record(seed.adopt) else {}
+	const draftPaths: { [string]: string } = {}
+	const usedUploads: { [string]: boolean } = {}
 	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
 	const settings = Json.record(seed.render)
@@ -150,14 +167,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	local sourceReused = 0
 	const oldPngs = if type(record.pngs) == "table" then Json.record(record.pngs) else {}
 	const pngs: { [string]: unknown } = {}
-	Fs.createDirectory(`{directory}/{PNG_ROOT}`, { makeParents = true })
+	Fs.createDirectory(`{directory}/{pngRoot}`, { makeParents = true })
 	local reused = 0
 	local uploaded = 0
 
 	--- Compare the newly generated PNG with the exact previously published upload bytes.
 	local function refresh(name: string, source: string, scale: number?, font: string?): ()
 		assert(name:match("^[a-z%-]+$"), "Invalid asset name")
-		const path = `{PNG_ROOT}/{name}.png`
+		const path = `{pngRoot}/{name}.png`
 		const png = `{directory}/{path}`
 
 		-- Always generate the actual bytes to be compared, independently of input identity.
@@ -172,6 +189,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		end
 
 		const blob = fingerprint(png)
+		-- Draft references are local placeholders, never sent to the forum.
+		if draft then
+			const reference = "upload://Draft" .. name:gsub("%-", "") .. ".png"
+			uploads[name] = reference
+			draftPaths[reference] = path
+			return
+		end
+
 		const prior = oldPngs[name]
 		const published = if hasParent then previousBlob(directory, path) else nil
 		local existing: string? = nil
@@ -180,17 +205,6 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			const entry = Json.record(prior)
 			if sameDestination and entry.path == path and entry.blob == published then
 				existing = AssetCache.Upload(blob, published, uploads[name])
-				-- A manually repaired reference can be adopted only for its pinned PNG.
-				const override = adoption[name]
-				if type(override) == "table" then
-					const candidate = Json.record(override)
-					if candidate.blob == blob and candidate.from == uploads[name] then
-						const adopted = AssetCache.Upload(blob, published, candidate.reference)
-						if adopted and validUploads[adopted] == true then
-							existing = adopted
-						end
-					end
-				end
 				-- A byte-identical upload is reusable only when it is accessible in the saved public post.
 				if existing and validUploads[existing] ~= true then
 					existing = nil
@@ -198,10 +212,22 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			end
 		end
 
+		-- Recover an already-published upload after an interrupted GitHub publication.
+		if not existing then
+			const adopted = AssetCache.Upload(blob, blob, adoption[blob])
+			if adopted and validUploads[adopted] == true and not usedUploads[adopted] then
+				existing = adopted
+			end
+		end
+		if existing and usedUploads[existing] then
+			existing = nil
+		end
+
 		pngs[name] = { path = path, blob = blob }
 
 		if existing then
 			uploads[name] = existing
+			usedUploads[existing] = true
 			reused += 1
 			print(`DevForum asset {name}: cached (identical PNG)`)
 			return
@@ -308,10 +334,28 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		record.benchmarkRevision = measurement.commit
 	end
 
-	-- Publish the cache and README in the same branch commit.
+	-- Drafts have separate artwork and never advance the verified publication cache.
 	record.uploads = uploads
+	if draft then
+		Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })
+		const preview = ForumReadme.Render(record, directory, pngRoot):gsub("upload://[%w]+%.png", function(reference: string): string
+			return assert(draftPaths[reference], "Unknown draft image")
+		end)
+		Fs.writeStringToFile(`{directory}/README.devforum.draft.md`, preview)
+		Fs.writeStringToFile(`{directory}/content/readme/devforum-draft.json`, Json.encode(policy) .. "\n")
+		if previousState and previous and type(previous.pngs) == "table" then
+			const restored = Process.run({ "git", "checkout", "FETCH_HEAD", "--", PNG_ROOT, "README.devforum.md" }, { cwd = directory })
+			assert(restored.ok, "Could not retain previous verified DevForum PNGs")
+			Fs.writeStringToFile(`{directory}/{MANIFEST}`, previousState .. "\n")
+		end
+		print("DevForum draft generated; no forum requests made")
+		return
+	end
+
+	-- Persist only after updating and verifying the existing public post.
 	record.destination = destination
 	record.adopt = nil
+	record.repository = repository
 	record.fingerprints = nil
 	record.pngs = pngs
 	record.badgeSources = badgeSources
@@ -323,7 +367,8 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const readme = `{directory}/README.devforum.md`
 	Fs.writeStringToFile(readme, ForumReadme.Render(record, directory))
 	-- A generated reference is not a valid cache entry until the saved public post renders it.
-	print(postCommand({ "publish", readme, digest }, key, client))
+	assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"), "Invalid DevForum post snapshot")
+	print(postCommand(repository, { "publish", readme, digest }, key, client))
 	Fs.writeStringToFile(`{directory}/{MANIFEST}`, Json.encode(record) .. "\n")
 	print(`DevForum badge sources: {sourceReused} reused, {fetched} fetched`)
 	print(`DevForum assets: {reused} reused, {uploaded} uploaded`)

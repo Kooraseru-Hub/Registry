@@ -7,7 +7,8 @@ const { rawImages, cookedImages, publicImageURL, createPublisher } =
 
 const origin = "https://devforum.roblox.com";
 const storage = "https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com";
-const config = { destination: { topicId: 1, postId: 2 } };
+const repository = "owner/project";
+const config = { repository, mode: "send", destination: { topicId: 1, postId: 2 }, title: null };
 const old = '<img alt="Banner" src="upload://Old.png">\n![Chart|690x690](upload://Chart.png)';
 const updated = old.replace("Old.png", "New.png");
 const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -16,26 +17,29 @@ const cooked = raw => '<img src="' + storage + (raw.includes("Old.png") ? '/old.
   storage + '/chart_2_500x500.png"></a>';
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status });
 
-function fixture({ privateTopic = false, editable = true, broken = false } = {}) {
-  let raw = old, puts = 0;
+function fixture({ privateTopic = false, editable = true, broken = false, desiredTitle = null } = {}) {
+  let raw = old, title = "Current title", puts = 0;
   const request = async (url, options) => {
     assert.equal(options.redirect, "error");
     if (url.startsWith(storage)) {
-      assert.equal(options.headers["User-Api-Key"], undefined);
-      assert.equal(options.headers.Range, "bytes=0-7");
+      assert.equal(options.headers?.["User-Api-Key"], undefined);
+      assert.ok(options.headers === undefined || options.headers.Range === "bytes=0-7");
       return url.endsWith("/old.png") || (broken && url.endsWith("/new.png"))
         ? new Response(null, { status: 403 }) : new Response(png, { status: 206 });
     }
     assert.ok(url.startsWith(origin + "/"));
     if (url.endsWith("/t/1.json")) {
       assert.equal(options.headers["User-Api-Key"], undefined);
-      return json({ id: 1, archetype: privateTopic ? "private_message" : "regular",
+      return json({ id: 1, title, archetype: privateTopic ? "private_message" : "regular",
         post_stream: { posts: [{ id: 2, post_number: 1 }] } });
     }
     assert.equal(url, origin + "/posts/2.json");
     if (options.method === "PUT") {
       assert.equal(options.headers["User-Api-Key"], "key");
-      const payload = JSON.parse(options.body).post;
+      const body = JSON.parse(options.body);
+      assert.equal(body.bypass_bump, true);
+      if (body.title !== undefined) title = body.title;
+      const payload = body.post;
       assert.equal(payload.original_text, raw);
       puts++;
       raw = payload.raw;
@@ -44,7 +48,7 @@ function fixture({ privateTopic = false, editable = true, broken = false } = {})
     return json({ id: 2, topic_id: 1, post_number: 1, raw, cooked: cooked(raw),
       can_edit: editable && options.headers["User-Api-Key"] === "key" });
   };
-  return { publisher: createPublisher(config, "key", "client", request), puts: () => puts,
+  return { publisher: createPublisher({ ...config, title: desiredTitle }, repository, "key", "client", request), puts: () => puts, title: () => title,
     manualEdit: () => { raw += "\nmanual edit"; } };
 }
 
@@ -76,4 +80,20 @@ test("private destinations, insufficient permissions and concurrent edits fail c
   f.manualEdit();
   await assert.rejects(f.publisher.publish(updated, before.digest), /changed during generation/);
   assert.equal(f.puts(), 0);
+});
+
+test("draft and copied-repository configurations cannot construct a sending client", () => {
+  assert.throws(() => createPublisher({ ...config, mode: "draft" }, repository, "key", "client"));
+  assert.throws(() => createPublisher(config, "other/repository", "key", "client"));
+});
+
+test("title changes use the existing first-post PUT and do not create replies", async () => {
+  const f = fixture({ desiredTitle: "Updated title" });
+  const before = await f.publisher.prepare();
+  await f.publisher.publish(updated, before.digest);
+  assert.equal(f.title(), "Updated title");
+  assert.equal(f.puts(), 1);
+  const after = await f.publisher.prepare();
+  assert.equal((await f.publisher.publish(updated, after.digest)).changed, false);
+  assert.equal(f.puts(), 1);
 });

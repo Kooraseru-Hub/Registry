@@ -135,8 +135,8 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.doesNotMatch(fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8"), /python/);
 });
 
-test("DevForum uses native uploads with pinned measurement provenance", () => {
-  const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+test("DevForum uses native upload fixtures with pinned measurement provenance", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "tests/ci/fixtures/devforum-snapshot.json"), "utf8"));
   const names = ["banner", "sponsor", "stars", "forks", "patriots", "documentation", "benchmark", "contribute", "license",
     "require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix"];
   const expected = manifest.uploads.patriots ? names : names.filter(name => name !== "patriots");
@@ -179,8 +179,15 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   assert.match(publisher, /ForumReadme\.Render\(record, directory\)/);
   assert.match(publisher, /validUploads\[existing\] ~= true/);
   assert.match(publisher, /record\.destination = destination/);
-  assert.match(publisher, /postCommand\(\{ "publish", readme, digest \}/);
-  const target = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8")).destination;
+  assert.match(publisher, /postCommand\(repository, \{ "publish", readme, digest \}/);
+  const policy = JSON.parse(fs.readFileSync(path.join(root, "config/devforum.json"), "utf8"));
+  assert.ok(["draft", "send"].includes(policy.mode));
+  const target = policy.destination;
+  assert.equal(policy.repository, "Kooraseru-Hub/Registry");
+  assert.match(publisher, /devforum-state\.json/);
+  assert.match(publisher, /README\.devforum\.draft\.md/);
+  const renderConfig = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+  assert.deepEqual(Object.keys(renderConfig).sort(), ["charts", "render"]);
   assert.ok(Number.isSafeInteger(target.topicId) && target.topicId > 0);
   assert.ok(Number.isSafeInteger(target.postId) && target.postId > 0);
   const spec = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.json"), "utf8"));
@@ -244,7 +251,9 @@ test("the real Luau forum renderer applies compact badge and carousel sizes", t 
     'local F=require("@components/governance/branches/build/forumReadme")',
     'local T=require("@components/governance/branches/build/readmeTemplate")',
     'local root=' + JSON.stringify(fixture),
-    'local r=F.Read()',
+    'local Fs=require("@std/fs")',
+    'local Json=require("@formats/json")',
+    'local r=Json.decode(Fs.readFileToString("tests/ci/fixtures/devforum-snapshot.json"))',
     'r.uploads.patriots="upload://TestPatriots.png"',
     'assert(T.PngWidth(root .. "/content/images/devforum/sponsor.png", 24) == 143)',
     'assert(not pcall(T.PngWidth, root .. "/invalid.png", 24))',
@@ -258,7 +267,7 @@ test("the real Luau forum renderer applies compact badge and carousel sizes", t 
   assert.match(result.stdout, /this project has been fact checked by TRUE robloxian patriots/);
   assert.equal((result.stdout.match(/width="\d+" height="24"/g) || []).length, 8);
   for (const [name, width] of Object.entries(widths)) {
-    const url = name === "patriots" ? "upload://TestPatriots.png" : JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8")).uploads[name];
+    const url = name === "patriots" ? "upload://TestPatriots.png" : JSON.parse(fs.readFileSync(path.join(root, "tests/ci/fixtures/devforum-snapshot.json"), "utf8")).uploads[name];
     assert.ok(result.stdout.includes('width="' + Math.round(width * 24 / 96) + '" height="24" src="' + url + '"'), name);
   }
   assert.doesNotMatch(result.stdout, /shieldcn\.dev|href="(?!https?:|#)/);

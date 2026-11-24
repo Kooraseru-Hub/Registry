@@ -105,11 +105,11 @@ function Component.Run(self: Component, _: { event: string }): string?
 		end
 
 		if branch == "main" and Process.env.TEMPLATE_PUBLICATION_REHEARSAL ~= "1" then
-			if forumKey == "" or Process.env.CI_ORIGIN_TRUSTED ~= "true" then
-				error("DevForum publication requires the configured ci-devforum environment credential", 0)
+			if Process.env.CI_ORIGIN_TRUSTED ~= "true" then
+				error("DevForum publication requires a trusted source", 0)
 			end
 
-			ForumPublisher.Run(directory, parent ~= nil, forumKey, if forumClient == "" then "discourse-mcp" else forumClient)
+			ForumPublisher.Run(directory, parent ~= nil, forumKey, if forumClient == "" then "discourse-mcp" else forumClient, repository)
 		end
 
 		git({ "add", "--all" }, directory)

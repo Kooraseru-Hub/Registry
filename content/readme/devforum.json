@@ -1,39 +1,4 @@
 {
-  "uploads": {
-    "banner": "upload://pdAjfEfxUeuNxokg1w2Bows46kC.png",
-    "sponsor": "upload://qGhWkeWImdRht8GqAb3JRQ3FFYv.png",
-    "stars": "upload://tfj1WInxDsySdCQ9EdQaK3qqoSm.png",
-    "forks": "upload://r9Ucqqicj5qDSDQi9j94SBDlkSR.png",
-    "documentation": "upload://yAGCHhEzwgmL4OkYiZUeeTnyznQ.png",
-    "benchmark": "upload://xgDdXVskhvr9NoQ97cwECqUOyNR.png",
-    "contribute": "upload://rPU7zP18DlYvcayYIRDYOHAmyNF.png",
-    "license": "upload://aOV2EyROvqijOzJAwyh0k2alR7S.png",
-    "require-cold-matrix": "upload://k1sdsJcFGa0JnMaRpQkPmAc5CZi.png",
-    "require-warm-matrix": "upload://3QeJKnHCr46mhoyFoDy5Px2cBuA.png",
-    "registry-cold-matrix": "upload://rFIlO0diX3OWimUdPmD67dUUe4E.png",
-    "registry-warm-matrix": "upload://6deMluUGVgq2GGTrlRguMrEicW2.png"
-  },
-  "measurement": {
-    "started": "2026-11-24 05:35:04 UTC",
-    "runtime": "Roblox Open Cloud",
-    "version": "603",
-    "commit": "b19c023d5b3af579cb7059242521260cbb2872d4"
-  },
-  "benchmarkRevision": "c99818ec19eea68e28ef93cb6808a61bd0db6ff1",
-  "fingerprints": {
-    "registry-cold-matrix": "dbae9d872b66218e9ae7285b17ee114616e1cf04",
-    "registry-warm-matrix": "01b5dd5d95daf1c488675db1726eb33c11ada686",
-    "require-cold-matrix": "0714ff806f5395d1254246cf81b7653c924f19a1",
-    "require-warm-matrix": "be4176f66cd46a02fb57acce176d5790279be1ee",
-    "benchmark": "cb975a2da87600eb17cffbdd2b024bfbdc61cc3f",
-    "contribute": "5dcdb1c007837f7dd8b47aac22e9daa5c15e969b",
-    "documentation": "4eec104b2d5b7cf51087c539da64e5d2b1452845",
-    "forks": "45b8f82698a3c355fc054367a8de8d3ca751fbce",
-    "license": "0e1df41026267e0864a18ec935d5810a30b88bbc",
-    "sponsor": "f23442cbb66a5fa178c79b7edbbef304052444f1",
-    "stars": "458932edb1aa15083ff3ba9be0fdfb586a8ce847",
-    "banner": "61f7d65bb384797e4b5f327e3bad3fdbde863c0a"
-  },
   "charts": [
     "require-cold-matrix",
     "require-warm-matrix",
@@ -46,16 +11,5 @@
     "chartZoom": 2,
     "chartDisplay": 690,
     "policy": "resvg-0.50.0-v2"
-  },
-  "destination": {
-    "topicId": 4313867,
-    "postId": 13824744
-  },
-  "adopt": {
-    "banner": {
-      "blob": "61f7d65bb384797e4b5f327e3bad3fdbde863c0a",
-      "from": "upload://3qQFpBATdhtQHHbg6m0gPzPUvaJ.png",
-      "reference": "upload://nKvllyZ8UNElvosqVrI8ux99sWo.png"
-    }
   }
 }
