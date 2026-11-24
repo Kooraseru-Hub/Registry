@@ -139,11 +139,23 @@ function PublicCache.Available(image: Image): boolean
 end
 
 --- Adopt a manually replaced public upload only if its original bytes match the generated PNG.
-function PublicCache.Matches(reference: string, file: string, blob: string): boolean
-	const short = reference:match("^upload://([%w]+%.png)$")
+function PublicCache.Matches(image: Image, file: string, blob: string): boolean
+	const short = image.reference:match("^upload://([%w]+%.png)$")
 	assert(short, "Invalid DevForum reference")
 	const temporary = file .. ".remote"
-	const _, status = request({ "--location", "--proto-redir", "=https", "--max-redirs", "3", "--output", temporary, ORIGIN .. "/uploads/short-url/" .. short })
+	local original: string? = nil
+
+	for _, url in image.sources do
+		if url:find("/uploads/original/", 1, true) then
+			original = url
+			break
+		end
+	end
+
+	const arguments = if original
+		then { "--output", temporary, original }
+		else { "--location", "--proto-redir", "=https", "--max-redirs", "3", "--output", temporary, ORIGIN .. "/uploads/short-url/" .. short }
+	const _, status = request(arguments)
 	local matches = false
 
 	if status == "200" and Fs.exists(temporary) then

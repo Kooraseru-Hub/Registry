@@ -114,6 +114,16 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const publicImages = PublicCache.Read(destination)
 	const previousReadme = if hasParent then previousFile(directory, "README.devforum.md") else nil
 	const labels = PublicCache.References(previousReadme or "")
+	local recognized = false
+
+	for label in labels do
+		if publicImages[label] then
+			recognized = true
+			break
+		end
+	end
+
+	assert(not hasParent or recognized, "No recognizable public image slots; refusing to invalidate the entire cache")
 	const confirmed: { [string]: string } = {}
 	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
@@ -171,9 +181,9 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			end
 		end
 
-		if publicImage and PublicCache.Available(publicImage) then
-			if existing == publicImage.reference or PublicCache.Matches(publicImage.reference, png, blob) then
-					existing = publicImage.reference
+		if existing and publicImage and PublicCache.Available(publicImage) then
+			if existing == publicImage.reference or PublicCache.Matches(publicImage, png, blob) then
+				existing = publicImage.reference
 				confirmed[name] = publicImage.reference
 				uploads[name] = publicImage.reference
 			else
