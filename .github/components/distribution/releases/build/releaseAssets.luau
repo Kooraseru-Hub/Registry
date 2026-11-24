@@ -29,6 +29,7 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 	end
 	const historical = head.stdout:gsub("%s+$", "") ~= commit
 	const assetRoot = if historical then `build/artifacts/source/{commit}/` else "build/artifacts/source/"
+	-- Only older commits need a separate archive build.
 	if historical then
 		const result = Process.run({ "bash", ".github/components/source/build/archive.sh", commit, assetRoot })
 		if not result.ok then

@@ -8,6 +8,7 @@ const GitFailure = require("@ci/github/publication/gitFailure")
 const Glob = require("@ci/bootstrap/discovery/glob")
 const Json = require("@formats/json")
 const SvgAssets = require("@components/governance/branches/build/svgAssets")
+const ForumPublisher = require("@components/governance/branches/publish/forumPublisher")
 
 local Component = {}
 Component.__index = Component
@@ -43,6 +44,10 @@ end
 
 --- Publish the staged branch trees to their configured refs.
 function Component.Run(self: Component, _: { event: string }): string?
+	const forumKey = Process.env.CI_CREDENTIAL_DEVFORUM_API_KEY or ""
+	const forumClient = Process.env.CI_CREDENTIAL_DEVFORUM_CLIENT_ID or "discourse-mcp"
+	Process.env.CI_CREDENTIAL_DEVFORUM_API_KEY = nil
+	Process.env.CI_CREDENTIAL_DEVFORUM_CLIENT_ID = nil
 	local repository = Publication.Begin("BRANCHES")
 	if not repository then
 		return "skipped"
@@ -97,6 +102,14 @@ function Component.Run(self: Component, _: { event: string }): string?
 				`refs/heads/{branch}`,
 			}, directory)
 			parent = git({ "rev-parse", "FETCH_HEAD" }, directory)
+		end
+
+		if branch == "main" and Process.env.TEMPLATE_PUBLICATION_REHEARSAL ~= "1" then
+			if forumKey ~= "" and Process.env.CI_ORIGIN_TRUSTED == "true" then
+				ForumPublisher.Run(directory, parent ~= nil, forumKey, if forumClient == "" then "discourse-mcp" else forumClient)
+			else
+				print("::warning::DevForum API credential unavailable; retaining the authored upload snapshot")
+			end
 		end
 
 		git({ "add", "--all" }, directory)

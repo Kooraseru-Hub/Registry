@@ -1,29 +1,19 @@
-# Source-managed repository rulesets
+# Repository ruleset expectations
 
-Each direct `.json` file defines one managed repository ruleset. The filename
-is its source identity. The `ruleset` object declares its GitHub name, branch/tag
-target, enforcement, and included/excluded refs. The `rules` array declares
-native REST rule types and optional `parameters`; `bypass_actors` declares actor
-IDs, types, and bypass modes.
+These JSON files declare the expected repository rulesets. The read-only
+`governance/rulesets/plan` component validates local definitions and compares
+them with GitHub's current repository-owned rulesets, reporting discrepancies
+as warnings. It never creates, updates, or deletes rulesets. Public API
+visibility and rate limits can prevent verification; these are reported
+separately rather than treated as successful matches. Bypass actors may be
+hidden from read-only callers.
 
-`rulesets/plan` validates configurations without touching GitHub. On pushes
-to source, `rulesets/sync` reconciles rulesets of matching names with the
-GitHub REST API. Unknown remote rulesets are never removed. Changing a managed
-ruleset's GitHub display name currently requires renaming its existing remote
-rule manually; otherwise the new name creates a separate ruleset.
+Registry disables `governance/rulesets/sync` in `config/ci/components.toml`.
+Manage the actual rulesets in GitHub Settings. No administrative token is
+required for the read-only check on this public repository.
 
-The standard GITHUB_TOKEN cannot administer repository rulesets. Configure
-`roles.rulesets_token` in `.github/config/credentials.json` (default secret `CI_RULESETS_TOKEN`)
-with repository Administration: write, or provide an installed GitHub App with
-repository Administration: write. A classic PAT needs the `repo` scope.
-Without an authorized credential, sync explicitly skips; plan/PR validation
-continues. Once authorized, API errors are failures, never successful skips.
-
-`source-gate.json` requires PRs and the `validate` check from CI.
-Repository administrators have the Always allow bypass on this ruleset.
-`.github/config/rulesets/source-admin.json` is a disabled tombstone for the former administrator-only
-update restriction. Keep it disabled until it is safely retired from the remote
-ruleset catalog. The active PR and CI gate remains the only source branch rule
-that blocks merges. No ruleset overrides another ruleset's required checks.
+The active source gate requires pull requests and the external CI validation
+check. The disabled source-admin record is a historical tombstone; its absence
+is acceptable, but it must not be active.
 
 Reference: https://docs.github.com/en/rest/repos/rules

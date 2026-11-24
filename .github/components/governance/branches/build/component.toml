@@ -1,7 +1,7 @@
 phase = "build"
 provides = ["branches.generated"]
 requires = []
-inputs = ["config/branches/**", "source/**", "content/docs/repository/**", "content/readme/**", "content/images/badges/**", ".github/components/governance/branches/build/svgAssets.luau"]
+inputs = ["config/branches/**", "source/**", "content/docs/repository/**", "content/readme/**", "content/images/badges/**", ".github/components/governance/branches/build/svgAssets.luau", ".github/components/governance/branches/build/forumReadme.luau"]
 outputs = ["build/artifacts/branches/**"]
 events = ["push", "pull_request", "workflow_dispatch"]
 boundary = "read"

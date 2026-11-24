@@ -5,3 +5,8 @@ default = true
 "distribution/attestations/publish" = false
 "distribution/packages/build" = false
 "distribution/packages/publish" = false
+
+# Repository administration is manual; CI only audits ruleset drift.
+"governance/rulesets/sync" = false
+"work/projects/plan" = false
+"work/projects/sync" = false

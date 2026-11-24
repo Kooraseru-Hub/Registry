@@ -6,8 +6,12 @@ const path = require('node:path');
 const root = path.resolve(__dirname, "../..");
 
 test('PR admission uses read-only review', () => {
-  const review = fs.readFileSync(path.join(root, '.github/workflows/pull.yml'), 'utf8');
-  assert.match(review, /pull_request_target:/);
+  const intake = fs.readFileSync(path.join(root, '.github/workflows/pull.yml'), 'utf8');
+  const review = fs.readFileSync(path.join(root, '.github/workflows/review.yml'), 'utf8');
+  assert.match(intake, /pull_request:/);
+  assert.doesNotMatch(intake, /pull_request_target:|checkout@|secrets:|: write/);
+  assert.match(review, /workflow_run:/);
+  assert.match(review, /workflows: \["Pull Request"\]/);
   assert.match(review, /CI_OPERATION: review/);
   assert.doesNotMatch(review.split("  review-comments:")[0], /checkout@|pull-requests: write|secrets:/);
   assert.match(review.split("  review-comments:")[1], /pull-requests: write/);
@@ -23,7 +27,7 @@ test('dropdown choices correspond to configured manual operations', () => {
 });
 
 test('PR starter correlates its own independent run and waits for the terminal result', () => {
-  const pull=fs.readFileSync(path.join(root,'.github/workflows/pull.yml'),'utf8');
+  const pull=fs.readFileSync(path.join(root,'.github/workflows/review.yml'),'utf8');
   const engine=fs.readFileSync(path.join(root,'.github/workflows/bootstrap.yml'),'utf8');
   assert.match(pull,/REQUEST_ID: \$\{\{ format\('\{0\}-\{1\}', github.run_id, github.run_attempt\) \}\}/);
   assert.match(pull,/client_payload:\{id:\$id,/);

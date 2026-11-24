@@ -1,4 +1,4 @@
-# Native Pages adapter appended to this component's generated job.
+# Native Pages adapter descriptor; the pinned engine owns the actual action versions.
 [permissions]
 contents = "read"
 pages = "write"

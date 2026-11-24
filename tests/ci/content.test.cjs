@@ -88,8 +88,10 @@ test("README variants share content and DevForum uses portable links", () => {
   assert.equal(Object.keys(assets).length, 8);
   assert.match(assets.stars, /badge\/validate%20my%20ego\.svg/);
   assert.match(assets.forks, /badge\/steal%20mah%20source%20code\.svg/);
-  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + "}}"));
-  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length);
+  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + (name === "patriots" ? ".badge" : "") + "}}"));
+  assert.match(assets.patriots, /TRUE%20robloxian%20patriots/);
+  assert.match(assets.patriots, /[?&]logo=roblox&/);
+  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length + 1);
   for (const file of [".github/components/governance/branches/build/branchBuilder.luau", ".github/components/governance/branches/publish/benchmark-readme.cjs"]) {
     assert.doesNotMatch(fs.readFileSync(path.join(root, file), "utf8"), /<br\s*\/?\s*>/i);
   }
@@ -143,7 +145,9 @@ test("DevForum uses native uploads with pinned measurement provenance", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
   const names = ["banner", "sponsor", "stars", "forks", "patriots", "documentation", "benchmark", "contribute", "license",
     "require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix"];
-  assert.deepEqual(Object.keys(manifest.uploads).sort(), names.sort());
+  const expected = manifest.uploads.patriots ? names : names.filter(name => name !== "patriots");
+  assert.deepEqual(Object.keys(manifest.uploads).sort(), expected.sort());
+  assert.notEqual(manifest.uploads.patriots, "upload://5dNUIGmLIvoAW6l4Uk76DW2YMNd.png");
   for (const url of Object.values(manifest.uploads)) assert.match(url, /^upload:\/\/[A-Za-z0-9]+\.png$/);
   assert.match(manifest.measurement.commit, /^[a-f0-9]{40}$/);
   assert.match(manifest.benchmarkRevision, /^[a-f0-9]{40}$/);
@@ -153,12 +157,47 @@ test("DevForum uses native uploads with pinned measurement provenance", () => {
   const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   const cloud = fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8");
   assert.doesNotMatch(helper + builder + publisher, /EmbedReadme|function SvgAssets\.DataUri/);
-  assert.match(builder, /content\/readme\/devforum\.json/);
-  assert.match(builder, /\[grid mode="carousel"\]/);
+  const forumRenderer = fs.readFileSync(path.join(directory, "build/forumReadme.luau"), "utf8");
+  assert.match(forumRenderer, /content\/readme\/devforum\.json/);
+  assert.match(forumRenderer, /\[grid mode="carousel"\]/);
   assert.doesNotMatch(cloud, /README\.devforum\.md/);
-  assert.match(builder, /content\/readme\/measurement\.html/);
+  assert.match(forumRenderer, /content\/readme\/measurement\.html/);
   assert.match(cloud, /content\/readme\/measurement\.html/);
   const template = fs.readFileSync(path.join(root, "content/readme/measurement.html"), "utf8");
   assert.equal((template.match(/<p>/g) || []).length, 4);
   assert.doesNotMatch(template, /<br\b/);
+});
+
+test("DevForum publisher uses named credentials, native uploads and content fingerprints", () => {
+  const directory = path.join(root, ".github/components/governance/branches");
+  const publisher = fs.readFileSync(path.join(directory, "publish/forumPublisher.luau"), "utf8");
+  const component = fs.readFileSync(path.join(directory, "publish/component.toml"), "utf8");
+  assert.match(component, /credentials = \["devforum_api_key", "devforum_client_id"\]/);
+  assert.match(publisher, /git", "hash-object"/);
+  assert.match(publisher, /status == "429"/);
+  assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
+  assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
+  assert.match(publisher, /ForumReadme\.Render\(record\)/);
+  const spec = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.json"), "utf8"));
+  const lock = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.lock"), "utf8"));
+  assert.equal(spec.dependencies["tools.resvg"].options.version, lock.entries["tools.resvg"].resolution.version);
+});
+
+test("new DevForum helpers use supported component aliases", () => {
+  const directory = path.join(root, ".github/components/governance/branches");
+  const init = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
+  assert.match(init, /require\("@components\/governance\/branches\/publish\/forumPublisher"\)/);
+  assert.match(builder, /require\("@components\/governance\/branches\/build\/forumReadme"\)/);
+});
+
+test("DevForum inventories are authored data and Starlight has its native 404 and UI dictionary", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+  assert.deepEqual(manifest.charts, ["require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix"]);
+  const site = path.join(root, ".github/components/documentation/pages/build/starlight");
+  assert.match(fs.readFileSync(path.join(site, "src/content.config.mjs"), "utf8"), /i18nLoader\(\)/);
+  assert.ok(JSON.parse(fs.readFileSync(path.join(site, "src/content/i18n/en.json"), "utf8"))["404.text"]);
+  assert.ok(fs.existsSync(path.join(site, "src/pages/404.astro")));
+  assert.match(fs.readFileSync(path.join(site, "astro.config.mjs"), "utf8"), /disable404Route: true/);
+  assert.ok(!fs.existsSync(path.join(root, "content/docs/404.md")));
 });

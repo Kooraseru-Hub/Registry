@@ -10,8 +10,8 @@
   <a href="https://github.com/kooraseru-hub/registry"><img alt="validate my ego" src="{{devforum.stars}}"></a>
   <!-- Forks -->
   <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="steal mah source code" src="{{devforum.forks}}"></a>
-  <!-- USA! USA! USA! -->
-  <img alt="Fact checked by true American patriots" src="{{devforum.patriots}}">
+  <!-- Robloxian patriots -->
+  {{devforum.patriots.badge}}
 </div>
 
 ---

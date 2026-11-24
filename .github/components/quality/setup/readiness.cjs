@@ -12,6 +12,7 @@ const REQUIRED = [
   ".github/workflows/bootstrap.yml",
   ".github/workflows/push.yml",
   ".github/workflows/pull.yml",
+  ".github/workflows/review.yml",
   ".github/workflows/manual.yml",
   ".github/workflows/remote.yml",
   "config/ci/operations.json",
@@ -77,7 +78,7 @@ function analyze(directory = ROOT, env = process.env) {
   catch (error) { issues.push("Template metadata: " + error.message); }
   try {
     operation = JSON.parse(fs.readFileSync(path.join(directory, "config/ci/operations.json"), "utf8"));
-    const pull = fs.readFileSync(path.join(directory, ".github/workflows/pull.yml"), "utf8");
+    const pull = fs.readFileSync(path.join(directory, ".github/workflows/review.yml"), "utf8");
     const push = fs.readFileSync(path.join(directory, ".github/workflows/push.yml"), "utf8");
     const review = pull.match(/^          CI_OPERATION:\s*([a-z][a-z0-9-]*)\s*$/m)?.[1];
     pushOperation = push.match(/-f operation=([a-z][a-z0-9-]*) -f publish=true/)?.[1] ?? null;

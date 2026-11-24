@@ -59,8 +59,10 @@ function SvgAssets.Sanitize(data: string): string
 		end
 
 		const seen: { [string]: boolean } = {}
+
 		while true do
 			const terminator = tail:match("^%s*(/?>)")
+
 			if terminator then
 				const finish = tail:find(">", 1, true)
 				assert(finish)
@@ -70,6 +72,7 @@ function SvgAssets.Sanitize(data: string): string
 				end
 				break
 			end
+
 			const first, last, attribute, quote = tail:find("^%s+([%a_][%w_:.-]*)%s*=%s*(['\"])")
 			if not first or not last or not attribute or not quote then
 				error("Malformed SVG attribute", 0)
@@ -99,13 +102,16 @@ function SvgAssets.Sanitize(data: string): string
 				if not raster and not value:match("^#[%w_.:-]+$") then error("External SVG reference", 0) end
 			else
 				const lower = value:lower()
+
 				if lower:find("javascript:", 1, true) or lower:find("expression%s*%(")
 					or value:find("\\", 1, true) or value:find("/*", 1, true) or value:find("@", 1, true)
 				then
 					error("Unsafe SVG attribute value", 0)
 				end
+
 				const withoutFragments = lower:gsub("url%s*%(%s*#[%w_.:-]+%s*%)", "")
 				if withoutFragments:find("url%s*%(") then error("External SVG CSS reference", 0) end
+
 				if attribute == "style" then
 					const safeStyle = " fill fill-opacity fill-rule stroke stroke-width stroke-opacity stroke-linecap stroke-linejoin opacity font-family font-size font-weight font-style text-anchor dominant-baseline display visibility clip-path mask filter stop-color stop-opacity "
 					for declaration in value:gmatch("[^;]+") do
@@ -117,10 +123,13 @@ function SvgAssets.Sanitize(data: string): string
 				end
 			end
 		end
+
 		if #stack == 1 and name == "svg" and not seen.xmlns then
 			error("Missing SVG namespace", 0)
 		end
 	end
+
+	-- Reject unclosed elements and documents without a root.
 	if not rootSeen or #stack ~= 0 then
 		error("Incomplete SVG document", 0)
 	end
@@ -131,12 +140,15 @@ end
 function SvgAssets.StageBadges(destination: string): ()
 	const manifest = Json.record(Json.decode(Fs.readFileToString(SOURCE .. "/sources.json")))
 	Fs.createDirectory(destination, { makeParents = true })
+
+	-- Resolve each source independently before staging the validated artwork.
 	for name, url in manifest do
 		if not name:match("^[a-z]+$") or type(url) ~= "string" or not url:match("^https://shieldcn%.dev/badge/") then
 			error("Invalid static badge source", 0)
 		end
 		const original = `{SOURCE}/{name}.svg`
 		local data: string
+
 		if Fs.exists(original) and Fs.type(original) == "file" then
 			data = Fs.readFileToString(original)
 		else
@@ -146,6 +158,7 @@ function SvgAssets.StageBadges(destination: string): ()
 			end
 			data = response.body
 		end
+
 		Fs.writeStringToFile(`{destination}/{name}.svg`, SvgAssets.Sanitize(data))
 	end
 end

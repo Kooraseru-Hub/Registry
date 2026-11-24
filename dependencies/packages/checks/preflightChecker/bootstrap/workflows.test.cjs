@@ -29,11 +29,13 @@ test("native delivery plan covers each real publication component with its own l
     "distribution/releases/publish": "contents",
     "documentation/pages/publish": "pages",
     "governance/branches/publish": "contents",
-    "governance/rulesets/sync": "credential",
     "work/labels/sync": "issues",
     "work/milestones/sync": "issues",
-    "work/projects/sync": "credential",
   });
+  for (const disabled of ["governance/rulesets/sync", "work/projects/plan", "work/projects/sync"]) {
+    assert.ok(!tasks.some(task => task.identity === disabled), disabled + " must not be scheduled");
+  }
+  assert.ok(tasks.some(task => task.identity === "governance/rulesets/plan" && task.boundary === "read"));
   assert.equal(plan.artifact,plan.destination);
   assert.match(plan.artifact,/^build\/run\/[^/]+\/transport\/bundles$/);
   const {normalize}=require("../../../../../dependencies/managed/packages/ci-engine/src/adapters/github/delivery.cjs");
@@ -63,7 +65,7 @@ test("authored events dispatch independently from the pinned engine", () => {
   const bootstrap=fs.readFileSync(path.join(directory,"bootstrap.yml"),"utf8");
   assert.match(bootstrap,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.match(bootstrap,/repository_dispatch:/);
-  for(const file of ["pull","manual","remote"]){
+  for(const file of ["review","manual","remote"]){
     const workflow=fs.readFileSync(path.join(directory,file+".yml"),"utf8");
     assert.match(workflow,/ci-request/);
     assert.doesNotMatch(workflow,/uses: .*bootstrap\.yml|secrets: inherit/);
@@ -114,4 +116,39 @@ test("Registry publishes branches, releases, and Pages with Cloudflare previews 
   for (const target of ["branches", "releases", "pages", "milestones"]) assert.ok(targets.includes(target + " = true"));
   assert.match(targets, /^packages = false$/m);
   assert.match(targets, /\[github\.previews\]\s+enabled = false/);
+});
+
+
+test("read-only ruleset audit detects drift and unavailable verification", t => {
+  const source = `local A=require("@components/governance/rulesets/plan/audit")
+local J=require("@formats/json")
+local C=require("@ci/github/resources/rulesets/rulesetCatalog")
+local definitions=C.Read()
+local wanted={}
+local details={}
+for i,item in definitions do
+  wanted[i]={id=i,name=item.definition.name}
+  details[i]=item.definition
+end
+local function get(path)
+  if path:find("?",1,true) then return wanted end
+  return details[tonumber(path:match("/(%d+)$"))]
+end
+local good=A.Check("Example/Registry",definitions,get)
+local missing=A.Check("Example/Registry",definitions,function() return {} end)
+local failed=A.Check("Example/Registry",definitions,function() error("unavailable") end)
+local changed=A.Check("Example/Registry",definitions,function(path)
+  if path:find("?",1,true) then return wanted end
+  local detail=table.clone(get(path))
+  detail.enforcement=if detail.enforcement=="active" then "disabled" else "active"
+  return detail
+end)
+print("RESULT:"..J.encode({good=good.state,missing=missing.state,failed=failed.state,changed=changed.state}))`;
+  fs.mkdirSync(path.join(root,"build"),{recursive:true});
+  const temporary=fs.mkdtempSync(path.join(root,"build/ruleset-test-"));
+  t.after(()=>fs.rmSync(temporary,{recursive:true,force:true}));
+  const file=path.join(temporary,"test.luau"); fs.writeFileSync(file,source);
+  const result=spawnSync(lute,["run",file],{cwd:root,encoding:"utf8",timeout:20000,windowsHide:true});
+  assert.ifError(result.error); assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout.match(/^RESULT:(.*)$/m)[1]),{good:"matches",missing:"review",failed:"unavailable",changed:"review"});
 });
