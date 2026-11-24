@@ -1,14 +1,13 @@
 ## Registry 1.0.0
 
-This release captures Registry as a path-based module manager for Roblox Luau. It gives a Roblox experience one place to register ModuleScripts or loaded module tables, find them by path, and coordinate their lifecycle.
+Historical release reconstructed from the January 31, 2026 revision of the original single-module Registry. This version provides context-specific registries, registration and lookup by name or Instance, and initialization and ordered startup helpers.
 
-- **Registration and lookup.** Register modules under hierarchical paths and look them up by path, alias, or registered instance.
-- **Lifecycle.** Run Setup, Init, and Start with category and priority ordering. Destroy runs in reverse initialization order and cleans up tracked resources for initialized modules.
-- **Dependency diagnostics.** Declare dependencies to get warnings for missing registrations and cycles. Hooks and inspection helpers expose lifecycle errors and registry state.
-- **Distribution.** This was the first release built with the shared CI Template. The original module tree and its CC0 license are in `Registry.zip`.
+- `Registry.zip` contains the historical source and license.
+- `Registry.rbxm` contains the original Registry ModuleScript.
+
+The existing November 2026 release with this tag was mislabeled; this record restores the original API and source revision.
 
 ## Contributors
 
 - [@Kooraseru](https://github.com/Kooraseru)
-- [@NeverSimplified](https://github.com/NeverSimplified)
 - [@ChristopherCAaaaaa](https://github.com/ChristopherCAaaaaa)

@@ -13,6 +13,7 @@ const RECORD_ROOT = "config/publishing/releases"
 const OUTPUT_ROOT = "build/artifacts/releases"
 
 type ReleaseRecord = {
+	onExisting: ConflictPolicy.Policy?,
 	assetPatterns: unknown,
 	version: string,
 	tag: string,
@@ -25,6 +26,7 @@ type ReleaseRecord = {
 }
 
 type ReleaseIndexEntry = {
+	onExisting: ConflictPolicy.Policy?,
 	assets: { ReleaseAssets.Asset },
 	version: string,
 	tag: string,
@@ -274,6 +276,7 @@ local function decodeRecords(): ({ ReleaseRecord }, ConflictPolicy.Policy)
 			previousTag = previousTag,
 			notes = notes,
 			assetPatterns = if value.assets ~= nil then value.assets else shared.assets,
+			onExisting = if value.on_existing ~= nil then ConflictPolicy.Parse(value.on_existing, recordPath) else nil,
 		})
 	end
 	return records, ConflictPolicy.Parse(shared.on_existing, CONFIG_PATH)
@@ -354,6 +357,7 @@ function ReleaseBuilder.Run(_: ReleaseBuilder): string?
 
 		local entry = {
 			assets = ReleaseAssets.Stage(release.assetPatterns, `{releaseDirectory}/assets`, release.commit),
+			onExisting = release.onExisting,
 			version = release.version,
 			tag = release.tag,
 			type = release.type,

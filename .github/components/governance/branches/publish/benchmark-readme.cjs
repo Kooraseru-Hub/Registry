@@ -53,7 +53,24 @@ try {
         `Test place version <code>${version}</code>`,
         `Source commit <code>${commit}</code>`,
     ].join("<br>\n");
-    fs.writeFileSync(readme, content.replace(placeholder, [...rows, measurement].join("\n\n")));
+    fs.writeFileSync(readme, content.replace(placeholder, ['<div align="center">', ...rows, measurement, "</div>"].join("\n\n")));
+
+    const forum = path.join(path.dirname(readme), "README.devforum.md");
+    const forumContent = fs.readFileSync(forum, "utf8");
+    if (forumContent.split(placeholder).length !== 2) throw new Error("Expected one DevForum benchmark placeholder");
+    const links = [["require", "Direct require"], ["registry", "Registry"]].flatMap(([method, label]) =>
+        [["cold", "first loads"], ["warm", "cached lookups"]].map(([phase, workload]) =>
+            "- [" + label + " – " + workload + "](https://github.com/" + repo +
+            "/blob/main/benchmarks/" + method + "-" + phase + "-matrix.svg)"));
+    const forumMeasurement = [
+        "Measured: " + started.replace("T", " ").replace("Z", " UTC"),
+        "Environment: Roblox Open Cloud",
+        "Test place version: `" + version + "`",
+        "Source commit: `" + commit + "`",
+    ].join("  \n");
+    fs.writeFileSync(forum, forumContent.replace(placeholder, [...links,
+        "", "[grid mode=\"carousel\"]", "Upload PNG exports of the four linked charts here before posting.", "[/grid]",
+        "", forumMeasurement].join("\n")));
 } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
 }

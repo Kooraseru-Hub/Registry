@@ -72,3 +72,45 @@ test("builders stage the authored docs into branch and Pages outputs", () => {
   assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);
   assert.match(branches, /OUTPUT_ROOT = "build\/artifacts\/branches"/);
 });
+
+test("README variants share content and DevForum uses portable links", () => {
+  const github = fs.readFileSync(path.join(repositoryTemplates, "README.md"), "utf8");
+  const forum = fs.readFileSync(path.join(repositoryTemplates, "README.devforum.md"), "utf8");
+  const body = fs.readFileSync(path.join(root, "content/readme/body.md"), "utf8");
+  for (const template of [github, forum]) assert.equal(template.split("{{registry.body}}").length, 2);
+  assert.equal(body.split("{{registry.benchmarks}}").length, 2);
+  assert.match(body, /Registry\.rbxm/);
+  assert.match(body, /ReplicatedFirst/);
+  assert.doesNotMatch(forum + body, /<img\b|shieldcn\.dev|href="(?!https?:)/);
+});
+test("release records preserve historical sources and publish both assets", () => {
+  const directory = path.join(root, "config/publishing/releases");
+  const record = v => JSON.parse(fs.readFileSync(path.join(directory, v, "release.json"), "utf8"));
+  assert.equal(record("1.0.0").source, "a0cdd83dc558daae263b0d8cf1c7f8266faf3180");
+  assert.equal(record("1.1.0").source, "dd2ed7645fde9985ce9637666461af697fab6edd");
+  assert.equal(record("2.0.0").sequence, 3);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, "settings.json"), "utf8")).release.assets,
+    ["build/artifacts/source/Registry.zip", "build/artifacts/source/Registry.rbxm"]);
+});
+test("binary model writes a root ModuleScript with exact source bytes", () => {
+  const { encode } = require(path.join(root, ".github/components/source/build/model.cjs"));
+  const source = Buffer.from("return { example = 'é' }\n");
+  const model = encode({ name: "Registry", children: new Map(), source });
+  assert.equal(model.subarray(0, 8).toString(), "<roblox!");
+  assert.equal(model.readUInt32LE(16), 1);
+  assert.equal(model.readUInt32LE(20), 1);
+  const chunks = [];
+  for (let at = 32; at < model.length;) {
+    const type = model.subarray(at, at + 4).toString();
+    assert.equal(model.readUInt32LE(at + 4), 0);
+    const size = model.readUInt32LE(at + 8);
+    chunks.push([type, model.subarray(at + 16, at + 16 + size)]);
+    at += 16 + size;
+  }
+  assert.deepEqual(chunks.map(([type]) => type), ["INST", "PROP", "PROP", "PRNT", "END\0"]);
+  const [, name, code, parents] = chunks.map(([, data]) => data);
+  assert.ok(name.includes(Buffer.from("Registry")));
+  assert.ok(code.subarray(-source.length).equals(source));
+  assert.equal(parents.readUInt32LE(1), 1);
+  assert.equal(parents.readUInt32BE(9), 1);
+});

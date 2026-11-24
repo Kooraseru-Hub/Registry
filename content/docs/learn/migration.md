@@ -9,7 +9,7 @@ The current Registry implementation exposes `Register` and `Get` only. It does n
 
 ```luau
 --!strict
-const Registry = require("@game/ReplicatedStorage/Registry")
+const Registry = require("@game/ReplicatedFirst/Registry")
 
 return Registry.Register({
     ["Game/Settings"] = script.Parent.Settings,

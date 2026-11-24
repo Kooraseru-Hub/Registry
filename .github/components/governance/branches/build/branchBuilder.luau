@@ -86,6 +86,9 @@ end
 -- Repository documents use explicit English placeholders, independent of site i18n.
 --- Resolve supported template substitutions for a generated branch.
 local function renderTemplate(content: string, source: string, branchName: string): string
+	const devforum = source:match("README%.devforum%.md$") ~= nil
+	const body = Fs.readFileToString("content/readme/body.md"):gsub("%s+$", "")
+	content = content:gsub("{{registry%.body}}", function(): string return body end)
 	local repository = Process.env.GITHUB_REPOSITORY or ""
 	local projectName = repository:match("^[%w_.-]+/([%w_.-]+)$") or "Project"
 	const results = LOCAL_RESULTS
@@ -126,7 +129,7 @@ local function renderTemplate(content: string, source: string, branchName: strin
 		["project.name"] = projectName,
 		["branch.name"] = branchName,
 		["branch.source"] = "source",
-		["registry.benchmarks"] = if results then ([[
+		["registry.benchmarks"] = if results and devforum then "Local benchmark charts are staged in benchmarks/. Upload the charts to DevForum and place the uploaded image references in a carousel.\n\n" .. measurement:gsub("<[^>]+>", "") elseif results then ([[
 <p align="center">
   <img width="49%" src="benchmarks/require-cold-matrix.png" alt="Direct require first load">
   <img width="49%" src="benchmarks/require-warm-matrix.png" alt="Direct require repeated lookup">

@@ -11,7 +11,7 @@ sidebar:
 Use string keys such as `"Game/Settings"` or `"UI/Theme"`. Slashes group names by convention only. Each key is an exact lookup; `"UI/Theme"` and `"ui/theme"` are different keys.
 
 ```luau
-const Registry = require("@game/ReplicatedStorage/Registry")
+const Registry = require("@game/ReplicatedFirst/Registry")
 return Registry.Register({
     ["Game/Settings"] = script.Parent.Settings,
     ["UI/Theme"] = "dark",
