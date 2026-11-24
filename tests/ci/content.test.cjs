@@ -73,28 +73,22 @@ test("builders stage the authored docs into branch and Pages outputs", () => {
   assert.match(branches, /OUTPUT_ROOT = "build\/artifacts\/branches"/);
 });
 
-test("README variants share content and DevForum uses portable links", () => {
+test("README variants derive from one authored source and declared asset inventory", () => {
   const github = fs.readFileSync(path.join(repositoryTemplates, "README.md"), "utf8");
-  const forum = fs.readFileSync(path.join(repositoryTemplates, "README.devforum.md"), "utf8");
   const body = fs.readFileSync(path.join(root, "content/readme/body.md"), "utf8");
-  for (const template of [github, forum]) assert.equal(template.split("{{registry.body}}").length, 2);
+  assert.ok(!fs.existsSync(path.join(repositoryTemplates, "README.devforum.md")));
+  assert.equal(github.split("{{registry.body}}").length, 2);
   assert.equal(body.split("{{registry.benchmarks}}").length, 2);
   assert.match(body, /Registry\.rbxm/);
   assert.match(body, /ReplicatedFirst/);
-  assert.doesNotMatch(forum + body, /shieldcn\.dev|href="(?!https?:)/);
-  assert.match(body, /releases\/latest\)/);
-  assert.ok(forum.includes("{{devforum.banner}}"));
   const assets = JSON.parse(fs.readFileSync(path.join(root, "content/images/badges/sources.json"), "utf8"));
   assert.equal(Object.keys(assets).length, 8);
   assert.match(assets.stars, /badge\/validate%20my%20ego\.svg/);
   assert.match(assets.forks, /badge\/steal%20mah%20source%20code\.svg/);
-  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + (name === "patriots" ? ".badge" : "") + "}}"));
+  for (const name of ["banner", ...Object.keys(assets)]) assert.equal(github.split("{{readme.image." + name + "}}").length, 2);
   assert.match(assets.patriots, /TRUE%20robloxian%20patriots/);
   assert.match(assets.patriots, /[?&]logo=roblox&/);
-  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length + 1);
-  for (const file of [".github/components/governance/branches/build/branchBuilder.luau", ".github/components/governance/branches/publish/benchmark-readme.cjs"]) {
-    assert.doesNotMatch(fs.readFileSync(path.join(root, file), "utf8"), /<br\s*\/?\s*>/i);
-  }
+  assert.doesNotMatch(github, /\b(?:width|height)="/);
 });
 test("release records preserve historical sources and publish both assets", () => {
   const directory = path.join(root, "config/publishing/releases");
@@ -188,7 +182,7 @@ test("new DevForum helpers use supported component aliases", () => {
   const init = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
   assert.match(init, /require\("@components\/governance\/branches\/publish\/forumPublisher"\)/);
-  assert.match(builder, /require\("@components\/governance\/branches\/build\/forumReadme"\)/);
+  assert.match(builder, /require\("@components\/governance\/branches\/build\/readmeTemplate"\)/);
 });
 
 test("DevForum inventories are authored data and Starlight has its native 404 and UI dictionary", () => {
@@ -203,22 +197,15 @@ test("DevForum inventories are authored data and Starlight has its native 404 an
 });
 
 
-test("DevForum uses compact badges and a single rasterization policy", () => {
+test("DevForum uses compact badges and declared environment bindings", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
-  const forum = fs.readFileSync(path.join(repositoryTemplates, "README.devforum.md"), "utf8");
   assert.equal(manifest.render.badgeHeight, 24);
   assert.equal(manifest.render.chartDisplay, 690);
   assert.equal(manifest.render.chartZoom, 2);
-  assert.equal((forum.match(/height="{{devforum.badgeHeight}}"/g) || []).length, 7);
-  const assets = JSON.parse(fs.readFileSync(path.join(root, "content/images/badges/sources.json"), "utf8"));
-  assert.match(assets.patriots, /this%20project%20has%20been%20fact%20checked/);
-  const publisher = fs.readFileSync(path.join(root, ".github/components/governance/branches/publish/forumPublisher.luau"), "utf8");
-  assert.match(publisher, /oldSources\[name\] == url/);
-  assert.match(publisher, /fingerprints\[name\] == identity/);
-  assert.match(publisher, /DevForum assets: \{reused\} reused, \{uploaded\} uploaded/);
+  assert.equal(manifest.badgeWidths, undefined);
   const workflow = fs.readFileSync(path.join(root, ".github/workflows/bootstrap.yml"), "utf8");
-  assert.match(workflow, /DEVFORUM_USER_API_KEY: \$\{\{ secrets\.DEVFORUM_USER_API_KEY \}\}/);
-  assert.doesNotMatch(workflow, /secrets: inherit/);
+  assert.match(workflow, /CI_BIND_SECRET_DEVFORUM_USER_API_KEY: .*matrix\.environment == 'ci-devforum'.*secrets\.DEVFORUM_USER_API_KEY/);
+  assert.doesNotMatch(workflow, /secrets: inherit|CI_SLOT_|CLOUDFLARE_API_TOKEN/);
 });
 
 test("the real Luau forum renderer applies compact badge and carousel sizes", t => {
@@ -235,5 +222,39 @@ test("the real Luau forum renderer applies compact badge and carousel sizes", t 
   assert.equal((result.stdout.match(/height="24"/g) || []).length, 8);
   assert.equal((result.stdout.match(/\|690x690\]\(upload:\/\//g) || []).length, 4);
   assert.match(result.stdout, /this project has been fact checked by TRUE robloxian patriots/);
+  assert.doesNotMatch(result.stdout, /width="|shieldcn\.dev|href="(?!https?:|#)/);
+  assert.match(result.stdout, /https:\/\/github\.com\/Kooraseru-Hub\/Registry\/blob\/main\/LICENSE/);
   assert.doesNotMatch(result.stdout, /{{[\w.-]+}}/);
+});
+
+test("the real Luau cache verifies source identity, bytes, sanitizer and render policy", t => {
+  const { spawnSync } = require("node:child_process");
+  const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/forum-cache-test-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const script = path.join(temporary, "test.luau");
+  fs.writeFileSync(script, `
+local C = require("@components/governance/branches/publish/assetCache")
+local H = require("@formats/hash")
+local url = "https://shieldcn.dev/badge/example.svg"
+local svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="24"><rect width="100" height="24"/></svg>'
+local hash = H.sha256(svg)
+assert(C.Source(url, url, svg, hash) == svg)
+assert(C.Source(url, url .. "?changed", svg, hash) == nil)
+assert(C.Source(url, url, svg .. " ", hash) == nil)
+assert(C.Source(url, url, nil, hash) == nil)
+assert(C.Source(url, url, svg, nil) == nil)
+local invalid = '<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>'
+assert(C.Source(url, url, invalid, H.sha256(invalid)) == nil)
+assert(C.Upload("hash:policy:3", "hash:policy:3", "upload://Example.png") == "upload://Example.png")
+assert(C.Upload("hash:policy:3", "hash:policy:2", "upload://Example.png") == nil)
+assert(C.Upload("hash:policy:3", "other:policy:3", "upload://Example.png") == nil)
+assert(C.Upload("hash:policy:3", "hash:policy:3", "https://example.com/image.png") == nil)
+print("cache fixtures passed")
+`);
+  const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /cache fixtures passed/);
 });
