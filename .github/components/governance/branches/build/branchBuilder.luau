@@ -133,10 +133,10 @@ local function renderTemplate(content: string, source: string, branchName: strin
 		["registry.benchmarks"] = if results and devforum then ([[
 
 [grid mode="carousel"]
-![Direct require – first loads](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-cold-matrix.svg)
-![Direct require – cached lookups](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-warm-matrix.svg)
-![Registry – first loads](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-cold-matrix.svg)
-![Registry – cached lookups](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-warm-matrix.svg)
+<img alt="Direct require – first loads" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-cold-matrix.svg">
+<img alt="Direct require – cached lookups" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-warm-matrix.svg">
+<img alt="Registry – first loads" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-cold-matrix.svg">
+<img alt="Registry – cached lookups" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-warm-matrix.svg">
 [/grid]
 
 ]]):gsub("devforum/([^\n]+)%.svg", function(name: string): string
@@ -284,6 +284,8 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
 				SvgAssets.StageCharts(benchmarkResults, `{branchRoot}/benchmarks/devforum`)
 			end
+
+			SvgAssets.EmbedReadme(branchRoot)
 		end
 
 		if copied == 0 then

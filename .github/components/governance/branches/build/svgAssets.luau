@@ -161,4 +161,60 @@ function SvgAssets.StageCharts(source: string, destination: string): ()
 	end
 end
 
+--- Encode the exact staged image bytes as an RFC 4648 data URI.
+function SvgAssets.DataUri(data: string, extension: string): string
+	const mediaType = if extension == "svg" then "image/svg+xml" elseif extension == "png" then "image/png" else nil
+	assert(mediaType, "Unsupported README image extension")
+	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	const encoded: { string } = {}
+
+	-- Encode three bytes at a time, with padding for the final partial group.
+	for offset = 1, #data, 3 do
+		const a = string.byte(data, offset)
+		const b = string.byte(data, offset + 1)
+		const c = string.byte(data, offset + 2)
+		const value = a * 65536 + (b or 0) * 256 + (c or 0)
+		const first = math.floor(value / 262144) + 1
+		const second = math.floor(value / 4096) % 64 + 1
+		const third = math.floor(value / 64) % 64 + 1
+		const fourth = value % 64 + 1
+		table.insert(encoded, alphabet:sub(first, first) .. alphabet:sub(second, second)
+			.. (if b then alphabet:sub(third, third) else "=")
+			.. (if c then alphabet:sub(fourth, fourth) else "="))
+	end
+
+	return "data:" .. mediaType .. ";base64," .. table.concat(encoded)
+end
+
+--- Inline staged assets in the DevForum document only, preserving the known banner upload.
+function SvgAssets.EmbedReadme(directory: string): ()
+	const path = `{directory}/README.devforum.md`
+	const prefix = "https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/"
+	local content = Fs.readFileToString(path)
+
+	-- Replace only the exact local badge and benchmark image sources, never ordinary links.
+	content = content:gsub('src="([^"]+)"', function(url: string): string
+		if url:sub(1, #prefix) ~= prefix then
+			return 'src="' .. url .. '"'
+		end
+		const relative = url:sub(#prefix + 1)
+		const extension = relative:match("%.([%a]+)$")
+		const badge = relative:match("^content/images/badges/[a-z]+%.svg$")
+		const chart = relative:match("^benchmarks/devforum/[a-z]+%-[a-z]+%-matrix%.svg$")
+			or relative:match("^benchmarks/[a-z]+%-[a-z]+%-matrix%.png$")
+		if not extension or not (badge or chart) then
+			error(`Unexpected DevForum image source: {url}`, 0)
+		end
+		const image = `{directory}/{relative}`
+		if not Fs.exists(image) or Fs.type(image) ~= "file" then
+			error(`Missing staged DevForum image: {image}`, 0)
+		end
+
+		return 'src="' .. SvgAssets.DataUri(Fs.readFileToString(image), extension) .. '"'
+	end)
+
+	Fs.writeStringToFile(path, content)
+	print(`Generated embedded DevForum README ({#content} bytes)`)
+end
+
 return table.freeze(SvgAssets)

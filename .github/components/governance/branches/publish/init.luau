@@ -78,6 +78,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 			const inputs = Json.record(Json.decode(Process.env.CI_ORIGIN_INPUTS or "{}"))
 			if inputs.benchmark_run then
 				SvgAssets.StageCharts(`{directory}/benchmarks`, `{directory}/benchmarks/devforum`)
+				SvgAssets.EmbedReadme(directory)
 			end
 		end
 		git({ "init", "--quiet" }, directory)

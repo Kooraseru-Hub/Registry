@@ -138,3 +138,17 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.match(publisher, /require\("@components\/governance\/branches\/build\/svgAssets"\)/);
   assert.doesNotMatch(fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8"), /python/);
 });
+
+test("DevForum embeds staged image bytes in both branch generation paths", () => {
+  const directory = path.join(root, ".github/components/governance/branches");
+  const helper = fs.readFileSync(path.join(directory, "build/svgAssets.luau"), "utf8");
+  const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
+  const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  const cloud = fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8");
+  assert.match(helper, /";base64,"/);
+  assert.match(helper, /README\.devforum\.md/);
+  assert.match(builder, /SvgAssets\.EmbedReadme\(branchRoot\)/);
+  assert.match(publisher, /SvgAssets\.EmbedReadme\(directory\)/);
+  assert.match(cloud, /<img alt=/);
+  assert.match(builder, /<img alt="Direct require – first loads"/);
+});

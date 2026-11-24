@@ -60,8 +60,8 @@ try {
     if (forumContent.split(placeholder).length !== 2) throw new Error("Expected one DevForum benchmark placeholder");
     const images = [["require", "Direct require"], ["registry", "Registry"]].flatMap(([method, label]) =>
         [["cold", "first loads"], ["warm", "cached lookups"]].map(([phase, workload]) =>
-            "![" + label + " – " + workload + "](https://raw.githubusercontent.com/" + repo +
-            "/main/benchmarks/devforum/" + method + "-" + phase + "-matrix.svg)"));
+            '<img alt="' + label + " – " + workload + '" src="https://raw.githubusercontent.com/' + repo +
+            "/main/benchmarks/devforum/" + method + "-" + phase + '-matrix.svg">'));
     fs.writeFileSync(forum, forumContent.replace(placeholder, [
         '<div align="center">', "", '[grid mode="carousel"]', ...images, "[/grid]", "",
         measurement, "", "</div>",
