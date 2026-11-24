@@ -23,12 +23,17 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 	end
 	local head = Process.run({ "git",  "rev-parse", "HEAD" })
 
-	-- Verify the checkout matches the requested commit before collecting assets.
-	if not head.ok or head.stdout:gsub("%s+$", "") ~= commit then
-		error(
-			"Release assets must come from the checked-out release source commit; refusing to attach another commit's binaries",
-			0
-		)
+	-- Historical deliverables are regenerated from the resolved Git object, never reused from HEAD.
+	if not head.ok or #commit ~= 40 or not commit:match("^%x+$") then
+		error("Unable to verify release source commit", 0)
+	end
+	const historical = head.stdout:gsub("%s+$", "") ~= commit
+	const assetRoot = if historical then `build/artifacts/source/{commit}/` else "build/artifacts/source/"
+	if historical then
+		const result = Process.run({ "bash", ".github/components/source/build/archive.sh", commit, assetRoot })
+		if not result.ok then
+			error(`Unable to build historical Registry assets: {result.stderr}`, 0)
+		end
 	end
 
 	-- Track matched source paths so overlapping patterns cannot duplicate assets.
@@ -59,7 +64,7 @@ function ReleaseAssets.Stage(patterns: unknown, directory: string, commit: strin
 		end
 		local count = 0
 
-		for _, path in Glob.Find(pattern) do
+		for _, path in Glob.Find(if historical then assetRoot .. pattern:sub(#"build/artifacts/source/" + 1) else pattern) do
 			local metadata = (if Fs.exists(path) then Fs.type(path) else nil)
 			if metadata == "dir" then
 				continue

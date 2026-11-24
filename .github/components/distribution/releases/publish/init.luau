@@ -28,7 +28,9 @@ function Component.Run(self: Component, _: { event: string }): string?
 
 	-- Publish each validated record from the release index.
 	for _, value in Publication.ReadIndex("build/artifacts/releases/index.json", "releases") do
-		if ReleasePublisher.Publish(repository, Publication.Record(value), policy, Publication.Request) then
+		const entry = Publication.Record(value)
+		const entryPolicy = if entry.onExisting ~= nil then ConflictPolicy.Parse(entry.onExisting, "Staged release") else policy
+		if ReleasePublisher.Publish(repository, entry, entryPolicy, Publication.Request) then
 			published = true
 		end
 	end

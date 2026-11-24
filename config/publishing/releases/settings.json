@@ -2,7 +2,10 @@
   "release": {
     "on_existing": "skip",
     "source": "HEAD",
-    "assets": ["build/artifacts/source/Registry.zip"],
+    "assets": [
+      "build/artifacts/source/Registry.zip",
+      "build/artifacts/source/Registry.rbxm"
+    ],
     "format": "semver"
   }
 }
