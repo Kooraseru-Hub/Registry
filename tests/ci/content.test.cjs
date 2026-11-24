@@ -125,3 +125,14 @@ test("binary model writes a root ModuleScript with exact source bytes", () => {
   assert.equal(parents.readUInt32LE(1), 1);
   assert.equal(parents.readUInt32BE(9), 1);
 });
+
+test("README image processing uses the existing Luau branch components", () => {
+  const directory = path.join(root, ".github/components/governance/branches");
+  const helper = fs.readFileSync(path.join(directory, "build/svgAssets.luau"), "utf8");
+  assert.match(helper, /require\("@std\/net"\)/);
+  assert.match(helper, /require\("@std\/fs"\)/);
+  assert.ok(!fs.existsSync(path.join(directory, "build/prepare-images.py")));
+  assert.match(fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8"), /SvgAssets\.StageBadges/);
+  assert.match(fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8"), /SvgAssets\.StageCharts/);
+  assert.doesNotMatch(fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8"), /python/);
+});

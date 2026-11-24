@@ -58,8 +58,6 @@ try {
     const forum = path.join(path.dirname(readme), "README.devforum.md");
     const forumContent = fs.readFileSync(forum, "utf8");
     if (forumContent.split(placeholder).length !== 2) throw new Error("Expected one DevForum benchmark placeholder");
-    execFileSync("python3", [".github/components/governance/branches/build/prepare-images.py",
-        "charts", temporary, path.join(directory, "devforum")], { stdio: "inherit" });
     const images = [["require", "Direct require"], ["registry", "Registry"]].flatMap(([method, label]) =>
         [["cold", "first loads"], ["warm", "cached lookups"]].map(([phase, workload]) =>
             "![" + label + " – " + workload + "](https://raw.githubusercontent.com/" + repo +

@@ -5,6 +5,7 @@ const Fs = require("@std/fs")
 const Toml = require("@formats/toml")
 const Glob = require("@ci/bootstrap/discovery/glob")
 const Process = require("@lute/process")
+const SvgAssets = require("./svgAssets")
 
 const CONFIG_ROOT = "config/branches"
 const CONTENT_ROOT = "content/docs/repository"
@@ -278,16 +279,9 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
 		if name == "main" then
-			const preparation = ".github/components/governance/branches/build/prepare-images.py"
-			const badgeResult = Process.run({ "python3", preparation, "badges", `{branchRoot}/content/images/badges` })
-			if not badgeResult.ok then
-				error(`Unable to prepare README badges: {badgeResult.stderr}`, 0)
-			end
+			SvgAssets.StageBadges(`{branchRoot}/content/images/badges`)
 			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
-				const chartResult = Process.run({ "python3", preparation, "charts", benchmarkResults, `{branchRoot}/benchmarks/devforum` })
-				if not chartResult.ok then
-					error(`Unable to prepare DevForum charts: {chartResult.stderr}`, 0)
-				end
+				SvgAssets.StageCharts(benchmarkResults, `{branchRoot}/benchmarks/devforum`)
 			end
 		end
 		if copied == 0 then
