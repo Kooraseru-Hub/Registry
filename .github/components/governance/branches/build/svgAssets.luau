@@ -192,10 +192,11 @@ function SvgAssets.EmbedReadme(directory: string): ()
 	const prefix = "https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/"
 	local content = Fs.readFileToString(path)
 
-	-- Replace only the exact local badge and benchmark image sources, never ordinary links.
-	content = content:gsub('src="([^"]+)"', function(url: string): string
-		if url:sub(1, #prefix) ~= prefix then
-			return 'src="' .. url .. '"'
+	-- Resolve images before substitution: Lute filesystem operations may yield.
+	const replacements: { [string]: string } = {}
+	for url in content:gmatch('src="([^"]+)"') do
+		if url:sub(1, #prefix) ~= prefix or replacements[url] then
+			continue
 		end
 		const relative = url:sub(#prefix + 1)
 		const extension = relative:match("%.([%a]+)$")
@@ -210,7 +211,12 @@ function SvgAssets.EmbedReadme(directory: string): ()
 			error(`Missing staged DevForum image: {image}`, 0)
 		end
 
-		return 'src="' .. SvgAssets.DataUri(Fs.readFileToString(image), extension) .. '"'
+		replacements[url] = SvgAssets.DataUri(Fs.readFileToString(image), extension)
+	end
+
+	-- The replacement callback must remain synchronous and preserve unrelated sources.
+	content = content:gsub('src="([^"]+)"', function(url: string): string
+		return 'src="' .. (replacements[url] or url) .. '"'
 	end)
 
 	Fs.writeStringToFile(path, content)

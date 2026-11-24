@@ -152,3 +152,14 @@ test("DevForum embeds staged image bytes in both branch generation paths", () =>
   assert.match(cloud, /<img alt=/);
   assert.match(builder, /<img alt="Direct require – first loads"/);
 });
+
+test("DevForum asset reads occur outside non-yieldable string substitution", () => {
+  const source = fs.readFileSync(path.join(root, ".github/components/governance/branches/build/svgAssets.luau"), "utf8");
+  const embedding = source.slice(source.indexOf("function SvgAssets.EmbedReadme"));
+  const substitution = embedding.indexOf("content = content:gsub");
+  assert.ok(substitution > 0);
+  assert.match(embedding.slice(0, substitution), /Fs\.readFileToString\(image\)/);
+  const callback = embedding.slice(substitution, embedding.indexOf("\n\tend)", substitution));
+  assert.doesNotMatch(callback, /Fs\.|Net\.|Process\./);
+  assert.match(callback, /replacements\[url\] or url/);
+});
