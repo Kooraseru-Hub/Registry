@@ -1,17 +1,20 @@
 <div align="center">
-  <img src="upload://pdAjfEfxUeuNxokg1w2Bows46kC.png" alt="Registry">
+  <img src="upload://3qQFpBATdhtQHHbg6m0gPzPUvaJ.png" alt="Registry">
   <p><strong>Typed module lookup for Roblox Luau</strong></p>
 </div>
 
 <div align="center">
   <!-- Sponsor -->
-  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" src="upload://qGhWkeWImdRht8GqAb3JRQ3FFYv.png"></a>
+  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" height="24" src="upload://6gefAr0NYW6h68B0ZFPyMxRSDJo.png"></a>
   <!-- Stars -->
-  <a href="https://github.com/kooraseru-hub/registry"><img alt="validate my ego" src="upload://tfj1WInxDsySdCQ9EdQaK3qqoSm.png"></a>
+  <a href="https://github.com/kooraseru-hub/registry"><img alt="Stars" height="24" src="upload://7hFjRsWK40MQ4FX7PlWHsZ5WyVR.png"></a>
   <!-- Forks -->
-  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="steal mah source code" src="upload://r9Ucqqicj5qDSDQi9j94SBDlkSR.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="Forks" height="24" src="upload://h80HUQ6rGlehSnsk9ghecDwPqgt.png"></a>
+</div>
+
+<div align="center">
   <!-- Robloxian patriots -->
-  this repo has been fact checked by TRUE robloxian patriots
+  <img alt="this project has been fact checked by TRUE robloxian patriots" height="24" src="upload://sqETx9q1NPAQED7BqGqlZ8WlAXB.png">
 </div>
 
 ---
@@ -69,17 +72,17 @@ For a dependency you already know and can load once, keep a direct `require` in 
 The benchmarks compare direct `require` and `Registry:Get` for first loads and repeated lookups. Each cell shows median latency per operation.
 
 [grid mode="carousel"]
-![Direct require – first loads](upload://k1sdsJcFGa0JnMaRpQkPmAc5CZi.png)
-![Direct require – cached lookups](upload://3QeJKnHCr46mhoyFoDy5Px2cBuA.png)
-![Registry – first loads](upload://rFIlO0diX3OWimUdPmD67dUUe4E.png)
-![Registry – cached lookups](upload://6deMluUGVgq2GGTrlRguMrEicW2.png)
+![Direct require – first loads|690x690](upload://42Wm6SgBjlwulV9sRiHwFZ5JTTz.png)
+![Direct require – cached lookups|690x690](upload://g8sloZGEY4AWFldAwFnfYClzlkz.png)
+![Registry – first loads|690x690](upload://lRsalshZ5N5DoZBn0bF5qO3jQLR.png)
+![Registry – cached lookups|690x690](upload://nzSCPOMt21Ul48AwPHrkbCrD4SJ.png)
 [/grid]
 
 <div align="center">
-  <p>Measured 2026-11-24 05:35:04 UTC</p>
+  <p>Measured 2026-11-24 20:59:19 UTC</p>
   <p>Roblox Open Cloud</p>
   <p>Test place version <code>603</code></p>
-  <p>Source commit <code>b19c023d5b3af579cb7059242521260cbb2872d4</code></p>
+  <p>Source commit <code>6fec78c7ae520c0962b54b669305811adbe68674</code></p>
 </div>
 
 <details>
@@ -98,11 +101,14 @@ To reproduce, check out the revision of interest and run **Registry: Benchmark a
 
 <div align="center">
   <!-- Documentation -->
-  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" src="upload://yAGCHhEzwgmL4OkYiZUeeTnyznQ.png"></a>
+  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" height="24" src="upload://laTaP7Gcaduj26E02c4a3OgdPvZ.png"></a>
   <!-- Benchmark -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" src="upload://xgDdXVskhvr9NoQ97cwECqUOyNR.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" height="24" src="upload://bmTcHYWMNvcC7rqgHLa6gvxXUSy.png"></a>
+</div>
+
+<div align="center">
   <!-- Contribute -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" src="upload://rPU7zP18DlYvcayYIRDYOHAmyNF.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" height="24" src="upload://b9Kx5qSDMWUwPkVrA96s35ioJtm.png"></a>
   <!-- License -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" src="upload://aOV2EyROvqijOzJAwyh0k2alR7S.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" height="24" src="upload://fdjMGqGkpyT25YFpeWVDABy8cMu.png"></a>
 </div>
