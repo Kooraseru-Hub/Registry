@@ -177,6 +177,12 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
   assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
   assert.match(publisher, /ForumReadme\.Render\(record, directory\)/);
+  assert.match(publisher, /validUploads\[existing\] ~= true/);
+  assert.match(publisher, /record\.destination = destination/);
+  assert.match(publisher, /postCommand\(\{ "publish", readme, digest \}/);
+  const target = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8")).destination;
+  assert.ok(Number.isSafeInteger(target.topicId) && target.topicId > 0);
+  assert.ok(Number.isSafeInteger(target.postId) && target.postId > 0);
   const spec = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.json"), "utf8"));
   const lock = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.lock"), "utf8"));
   assert.equal(spec.dependencies["tools.resvg"].options.version, lock.entries["tools.resvg"].resolution.version);

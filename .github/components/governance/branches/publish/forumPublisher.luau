@@ -14,6 +14,7 @@ const Publisher = {}
 const MANIFEST = "content/readme/devforum.json"
 const PNG_ROOT = "content/images/devforum"
 const RENDERER = "dependencies/managed/bin/resvg/resvg"
+const POST_PUBLISHER = ".github/components/governance/branches/publish/forum-post.cjs"
 
 --- Read a file from the already fetched published main tree; no network request.
 local function previousFile(directory: string, path: string): string?
@@ -102,6 +103,27 @@ local function fingerprint(source: string): string
 	return value
 end
 
+--- Invoke the destination verifier without exposing credentials in command arguments.
+local function postCommand(arguments: { string }, key: string, client: string): string
+	const command = { "node", POST_PUBLISHER }
+	for _, argument in arguments do
+		table.insert(command, argument)
+	end
+	const result = Process.run(command, {
+		env = {
+			PATH = Process.env.PATH,
+			HOME = Process.env.HOME,
+			DEVFORUM_UPLOAD_KEY = key,
+			DEVFORUM_UPLOAD_CLIENT = client,
+		},
+		timeout = 180,
+	})
+	if not result.ok then
+		error("DevForum post publication failed: " .. result.stderr, 0)
+	end
+	return result.stdout
+end
+
 --- Refresh changed artwork and persist its provenance alongside the generated branch.
 function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string): ()
 	assert(not key:find("[%c]") and not client:find("[%c]"), "Invalid DevForum credential format")
@@ -109,6 +131,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const previous = if hasParent then previousManifest(directory) else nil
 	const record = if previous and type(previous.uploads) == "table" then previous else seed
 	const uploads = Json.record(record.uploads)
+	const destination = Json.record(seed.destination)
+	const priorDestination = if type(record.destination) == "table" then Json.record(record.destination) else nil
+	const sameDestination = not priorDestination or (priorDestination.topicId == destination.topicId and priorDestination.postId == destination.postId)
+	const preflight = Json.record(Json.decode(postCommand({ "prepare" }, key, client)))
+	const validUploads = Json.record(preflight.validUploads)
+	const digest = preflight.digest
+	assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"), "Invalid DevForum post snapshot")
+	const adoption = if type(seed.adopt) == "table" then Json.record(seed.adopt) else {}
 	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
 	const settings = Json.record(seed.render)
@@ -148,14 +178,30 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 		if type(prior) == "table" then
 			const entry = Json.record(prior)
-			if entry.path == path and entry.blob == published then
+			if sameDestination and entry.path == path and entry.blob == published then
 				existing = AssetCache.Upload(blob, published, uploads[name])
+				-- A manually repaired reference can be adopted only for its pinned PNG.
+				const override = adoption[name]
+				if type(override) == "table" then
+					const candidate = Json.record(override)
+					if candidate.blob == blob and candidate.from == uploads[name] then
+						const adopted = AssetCache.Upload(blob, published, candidate.reference)
+						if adopted and validUploads[adopted] == true then
+							existing = adopted
+						end
+					end
+				end
+				-- A byte-identical upload is reusable only when it is accessible in the saved public post.
+				if existing and validUploads[existing] ~= true then
+					existing = nil
+				end
 			end
 		end
 
 		pngs[name] = { path = path, blob = blob }
 
 		if existing then
+			uploads[name] = existing
 			reused += 1
 			print(`DevForum asset {name}: cached (identical PNG)`)
 			return
@@ -264,6 +310,8 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 	-- Publish the cache and README in the same branch commit.
 	record.uploads = uploads
+	record.destination = destination
+	record.adopt = nil
 	record.fingerprints = nil
 	record.pngs = pngs
 	record.badgeSources = badgeSources
@@ -272,8 +320,11 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	record.render = settings
 	record.charts = seed.charts
 	Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })
+	const readme = `{directory}/README.devforum.md`
+	Fs.writeStringToFile(readme, ForumReadme.Render(record, directory))
+	-- A generated reference is not a valid cache entry until the saved public post renders it.
+	print(postCommand({ "publish", readme, digest }, key, client))
 	Fs.writeStringToFile(`{directory}/{MANIFEST}`, Json.encode(record) .. "\n")
-	Fs.writeStringToFile(`{directory}/README.devforum.md`, ForumReadme.Render(record, directory))
 	print(`DevForum badge sources: {sourceReused} reused, {fetched} fetched`)
 	print(`DevForum assets: {reused} reused, {uploaded} uploaded`)
 end
