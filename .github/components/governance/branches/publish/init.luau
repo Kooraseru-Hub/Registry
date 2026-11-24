@@ -108,7 +108,7 @@ function Component.Run(self: Component, _: { event: string }): string?
 			if forumKey ~= "" and Process.env.CI_ORIGIN_TRUSTED == "true" then
 				ForumPublisher.Run(directory, parent ~= nil, forumKey, if forumClient == "" then "discourse-mcp" else forumClient)
 			else
-				print("::warning::DevForum API credential unavailable; retaining the authored upload snapshot")
+				error("DevForum publication requires the configured ci-devforum environment credential", 0)
 			end
 		end
 

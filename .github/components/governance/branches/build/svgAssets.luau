@@ -137,7 +137,7 @@ function SvgAssets.Sanitize(data: string): string
 end
 
 --- Stage static ShieldCN artwork using the existing Lute HTTP and filesystem libraries.
-function SvgAssets.StageBadges(destination: string): ()
+function SvgAssets.StageBadges(destination: string, cached: ((string, string) -> string?)?): ()
 	const manifest = Json.record(Json.decode(Fs.readFileToString(SOURCE .. "/sources.json")))
 	Fs.createDirectory(destination, { makeParents = true })
 
@@ -146,12 +146,9 @@ function SvgAssets.StageBadges(destination: string): ()
 		if not name:match("^[a-z]+$") or type(url) ~= "string" or not url:match("^https://shieldcn%.dev/badge/") then
 			error("Invalid static badge source", 0)
 		end
-		const original = `{SOURCE}/{name}.svg`
-		local data: string
+		local data = if cached then cached(name, url) else nil
 
-		if Fs.exists(original) and Fs.type(original) == "file" then
-			data = Fs.readFileToString(original)
-		else
+		if not data then
 			const response = Net.request(url, { headers = { Accept = "image/svg+xml" } })
 			if not response.ok then
 				error(`Badge {name} returned HTTP {response.status}`, 0)

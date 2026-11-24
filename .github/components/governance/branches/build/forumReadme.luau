@@ -16,6 +16,18 @@ function ForumReadme.Values(record: { [string]: unknown }): { [string]: string }
 	const metadata = Json.record(record.measurement)
 	const template = Fs.readFileToString("content/readme/measurement.html"):gsub("%s+$", "")
 	const values: { [string]: string } = {}
+	const settings = Json.record(ForumReadme.Read().render)
+	const widths = if type(record.badgeWidths) == "table" then Json.record(record.badgeWidths) else Json.record(ForumReadme.Read().badgeWidths)
+	const height = settings.badgeHeight
+	const chartDisplay = settings.chartDisplay
+	assert(type(height) == "number" and height >= 16 and height <= 32)
+	assert(type(chartDisplay) == "number" and chartDisplay >= 500 and chartDisplay <= 800)
+	values["devforum.badgeHeight"] = tostring(height)
+
+	for name, width in widths do
+		assert(type(width) == "number" and width > 0 and width <= 690, "Invalid badge width")
+		values["devforum." .. name .. ".width"] = tostring(width)
+	end
 
 	-- Validate upload references before inserting them into Markdown or HTML.
 	for name, url in uploads do
@@ -28,8 +40,8 @@ function ForumReadme.Values(record: { [string]: unknown }): { [string]: string }
 	-- A changed static badge needs a new upload; never reuse the previous artwork.
 	const patriots = values["devforum.patriots"]
 	values["devforum.patriots.badge"] = if patriots
-		then '<img alt="this repo has been fact checked by TRUE robloxian patriots" src="' .. patriots .. '">'
-		else "this repo has been fact checked by TRUE robloxian patriots"
+		then '<img alt="this project has been fact checked by TRUE robloxian patriots" width="' .. assert(values["devforum.patriots.width"]) .. '" height="' .. tostring(height) .. '" src="' .. patriots .. '">'
+		else "this project has been fact checked by TRUE robloxian patriots"
 
 	const measurement = template:gsub("{{([%a]+)}}", function(key: string): string
 		const value = metadata[key]
@@ -38,12 +50,13 @@ function ForumReadme.Values(record: { [string]: unknown }): { [string]: string }
 		end
 		return value
 	end)
+	const dimensions = "|" .. tostring(chartDisplay) .. "x" .. tostring(chartDisplay)
 	const images = {
 		'[grid mode="carousel"]',
-		"![Direct require – first loads](" .. assert(values["devforum.require-cold-matrix"]) .. ")",
-		"![Direct require – cached lookups](" .. assert(values["devforum.require-warm-matrix"]) .. ")",
-		"![Registry – first loads](" .. assert(values["devforum.registry-cold-matrix"]) .. ")",
-		"![Registry – cached lookups](" .. assert(values["devforum.registry-warm-matrix"]) .. ")",
+		"![Direct require – first loads" .. dimensions .. "](" .. assert(values["devforum.require-cold-matrix"]) .. ")",
+		"![Direct require – cached lookups" .. dimensions .. "](" .. assert(values["devforum.require-warm-matrix"]) .. ")",
+		"![Registry – first loads" .. dimensions .. "](" .. assert(values["devforum.registry-cold-matrix"]) .. ")",
+		"![Registry – cached lookups" .. dimensions .. "](" .. assert(values["devforum.registry-warm-matrix"]) .. ")",
 		"[/grid]",
 	}
 	values["registry.benchmarks"] = table.concat(images, "\n") .. "\n\n" .. measurement

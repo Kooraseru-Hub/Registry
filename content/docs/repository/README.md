@@ -11,7 +11,7 @@
   <!-- Forks -->
   <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="Forks" src="https://shieldcn.dev/github/Kooraseru-Hub/registry/forks.svg?variant=secondary&amp;logo=ri%3APiGitFork&amp;label=stolen+by&amp;gradient=278c82%2C+376ca8"></a>
   <!-- Robloxian patriots -->
-  <img alt="this repo has been fact checked by TRUE robloxian patriots" src="https://shieldcn.dev/badge/this%20repo%20has%20been%20fact%20checked%20by%20TRUE%20robloxian%20patriots-abcde3.svg?variant=secondary&amp;logo=roblox&amp;gradient=bd4854%2C+3f5da8">
+  <img alt="this project has been fact checked by TRUE robloxian patriots" src="https://shieldcn.dev/badge/this%20project%20has%20been%20fact%20checked%20by%20TRUE%20robloxian%20patriots-abcde3.svg?variant=secondary&amp;logo=roblox&amp;gradient=bd4854%2C+3f5da8">
 </div>
 
 ---

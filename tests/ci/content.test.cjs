@@ -134,7 +134,7 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.match(helper, /require\("@std\/net"\)/);
   assert.match(helper, /require\("@std\/fs"\)/);
   assert.ok(!fs.existsSync(path.join(directory, "build/prepare-images.py")));
-  assert.match(fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8"), /SvgAssets\.StageBadges/);
+  assert.match(fs.readFileSync(path.join(directory, "publish/forumPublisher.luau"), "utf8"), /SvgAssets\.StageBadges/);
   const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   assert.match(publisher, /SvgAssets\.StageCharts/);
   assert.match(publisher, /require\("@components\/governance\/branches\/build\/svgAssets"\)/);
@@ -200,4 +200,23 @@ test("DevForum inventories are authored data and Starlight has its native 404 an
   assert.ok(fs.existsSync(path.join(site, "src/pages/404.astro")));
   assert.match(fs.readFileSync(path.join(site, "astro.config.mjs"), "utf8"), /disable404Route: true/);
   assert.ok(!fs.existsSync(path.join(root, "content/docs/404.md")));
+});
+
+
+test("DevForum uses compact badges and a single rasterization policy", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+  const forum = fs.readFileSync(path.join(repositoryTemplates, "README.devforum.md"), "utf8");
+  assert.equal(manifest.render.badgeHeight, 24);
+  assert.equal(manifest.render.chartDisplay, 690);
+  assert.equal(manifest.render.chartZoom, 2);
+  assert.equal((forum.match(/height="{{devforum.badgeHeight}}"/g) || []).length, 7);
+  const assets = JSON.parse(fs.readFileSync(path.join(root, "content/images/badges/sources.json"), "utf8"));
+  assert.match(assets.patriots, /this%20project%20has%20been%20fact%20checked/);
+  const publisher = fs.readFileSync(path.join(root, ".github/components/governance/branches/publish/forumPublisher.luau"), "utf8");
+  assert.match(publisher, /oldSources\[name\] == url/);
+  assert.match(publisher, /fingerprints\[name\] == identity/);
+  assert.match(publisher, /DevForum assets: \{reused\} reused, \{uploaded\} uploaded/);
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/bootstrap.yml"), "utf8");
+  assert.match(workflow, /DEVFORUM_USER_API_KEY: \$\{\{ secrets\.DEVFORUM_USER_API_KEY \}\}/);
+  assert.doesNotMatch(workflow, /secrets: inherit/);
 });

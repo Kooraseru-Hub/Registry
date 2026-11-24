@@ -31,12 +31,30 @@
     "forks": "45b8f82698a3c355fc054367a8de8d3ca751fbce",
     "license": "0e1df41026267e0864a18ec935d5810a30b88bbc",
     "sponsor": "f23442cbb66a5fa178c79b7edbbef304052444f1",
-    "stars": "458932edb1aa15083ff3ba9be0fdfb586a8ce847"
+    "stars": "458932edb1aa15083ff3ba9be0fdfb586a8ce847",
+    "banner": "61f7d65bb384797e4b5f327e3bad3fdbde863c0a"
   },
   "charts": [
     "require-cold-matrix",
     "require-warm-matrix",
     "registry-cold-matrix",
     "registry-warm-matrix"
-  ]
+  ],
+  "badgeWidths": {
+    "sponsor": 143,
+    "stars": 114,
+    "forks": 149,
+    "patriots": 350,
+    "documentation": 335,
+    "benchmark": 131,
+    "contribute": 107,
+    "license": 128
+  },
+  "render": {
+    "badgeHeight": 24,
+    "badgeZoom": 3,
+    "chartZoom": 2,
+    "chartDisplay": 690,
+    "policy": "resvg-0.50.0-v2"
+  }
 }

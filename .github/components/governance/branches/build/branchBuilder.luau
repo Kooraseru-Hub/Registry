@@ -278,7 +278,6 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
 
 		if name == "main" then
-			SvgAssets.StageBadges(`{branchRoot}/content/images/badges`)
 			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
 				SvgAssets.StageCharts(benchmarkResults, `{branchRoot}/benchmarks/devforum`)
 			end
