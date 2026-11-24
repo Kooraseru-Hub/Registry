@@ -20,7 +20,14 @@ Registry lets scripts share a named set of values and ModuleScripts. Register en
 
 ## Installation
 
-Copy `source/Registry.luau` into a ModuleScript named `Registry` in `ReplicatedStorage`. Enable the new Luau type solver under **Workspace > Scripting > UseNewLuauTypeSolver**.
+Choose one installation method:
+
+1. **Studio model (recommended):** download `Registry.rbxm` from the [2.0.0 release](https://github.com/Kooraseru-Hub/Registry/releases/tag/2.0.0). Import the model into Studio and place the resulting `Registry` ModuleScript under `ReplicatedFirst`.
+2. **Source:** copy [`source/Registry.luau`](https://github.com/Kooraseru-Hub/Registry/blob/main/source/Registry.luau) (also included in `Registry.zip`) into a ModuleScript named `Registry` under `ReplicatedFirst`.
+
+Use `ReplicatedFirst` for early client bootstrappers, or `ReplicatedStorage` for ordinary shared code; adjust the require path accordingly. Early replication of Registry does not make its registered dependencies replicate earlier. Wait for any dependencies outside ReplicatedFirst when necessary.
+
+Enable the new Luau type solver under **Workspace > Scripting > UseNewLuauTypeSolver**.
 
 ## Quick start
 
@@ -28,7 +35,7 @@ In `ReplicatedStorage`, create a ModuleScript named `Settings` that returns your
 
 ```luau
 --!strict
-const Registry = require("@game/ReplicatedStorage/Registry")
+const Registry = require("@game/ReplicatedFirst/Registry")
 
 return Registry.Register({
     ["Game/Settings"] = script.Parent.Settings,
@@ -73,10 +80,10 @@ The benchmarks compare direct `require` and `Registry:Get` for first loads and r
   <img width="49%" src="benchmarks/registry-warm-matrix.svg" alt="Registry cached lookups">
 </p>
 
-Measured <time datetime="2026-11-23T18:41:28Z">2026-11-23 18:41:28 UTC</time><br>
+Measured <time datetime="2026-11-24T03:25:03Z">2026-11-24 03:25:03 UTC</time><br>
 Roblox Open Cloud<br>
 Test place version <code>603</code><br>
-Source commit <code>fb598d9f9b5afae4dd5612ab9d3173c1710f0e62</code>
+Source commit <code>9526ea1ea7b290800d6784af3fcb68f01fb6354b</code>
 
 </div>
 
