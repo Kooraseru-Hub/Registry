@@ -5,16 +5,16 @@
 
 <div align="center">
   <!-- Sponsor -->
-  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" height="24" src="upload://6gefAr0NYW6h68B0ZFPyMxRSDJo.png"></a>
+  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" width="143" height="24" src="upload://6gefAr0NYW6h68B0ZFPyMxRSDJo.png"></a>
   <!-- Stars -->
-  <a href="https://github.com/kooraseru-hub/registry"><img alt="Stars" height="24" src="upload://7hFjRsWK40MQ4FX7PlWHsZ5WyVR.png"></a>
+  <a href="https://github.com/kooraseru-hub/registry"><img alt="Stars" width="114" height="24" src="upload://7hFjRsWK40MQ4FX7PlWHsZ5WyVR.png"></a>
   <!-- Forks -->
-  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="Forks" height="24" src="upload://h80HUQ6rGlehSnsk9ghecDwPqgt.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="Forks" width="149" height="24" src="upload://h80HUQ6rGlehSnsk9ghecDwPqgt.png"></a>
 </div>
 
 <div align="center">
   <!-- Robloxian patriots -->
-  <img alt="this project has been fact checked by TRUE robloxian patriots" height="24" src="upload://sqETx9q1NPAQED7BqGqlZ8WlAXB.png">
+  <img alt="this project has been fact checked by TRUE robloxian patriots" width="345" height="24" src="upload://sqETx9q1NPAQED7BqGqlZ8WlAXB.png">
 </div>
 
 ---
@@ -72,17 +72,17 @@ For a dependency you already know and can load once, keep a direct `require` in 
 The benchmarks compare direct `require` and `Registry:Get` for first loads and repeated lookups. Each cell shows median latency per operation.
 
 [grid mode="carousel"]
-![Direct require – first loads|690x690](upload://42Wm6SgBjlwulV9sRiHwFZ5JTTz.png)
-![Direct require – cached lookups|690x690](upload://g8sloZGEY4AWFldAwFnfYClzlkz.png)
-![Registry – first loads|690x690](upload://lRsalshZ5N5DoZBn0bF5qO3jQLR.png)
-![Registry – cached lookups|690x690](upload://nzSCPOMt21Ul48AwPHrkbCrD4SJ.png)
+![Direct require – first loads|690x690](upload://yx1426U7fEJ40bislSm2UXZPVx8.png)
+![Direct require – cached lookups|690x690](upload://2xMJ9qZn2vAxamhUU090eiYTdVM.png)
+![Registry – first loads|690x690](upload://hl1hUQs86PQwn0RLMWg6nKp5sXT.png)
+![Registry – cached lookups|690x690](upload://roOzn5UPyRuoh8GlUqlglzqXagO.png)
 [/grid]
 
 <div align="center">
-  <p>Measured 2026-11-24 20:59:19 UTC</p>
+  <p>Measured 2026-11-24 22:08:44 UTC</p>
   <p>Roblox Open Cloud</p>
   <p>Test place version <code>603</code></p>
-  <p>Source commit <code>6fec78c7ae520c0962b54b669305811adbe68674</code></p>
+  <p>Source commit <code>5c216dd5450d142c73120d1e398fb3d5773e2be1</code></p>
 </div>
 
 <details>
@@ -101,14 +101,14 @@ To reproduce, check out the revision of interest and run **Registry: Benchmark a
 
 <div align="center">
   <!-- Documentation -->
-  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" height="24" src="upload://laTaP7Gcaduj26E02c4a3OgdPvZ.png"></a>
+  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" width="335" height="24" src="upload://laTaP7Gcaduj26E02c4a3OgdPvZ.png"></a>
   <!-- Benchmark -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" height="24" src="upload://bmTcHYWMNvcC7rqgHLa6gvxXUSy.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" width="131" height="24" src="upload://bmTcHYWMNvcC7rqgHLa6gvxXUSy.png"></a>
 </div>
 
 <div align="center">
   <!-- Contribute -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" height="24" src="upload://b9Kx5qSDMWUwPkVrA96s35ioJtm.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" width="107" height="24" src="upload://b9Kx5qSDMWUwPkVrA96s35ioJtm.png"></a>
   <!-- License -->
-  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" height="24" src="upload://fdjMGqGkpyT25YFpeWVDABy8cMu.png"></a>
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" width="128" height="24" src="upload://fdjMGqGkpyT25YFpeWVDABy8cMu.png"></a>
 </div>
