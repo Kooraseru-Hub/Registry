@@ -8,9 +8,14 @@ sidebar:
 
 ## Install
 
-Copy [`source/Registry.luau`](https://github.com/Kooraseru-Hub/Registry/blob/source/source/Registry.luau) into a ModuleScript named `Registry` under `ReplicatedStorage`.
+Choose one installation method:
 
-Enable the new Luau type solver in Studio under **Workspace > Scripting > UseNewLuauTypeSolver**.
+1. **Studio model (recommended):** download `Registry.rbxm` from the [2.0.0 release](https://github.com/Kooraseru-Hub/Registry/releases/tag/2.0.0). Import the model into Studio and place the resulting `Registry` ModuleScript under `ReplicatedFirst`.
+2. **Source:** copy [`source/Registry.luau`](https://github.com/Kooraseru-Hub/Registry/blob/main/source/Registry.luau) (also included in `Registry.zip`) into a ModuleScript named `Registry` under `ReplicatedFirst`.
+
+Use `ReplicatedFirst` for early client bootstrappers, or `ReplicatedStorage` for ordinary shared code; adjust the require path accordingly. Early replication of Registry does not make its registered dependencies replicate earlier. Wait for any dependencies outside ReplicatedFirst when necessary.
+
+Enable the new Luau type solver under **Workspace > Scripting > UseNewLuauTypeSolver**.
 
 ## Create an entry
 
@@ -25,7 +30,7 @@ Create a sibling ModuleScript named `Registrations`:
 
 ```luau
 --!strict
-const Registry = require("@game/ReplicatedStorage/Registry")
+const Registry = require("@game/ReplicatedFirst/Registry")
 
 return Registry.Register({
     ["Game/Settings"] = script.Parent.Settings,
