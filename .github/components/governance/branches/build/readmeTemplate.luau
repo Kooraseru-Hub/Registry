@@ -37,11 +37,13 @@ function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, heigh
 			return assert(tag:match('alt="([^"]+)"'), "Missing image alternative")
 		end
 		assert(type(url) == "string", "Missing README image: " .. name)
+
 		if height then
 			assert(url:match("^upload://[%w]+%.png$"), "Invalid uploaded image")
 		else
 			assert(url:match("^https://") and not url:find('[<>"%c]'), "Invalid GitHub image")
 		end
+
 		const escaped = url:gsub("&", "&amp;")
 		const replacement = (if height and name ~= "banner" then 'height="' .. tostring(height) .. '" ' else "") .. 'src="' .. escaped .. '"'
 
