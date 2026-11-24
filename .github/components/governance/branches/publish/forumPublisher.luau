@@ -12,12 +12,22 @@ const SvgAssets = require("@components/governance/branches/build/svgAssets")
 
 const Publisher = {}
 const MANIFEST = "content/readme/devforum.json"
+const PNG_ROOT = "content/images/devforum"
 
 --- Read a file from the already fetched published main tree; no network request.
 local function previousFile(directory: string, path: string): string?
 	const result = Process.run({ "git", "show", "FETCH_HEAD:" .. path }, { cwd = directory })
 
 	return if result.ok then result.stdout else nil
+end
+
+--- Restore exact binary PNG bytes from the fetched tree without decoding Git output.
+local function previousPng(directory: string, path: string): boolean
+	const result = Process.run({ "git", "restore", "--source=FETCH_HEAD", "--worktree", "--", path }, {
+		cwd = directory,
+	})
+
+	return result.ok
 end
 
 --- Read the previous upload snapshot if it exists.
@@ -122,37 +132,51 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const sourceDigests: { [string]: string } = {}
 	local fetched = 0
 	local sourceReused = 0
-	const temporary = "build/devforum-upload"
-	Fs.createDirectory(temporary, { makeParents = true })
+	const oldPngs = if type(record.pngs) == "table" then Json.record(record.pngs) else {}
+	const pngs: { [string]: unknown } = {}
+	Fs.createDirectory(`{directory}/{PNG_ROOT}`, { makeParents = true })
 	local reused = 0
 	local uploaded = 0
 
-	--- Reuse a verified upload only when the source and rasterization policy match.
+	--- Verify and retain the exact PNG associated with each cached upload.
 	local function refresh(name: string, source: string, scale: number?): ()
+		assert(name:match("^[a-z%-]+$"), "Invalid asset name")
 		const hash = fingerprint(source)
 		const identity = if scale then `{hash}:{policy}:{renderer}:{scale}` else hash
-		const existing = uploads[name]
+		const path = `{PNG_ROOT}/{name}.png`
+		const png = `{directory}/{path}`
+		const existing = AssetCache.Upload(identity, fingerprints[name], uploads[name])
+		const prior = oldPngs[name]
 
-		if AssetCache.Upload(identity, fingerprints[name], existing) then
-			reused += 1
-			print(`DevForum asset {name}: cached`)
-			return
+		-- Never reuse an upload without its locally verifiable original PNG.
+		if existing and hasParent and type(prior) == "table" then
+			const entry = Json.record(prior)
+
+			if entry.path == path and type(entry.blob) == "string" and previousPng(directory, path) then
+				if Fs.exists(png) and fingerprint(png) == entry.blob then
+					pngs[name] = entry
+					reused += 1
+					print(`DevForum asset {name}: cached`)
+					return
+				end
+			end
 		end
 
-		-- The banner already is PNG; rasterize only SVG artwork.
-		const png = if scale then `{temporary}/{name}.png` else source
-
-		if scale then
-			rasterize(source, png, scale)
-		end
-
-		uploads[name] = upload(png, name, key, client)
-
-		if scale then
+		if Fs.exists(png) then
 			Fs.remove(png)
 		end
 
+		-- The banner already is PNG; only vector artwork requires rasterization.
+		if scale then
+			rasterize(source, png, scale)
+		else
+			Fs.copy(source, png)
+		end
+
+		const blob = fingerprint(png)
+		uploads[name] = upload(png, name, key, client)
 		fingerprints[name] = identity
+		pngs[name] = { path = path, blob = blob }
 		uploaded += 1
 		print(`DevForum asset {name}: uploaded`)
 		Task.wait(2)
@@ -235,7 +259,8 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		end
 	end
 
-	-- A benchmark snapshot advances only when its full measurement is present.
+	-- A complete chart inventory must accompany the published upload cache.
+	assert(Fs.exists(metadata), "Missing benchmark snapshot for DevForum publication")
 	if Fs.exists(metadata) then
 		const charts = seed.charts
 		assert(type(charts) == "table", "Missing benchmark chart inventory")
@@ -253,6 +278,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	-- Publish the cache and README in the same branch commit.
 	record.uploads = uploads
 	record.fingerprints = fingerprints
+	record.pngs = pngs
 	record.badgeSources = badgeSources
 	record.badgeWidths = nil
 	record.badgeSourceFingerprints = sourceDigests

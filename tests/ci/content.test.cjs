@@ -168,6 +168,9 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   const component = fs.readFileSync(path.join(directory, "publish/component.toml"), "utf8");
   assert.match(component, /credentials = \["devforum_api_key", "devforum_client_id"\]/);
   assert.match(publisher, /git", "hash-object"/);
+  assert.match(publisher, /PNG_ROOT = "content\/images\/devforum"/);
+  assert.match(publisher, /record\.pngs = pngs/);
+  assert.match(publisher, /fingerprint\(png\) == entry\.blob/);
   assert.match(publisher, /status == "429"/);
   assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
   assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
