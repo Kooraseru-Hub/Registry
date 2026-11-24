@@ -1,10 +1,18 @@
-# Registry
+<div align="center">
+  <img src="upload://pdAjfEfxUeuNxokg1w2Bows46kC.png" alt="Registry">
+  <p><strong>Typed module lookup for Roblox Luau</strong></p>
+</div>
 
-![Registry](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/source/content/images/banner.png)
-
-**Typed module lookup for Roblox Luau**
-
-[Source code](https://github.com/Kooraseru-Hub/Registry) | [Sponsor](https://github.com/sponsors/Kooraseru) | [Stars](https://github.com/Kooraseru-Hub/Registry/stargazers) | [Forks](https://github.com/Kooraseru-Hub/Registry/forks)
+<div align="center">
+  <!-- Sponsor -->
+  <a href="https://github.com/sponsors/Kooraseru"><img alt="Sponsor" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/sponsor.svg"></a>
+  <!-- Stars -->
+  <a href="https://github.com/kooraseru-hub/registry"><img alt="validate my ego" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/stars.svg"></a>
+  <!-- Forks -->
+  <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="steal mah source code" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/forks.svg"></a>
+  <!-- USA! USA! USA! -->
+  <img alt="Fact checked by true American patriots" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/patriots.svg">
+</div>
 
 ---
 
@@ -14,7 +22,7 @@ Registry lets scripts share a named set of values and ModuleScripts. Register en
 
 Choose one installation method:
 
-1. **Studio model (recommended):** download `Registry.rbxm` from the [2.0.0 release](https://github.com/Kooraseru-Hub/Registry/releases/tag/2.0.0). Import the model into Studio and place the resulting `Registry` ModuleScript under `ReplicatedFirst`.
+1. **Studio model (recommended):** download `Registry.rbxm` from the [latest release](https://github.com/Kooraseru-Hub/Registry/releases/latest). Import the model into Studio and place the resulting `Registry` ModuleScript under `ReplicatedFirst`.
 2. **Source:** copy [`source/Registry.luau`](https://github.com/Kooraseru-Hub/Registry/blob/main/source/Registry.luau) (also included in `Registry.zip`) into a ModuleScript named `Registry` under `ReplicatedFirst`.
 
 Use `ReplicatedFirst` for early client bootstrappers, or `ReplicatedStorage` for ordinary shared code; adjust the require path accordingly. Early replication of Registry does not make its registered dependencies replicate earlier. Wait for any dependencies outside ReplicatedFirst when necessary.
@@ -60,19 +68,21 @@ For a dependency you already know and can load once, keep a direct `require` in 
 
 The benchmarks compare direct `require` and `Registry:Get` for first loads and repeated lookups. Each cell shows median latency per operation.
 
-- [Direct require – first loads](https://github.com/Kooraseru-Hub/Registry/blob/main/benchmarks/require-cold-matrix.svg)
-- [Direct require – cached lookups](https://github.com/Kooraseru-Hub/Registry/blob/main/benchmarks/require-warm-matrix.svg)
-- [Registry – first loads](https://github.com/Kooraseru-Hub/Registry/blob/main/benchmarks/registry-cold-matrix.svg)
-- [Registry – cached lookups](https://github.com/Kooraseru-Hub/Registry/blob/main/benchmarks/registry-warm-matrix.svg)
+<div align="center">
 
 [grid mode="carousel"]
-Upload PNG exports of the four linked charts here before posting.
+![Direct require – first loads](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-cold-matrix.svg)
+![Direct require – cached lookups](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-warm-matrix.svg)
+![Registry – first loads](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-cold-matrix.svg)
+![Registry – cached lookups](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-warm-matrix.svg)
 [/grid]
 
-Measured: 2026-11-24 03:25:03 UTC  
-Environment: Roblox Open Cloud  
-Test place version: `603`  
-Source commit: `9526ea1ea7b290800d6784af3fcb68f01fb6354b`
+Measured 2026-11-24 05:12:16 UTC
+Roblox Open Cloud
+Test place version `603`
+Source commit `1de9181da34df75fc48b340b03ec228ecd343646`
+
+</div>
 
 <details>
 <summary>Workloads and measurement details</summary>
@@ -88,7 +98,13 @@ To reproduce, check out the revision of interest and run **Registry: Benchmark a
 
 ## More information
 
-- [Documentation](https://kooraseru-hub.github.io/Registry/)
-- [Benchmark source](https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks)
-- [Contribute](https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md)
-- [CC0 1.0 license](https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE)
+<div align="center">
+  <!-- Documentation -->
+  <a href="https://kooraseru-hub.github.io/Registry/"><img alt="Documentation" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/documentation.svg"></a>
+  <!-- Benchmark -->
+  <a href="https://github.com/Kooraseru-Hub/Registry/tree/source/tests/registry/benchmarks"><img alt="How to benchmark" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/benchmark.svg"></a>
+  <!-- Contribute -->
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/CONTRIBUTING.md"><img alt="Contribute" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/contribute.svg"></a>
+  <!-- License -->
+  <a href="https://github.com/Kooraseru-Hub/Registry/blob/main/LICENSE"><img alt="CC0 1.0 license" src="https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/content/images/badges/license.svg"></a>
+</div>
