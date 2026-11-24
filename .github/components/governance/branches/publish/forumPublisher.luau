@@ -58,8 +58,8 @@ printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEV
 		end
 		if status == "429" then
 			const details = Json.record(Json.decode(body))
-			const extras = if type(details.extras) == "table" then Json.record(details.extras) else {}
-			const cooldown = extras.wait_seconds
+			const cooldown = if type(details.extras) == "table"
+				then Json.record(details.extras).wait_seconds else nil
 			if attempt == 4 or type(cooldown) ~= "number" or cooldown < 0 or cooldown > 300 then
 				error("DevForum upload rate limit: retry later", 0)
 			end
