@@ -6,6 +6,8 @@ const Process = require("@lute/process")
 const Publication = require("@ci/github/publication")
 const GitFailure = require("@ci/github/publication/gitFailure")
 const Glob = require("@ci/bootstrap/discovery/glob")
+const Json = require("@formats/json")
+const SvgAssets = require("../build/svgAssets")
 
 local Component = {}
 Component.__index = Component
@@ -73,6 +75,10 @@ function Component.Run(self: Component, _: { event: string }): string?
 				stdio = "inherit",
 			})
 			if not result.ok then error(`Benchmark README staging failed (exit {result.exitcode})`, 0) end
+			const inputs = Json.record(Json.decode(Process.env.CI_ORIGIN_INPUTS or "{}"))
+			if inputs.benchmark_run then
+				SvgAssets.StageCharts(`{directory}/benchmarks`, `{directory}/benchmarks/devforum`)
+			end
 		end
 		git({ "init", "--quiet" }, directory)
 		git({ "remote", "add", "origin", remote }, directory)
