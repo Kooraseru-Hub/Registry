@@ -19,9 +19,9 @@ function AssetCache.Source(url: string, previousUrl: unknown, data: string?, dig
 	return data
 end
 
---- A cached upload must match the exact source fingerprint and rendering policy.
-function AssetCache.Upload(identity: string, previous: unknown, url: unknown): string?
-	if identity ~= previous or type(url) ~= "string" or not url:match("^upload://[%w]+%.png$") then
+--- Reuse an upload only when the generated PNG matches its published blob.
+function AssetCache.Upload(blob: string, previous: unknown, url: unknown): string?
+	if blob ~= previous or type(url) ~= "string" or not url:match("^upload://[%w]+%.png$") then
 		return nil
 	end
 

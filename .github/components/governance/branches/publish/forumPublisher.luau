@@ -21,13 +21,12 @@ local function previousFile(directory: string, path: string): string?
 	return if result.ok then result.stdout else nil
 end
 
---- Restore exact binary PNG bytes from the fetched tree without decoding Git output.
-local function previousPng(directory: string, path: string): boolean
-	const result = Process.run({ "git", "restore", "--source=FETCH_HEAD", "--worktree", "--", path }, {
-		cwd = directory,
-	})
+--- Read the exact blob identity of a file in the fetched publication tree.
+local function previousBlob(directory: string, path: string): string?
+	const result = Process.run({ "git", "rev-parse", "--verify", "FETCH_HEAD:" .. path }, { cwd = directory })
+	const blob = result.stdout:gsub("%s+$", "")
 
-	return result.ok
+	return if result.ok and #blob == 40 and blob:match("^%x+$") then blob else nil
 end
 
 --- Read the previous upload snapshot if it exists.
@@ -117,17 +116,13 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	assert(not key:find("[%c]") and not client:find("[%c]"), "Invalid DevForum credential format")
 	const seed = ForumReadme.Read()
 	const previous = if hasParent then previousManifest(directory) else nil
-	const record = if previous and type(previous.fingerprints) == "table" then previous else seed
+	const record = if previous and type(previous.uploads) == "table" then previous else seed
 	const uploads = Json.record(record.uploads)
-	const fingerprints = Json.record(record.fingerprints)
 	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
 	const settings = Json.record(seed.render)
-	const policy, badgeZoom, chartZoom = settings.policy, settings.badgeZoom, settings.chartZoom
-	assert(type(policy) == "string" and type(badgeZoom) == "number" and type(chartZoom) == "number")
-	const lock = Json.record(Json.decode(Fs.readFileToString("dependencies/dependencies.lock")))
-	const renderer = Json.record(Json.record(lock.entries)["tools.resvg"]).fingerprint
-	assert(type(renderer) == "string" and #renderer == 64 and renderer:match("^%x+$"), "Invalid rasterizer lock fingerprint")
+	const badgeZoom, chartZoom = settings.badgeZoom, settings.chartZoom
+	assert(type(badgeZoom) == "number" and type(chartZoom) == "number")
 	const priorDigests = if type(record.badgeSourceFingerprints) == "table" then Json.record(record.badgeSourceFingerprints) else {}
 	const sourceDigests: { [string]: string } = {}
 	local fetched = 0
@@ -138,35 +133,17 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	local reused = 0
 	local uploaded = 0
 
-	--- Verify and retain the exact PNG associated with each cached upload.
+	--- Compare the newly generated PNG with the exact previously published upload bytes.
 	local function refresh(name: string, source: string, scale: number?): ()
 		assert(name:match("^[a-z%-]+$"), "Invalid asset name")
-		const hash = fingerprint(source)
-		const identity = if scale then `{hash}:{policy}:{renderer}:{scale}` else hash
 		const path = `{PNG_ROOT}/{name}.png`
 		const png = `{directory}/{path}`
-		const existing = AssetCache.Upload(identity, fingerprints[name], uploads[name])
-		const prior = oldPngs[name]
 
-		-- Never reuse an upload without its locally verifiable original PNG.
-		if existing and hasParent and type(prior) == "table" then
-			const entry = Json.record(prior)
-
-			if entry.path == path and type(entry.blob) == "string" and previousPng(directory, path) then
-				if Fs.exists(png) and fingerprint(png) == entry.blob then
-					pngs[name] = entry
-					reused += 1
-					print(`DevForum asset {name}: cached`)
-					return
-				end
-			end
-		end
-
+		-- Always generate the actual bytes to be compared, independently of input identity.
 		if Fs.exists(png) then
 			Fs.remove(png)
 		end
 
-		-- The banner already is PNG; only vector artwork requires rasterization.
 		if scale then
 			rasterize(source, png, scale)
 		else
@@ -174,9 +151,26 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		end
 
 		const blob = fingerprint(png)
-		uploads[name] = upload(png, name, key, client)
-		fingerprints[name] = identity
+		const prior = oldPngs[name]
+		const published = if hasParent then previousBlob(directory, path) else nil
+		local existing: string? = nil
+
+		if type(prior) == "table" then
+			const entry = Json.record(prior)
+			if entry.path == path and entry.blob == published then
+				existing = AssetCache.Upload(blob, published, uploads[name])
+			end
+		end
+
 		pngs[name] = { path = path, blob = blob }
+
+		if existing then
+			reused += 1
+			print(`DevForum asset {name}: cached (identical PNG)`)
+			return
+		end
+
+		uploads[name] = upload(png, name, key, client)
 		uploaded += 1
 		print(`DevForum asset {name}: uploaded`)
 		Task.wait(2)
@@ -203,7 +197,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 	table.sort(names)
 
-	-- A new render policy intentionally regenerates the legacy PNGs once.
+	-- Rasterize each badge and compare its actual PNG bytes.
 	for _, name in names do
 		const source = `{directory}/content/images/badges/{name}.svg`
 		sourceDigests[name] = Hash.sha256(Fs.readFileToString(source))
@@ -277,7 +271,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 	-- Publish the cache and README in the same branch commit.
 	record.uploads = uploads
-	record.fingerprints = fingerprints
+	record.fingerprints = nil
 	record.pngs = pngs
 	record.badgeSources = badgeSources
 	record.badgeWidths = nil

@@ -170,7 +170,9 @@ test("DevForum publisher uses named credentials, native uploads and content fing
   assert.match(publisher, /git", "hash-object"/);
   assert.match(publisher, /PNG_ROOT = "content\/images\/devforum"/);
   assert.match(publisher, /record\.pngs = pngs/);
-  assert.match(publisher, /fingerprint\(png\) == entry\.blob/);
+  assert.match(publisher, /const blob = fingerprint\(png\)/);
+  assert.match(publisher, /entry\.blob == published/);
+  assert.match(publisher, /AssetCache\.Upload\(blob, published, uploads\[name\]\)/);
   assert.match(publisher, /status == "429"/);
   assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
   assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
@@ -230,7 +232,7 @@ test("the real Luau forum renderer applies compact badge and carousel sizes", t 
   assert.doesNotMatch(result.stdout, /{{[\w.-]+}}/);
 });
 
-test("the real Luau cache verifies source identity, bytes, sanitizer and render policy", t => {
+test("the real Luau cache verifies SVG provenance and final PNG identity", t => {
   const { spawnSync } = require("node:child_process");
   const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
   fs.mkdirSync(path.join(root, "build"), { recursive: true });
@@ -250,14 +252,37 @@ assert(C.Source(url, url, nil, hash) == nil)
 assert(C.Source(url, url, svg, nil) == nil)
 local invalid = '<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>'
 assert(C.Source(url, url, invalid, H.sha256(invalid)) == nil)
-assert(C.Upload("hash:policy:3", "hash:policy:3", "upload://Example.png") == "upload://Example.png")
-assert(C.Upload("hash:policy:3", "hash:policy:2", "upload://Example.png") == nil)
-assert(C.Upload("hash:policy:3", "other:policy:3", "upload://Example.png") == nil)
-assert(C.Upload("hash:policy:3", "hash:policy:3", "https://example.com/image.png") == nil)
+assert(C.Upload("png-blob-a", "png-blob-a", "upload://Example.png") == "upload://Example.png")
+assert(C.Upload("png-blob-a", "png-blob-b", "upload://Example.png") == nil)
+assert(C.Upload("png-blob-a", "png-blob-c", "upload://Example.png") == nil)
+assert(C.Upload("png-blob-a", "png-blob-a", "https://example.com/image.png") == nil)
 print("cache fixtures passed")
 `);
   const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /cache fixtures passed/);
+});
+
+test("equivalent SVG sources generate identical PNGs using the pinned renderer", t => {
+  const { spawnSync } = require("node:child_process");
+  const renderer = path.join(root, "dependencies/managed/bin/resvg", process.platform === "win32" ? "resvg.exe" : "resvg");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/png-identity-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="24"><rect width="100" height="24" fill="red"/></svg>';
+  const inputs = [svg, svg.replace("<rect", "\n  <rect"), svg.replace('fill="red"', 'fill="blue"')];
+  const blobs = inputs.map((input, i) => {
+    const source = path.join(temporary, i + ".svg"), png = path.join(temporary, i + ".png");
+    fs.writeFileSync(source, input);
+    const render = spawnSync(renderer, ["--zoom", "3", source, png], { encoding: "utf8", timeout: 20000 });
+    assert.ifError(render.error);
+    assert.equal(render.status, 0, render.stdout + render.stderr);
+    const result = spawnSync("git", ["hash-object", png], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  });
+  assert.notEqual(inputs[0], inputs[1]);
+  assert.equal(blobs[0], blobs[1]);
+  assert.notEqual(blobs[0], blobs[2]);
 });
