@@ -72,17 +72,17 @@ For a dependency you already know and can load once, keep a direct `require` in 
 The benchmarks compare direct `require` and `Registry:Get` for first loads and repeated lookups. Each cell shows median latency per operation.
 
 [grid mode="carousel"]
-![Direct require – first loads|690x690](upload://yx1426U7fEJ40bislSm2UXZPVx8.png)
-![Direct require – cached lookups|690x690](upload://2xMJ9qZn2vAxamhUU090eiYTdVM.png)
-![Registry – first loads|690x690](upload://hl1hUQs86PQwn0RLMWg6nKp5sXT.png)
-![Registry – cached lookups|690x690](upload://roOzn5UPyRuoh8GlUqlglzqXagO.png)
+![Direct require – first loads|690x690](upload://4KsdPnEtYJDrWlcamJnaWydp2H3.png)
+![Direct require – cached lookups|690x690](upload://nyI3piAbUC5kYJYUZGLsowkw6zK.png)
+![Registry – first loads|690x690](upload://iv0j3aPJ87jFlEitIpijACrfHCl.png)
+![Registry – cached lookups|690x690](upload://cuEyPQ7bJba5FfrpZCgEdm8GwCq.png)
 [/grid]
 
 <div align="center">
-  <p>Measured 2026-11-24 22:08:44 UTC</p>
+  <p>Measured 2026-11-24 22:19:20 UTC</p>
   <p>Roblox Open Cloud</p>
   <p>Test place version <code>603</code></p>
-  <p>Source commit <code>5c216dd5450d142c73120d1e398fb3d5773e2be1</code></p>
+  <p>Source commit <code>317fef2e0b98a194698c1d75feec37b053623cc1</code></p>
 </div>
 
 <details>

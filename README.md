@@ -86,10 +86,10 @@ The benchmarks compare direct `require` and `Registry:Get` for first loads and r
 </div>
 
 <div align="center">
-  <p>Measured 2026-11-24 22:08:44 UTC</p>
+  <p>Measured 2026-11-24 22:19:20 UTC</p>
   <p>Roblox Open Cloud</p>
   <p>Test place version <code>603</code></p>
-  <p>Source commit <code>5c216dd5450d142c73120d1e398fb3d5773e2be1</code></p>
+  <p>Source commit <code>317fef2e0b98a194698c1d75feec37b053623cc1</code></p>
 </div>
 
 <details>
