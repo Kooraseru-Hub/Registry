@@ -88,8 +88,10 @@ test("README variants share content and DevForum uses portable links", () => {
   assert.equal(Object.keys(assets).length, 8);
   assert.match(assets.stars, /badge\/validate%20my%20ego\.svg/);
   assert.match(assets.forks, /badge\/steal%20mah%20source%20code\.svg/);
-  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + "}}"));
-  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length);
+  for (const name of Object.keys(assets)) assert.ok(forum.includes("{{devforum." + name + (name === "patriots" ? ".badge" : "") + "}}"));
+  assert.match(assets.patriots, /TRUE%20robloxian%20patriots/);
+  assert.match(assets.patriots, /[?&]logo=roblox&/);
+  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length + 1);
   for (const file of [".github/components/governance/branches/build/branchBuilder.luau", ".github/components/governance/branches/publish/benchmark-readme.cjs"]) {
     assert.doesNotMatch(fs.readFileSync(path.join(root, file), "utf8"), /<br\s*\/?\s*>/i);
   }
@@ -143,7 +145,9 @@ test("DevForum uses native uploads with pinned measurement provenance", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
   const names = ["banner", "sponsor", "stars", "forks", "patriots", "documentation", "benchmark", "contribute", "license",
     "require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix"];
-  assert.deepEqual(Object.keys(manifest.uploads).sort(), names.sort());
+  const expected = manifest.uploads.patriots ? names : names.filter(name => name !== "patriots");
+  assert.deepEqual(Object.keys(manifest.uploads).sort(), expected.sort());
+  assert.notEqual(manifest.uploads.patriots, "upload://5dNUIGmLIvoAW6l4Uk76DW2YMNd.png");
   for (const url of Object.values(manifest.uploads)) assert.match(url, /^upload:\/\/[A-Za-z0-9]+\.png$/);
   assert.match(manifest.measurement.commit, /^[a-f0-9]{40}$/);
   assert.match(manifest.benchmarkRevision, /^[a-f0-9]{40}$/);

@@ -102,6 +102,12 @@ local function forumValues(): { [string]: string }
 		values["devforum." .. name] = url
 	end
 
+	-- A changed static badge needs a new upload; never reuse the previous artwork.
+	const patriots = values["devforum.patriots"]
+	values["devforum.patriots.badge"] = if patriots
+		then '<img alt="this repo has been fact checked by TRUE robloxian patriots" src="' .. patriots .. '">'
+		else "this repo has been fact checked by TRUE robloxian patriots"
+
 	const measurement = template:gsub("{{([%a]+)}}", function(key: string): string
 		const value = metadata[key]
 		if type(value) ~= "string" or not value:match("^[%w .:%%-]+$") then
