@@ -117,3 +117,38 @@ test("Registry publishes branches, releases, and Pages with Cloudflare previews 
   assert.match(targets, /^packages = false$/m);
   assert.match(targets, /\[github\.previews\]\s+enabled = false/);
 });
+
+
+test("read-only ruleset audit detects drift and unavailable verification", t => {
+  const source = `local A=require("@components/governance/rulesets/plan/audit")
+local J=require("@formats/json")
+local C=require("@ci/github/resources/rulesets/rulesetCatalog")
+local definitions=C.Read()
+local wanted={}
+local details={}
+for i,item in definitions do
+  wanted[i]={id=i,name=item.definition.name}
+  details[i]=item.definition
+end
+local function get(path)
+  if path:find("?",1,true) then return wanted end
+  return details[tonumber(path:match("/(%d+)$"))]
+end
+local good=A.Check("Example/Registry",definitions,get)
+local missing=A.Check("Example/Registry",definitions,function() return {} end)
+local failed=A.Check("Example/Registry",definitions,function() error("unavailable") end)
+local changed=A.Check("Example/Registry",definitions,function(path)
+  if path:find("?",1,true) then return wanted end
+  local detail=table.clone(get(path))
+  detail.enforcement=if detail.enforcement=="active" then "disabled" else "active"
+  return detail
+end)
+print("RESULT:"..J.encode({good=good.state,missing=missing.state,failed=failed.state,changed=changed.state}))`;
+  fs.mkdirSync(path.join(root,"build"),{recursive:true});
+  const temporary=fs.mkdtempSync(path.join(root,"build/ruleset-test-"));
+  t.after(()=>fs.rmSync(temporary,{recursive:true,force:true}));
+  const file=path.join(temporary,"test.luau"); fs.writeFileSync(file,source);
+  const result=spawnSync(lute,["run",file],{cwd:root,encoding:"utf8",timeout:20000,windowsHide:true});
+  assert.ifError(result.error); assert.equal(result.status,0,result.stdout+result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout.match(/^RESULT:(.*)$/m)[1]),{good:"matches",missing:"review",failed:"unavailable",changed:"review"});
+});

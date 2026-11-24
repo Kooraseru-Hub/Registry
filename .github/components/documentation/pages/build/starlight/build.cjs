@@ -109,6 +109,9 @@ function prepareRuntime() {
   }
   if (fs.existsSync(components)) fs.cpSync(components, stagedComponents, { recursive: true });
   prepareSite();
+  // Keep the 404 on a single static route, outside the docs catch-all.
+  fs.mkdirSync(path.join(site, 'src/pages'), { recursive: true });
+  fs.copyFileSync(path.join(__dirname, 'src/pages/404.astro'), path.join(site, 'src/pages/404.astro'));
   // Stage the English UI dictionary used by Starlight's native i18n loader.
   fs.mkdirSync(path.join(site, 'src/content/i18n'), { recursive: true });
   fs.copyFileSync(path.join(__dirname, 'src/content/i18n/en.json'), path.join(site, 'src/content/i18n/en.json'));
@@ -174,6 +177,7 @@ function build() {
     throw new Error('Starlight did not produce dist/index.html');
   }
   verifyNavigationPaths(fs.readFileSync(path.join(staging, 'index.html'), 'utf8'));
+  if (!fs.existsSync(path.join(staging, '404.html'))) throw new Error('Missing static 404 page');
   fs.cpSync(staging, output, { recursive: true, force: true });
   copyAssets(images, path.join(output, 'images'));
   if (!fs.existsSync(path.join(output, 'index.html'))) {

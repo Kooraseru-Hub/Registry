@@ -44,8 +44,11 @@ local function matches(actual: unknown, desired: unknown): boolean
 	end
 
 	-- Ignore server-owned object fields, but do not ignore extra array entries.
-	for key, value in desired do
-		if not matches(actual[key], value) then
+	const actualRecord = actual :: Record
+	const desiredRecord = desired :: Record
+
+	for key, value in desiredRecord do
+		if not matches(actualRecord[key], value) then
 			return false
 		end
 	end
@@ -140,7 +143,7 @@ function Audit.Check(repository: string, definitions: { RulesetCatalog.Ruleset }
 	const findings: { string } = {}
 
 	-- Catch network and visibility failures separately from configuration mismatches.
-	const ok, problem = pcall(function()
+	const ok = pcall(function()
 		const remote = collect(prefix, get)
 
 		for _, expected in definitions do

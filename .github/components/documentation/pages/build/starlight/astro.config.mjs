@@ -27,6 +27,7 @@ export default defineConfig({
   base,
   integrations: [starlight({
     title,
+    disable404Route: true,
     favicon: '/images/favicon.png',
     // The reference has stable, intentionally ordered groups like Creator Hub.
     customCss: [

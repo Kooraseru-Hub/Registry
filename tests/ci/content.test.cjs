@@ -197,5 +197,7 @@ test("DevForum inventories are authored data and Starlight has its native 404 an
   const site = path.join(root, ".github/components/documentation/pages/build/starlight");
   assert.match(fs.readFileSync(path.join(site, "src/content.config.mjs"), "utf8"), /i18nLoader\(\)/);
   assert.ok(JSON.parse(fs.readFileSync(path.join(site, "src/content/i18n/en.json"), "utf8"))["404.text"]);
-  assert.ok(fs.existsSync(path.join(root, "content/docs/404.md")));
+  assert.ok(fs.existsSync(path.join(site, "src/pages/404.astro")));
+  assert.match(fs.readFileSync(path.join(site, "astro.config.mjs"), "utf8"), /disable404Route: true/);
+  assert.ok(!fs.existsSync(path.join(root, "content/docs/404.md")));
 });
