@@ -65,7 +65,7 @@ test("authored events dispatch independently from the pinned engine", () => {
   const bootstrap=fs.readFileSync(path.join(directory,"bootstrap.yml"),"utf8");
   assert.match(bootstrap,/uses: Kooraseru-Hub\/CI-Engine\/\.github\/workflows\/bootstrap\.yml@[a-f0-9]{40}/);
   assert.match(bootstrap,/repository_dispatch:/);
-  for(const file of ["pull","manual","remote"]){
+  for(const file of ["review","manual","remote"]){
     const workflow=fs.readFileSync(path.join(directory,file+".yml"),"utf8");
     assert.match(workflow,/ci-request/);
     assert.doesNotMatch(workflow,/uses: .*bootstrap\.yml|secrets: inherit/);
