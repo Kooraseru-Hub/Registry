@@ -40,16 +40,6 @@
     "registry-cold-matrix",
     "registry-warm-matrix"
   ],
-  "badgeWidths": {
-    "sponsor": 143,
-    "stars": 114,
-    "forks": 149,
-    "patriots": 350,
-    "documentation": 335,
-    "benchmark": 131,
-    "contribute": 107,
-    "license": 128
-  },
   "render": {
     "badgeHeight": 24,
     "badgeZoom": 3,

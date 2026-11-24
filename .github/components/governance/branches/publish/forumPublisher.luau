@@ -5,6 +5,8 @@ const Fs = require("@std/fs")
 const Process = require("@lute/process")
 const Task = require("@lute/task")
 const Json = require("@formats/json")
+const Hash = require("@formats/hash")
+const AssetCache = require("./assetCache")
 const ForumReadme = require("@components/governance/branches/build/forumReadme")
 const SvgAssets = require("@components/governance/branches/build/svgAssets")
 
@@ -100,16 +102,6 @@ local function fingerprint(source: string): string
 	return value
 end
 
---- Compute the proportional display width from the original SVG viewport.
-local function badgeWidth(source: string, height: number): number
-	const root = Fs.readFileToString(source):match("<svg%s+([^>]+)>") or ""
-	const width = tonumber(root:match("width=['\"]([%d.]+)['\"]"))
-	const originalHeight = tonumber(root:match("height=['\"]([%d.]+)['\"]"))
-	assert(width and originalHeight and originalHeight > 0 and width > 0, "Invalid badge viewport")
-
-	return math.clamp(math.floor(width / originalHeight * height + 0.5), 1, 690)
-end
-
 --- Refresh changed artwork and persist its provenance alongside the generated branch.
 function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string): ()
 	assert(not key:find("[%c]") and not client:find("[%c]"), "Invalid DevForum credential format")
@@ -120,10 +112,13 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const fingerprints = Json.record(record.fingerprints)
 	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
-	const widths = Json.record(seed.badgeWidths)
 	const settings = Json.record(seed.render)
-	const policy, badgeZoom, chartZoom, height = settings.policy, settings.badgeZoom, settings.chartZoom, settings.badgeHeight
-	assert(type(policy) == "string" and type(badgeZoom) == "number" and type(chartZoom) == "number" and type(height) == "number")
+	const policy, badgeZoom, chartZoom = settings.policy, settings.badgeZoom, settings.chartZoom
+	assert(type(policy) == "string" and type(badgeZoom) == "number" and type(chartZoom) == "number")
+	const priorDigests = if type(record.badgeSourceFingerprints) == "table" then Json.record(record.badgeSourceFingerprints) else {}
+	const sourceDigests: { [string]: string } = {}
+	local fetched = 0
+	local sourceReused = 0
 	const temporary = "build/devforum-upload"
 	Fs.createDirectory(temporary, { makeParents = true })
 	local reused = 0
@@ -135,7 +130,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		const identity = if scale then `{hash}:{policy}:{scale}` else hash
 		const existing = uploads[name]
 
-		if fingerprints[name] == identity and type(existing) == "string" and existing:match("^upload://[%w]+%.png$") then
+		if AssetCache.Upload(identity, fingerprints[name], existing) then
 			reused += 1
 			print(`DevForum asset {name}: cached`)
 			return
@@ -162,11 +157,15 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 	-- Fetch ShieldCN only for a new source URL or absent cached SVG.
 	SvgAssets.StageBadges(`{directory}/content/images/badges`, function(name: string, url: string): string?
-		if hasParent and oldSources[name] == url then
-			return previousFile(directory, `content/images/badges/{name}.svg`)
+		const data = if hasParent then previousFile(directory, `content/images/badges/{name}.svg`) else nil
+		const cached = AssetCache.Source(url, oldSources[name], data, priorDigests[name])
+		if cached then
+			sourceReused += 1
+		else
+			fetched += 1
 		end
 
-		return nil
+		return cached
 	end)
 
 	const names: { string } = {}
@@ -180,7 +179,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	-- A new render policy intentionally regenerates the legacy PNGs once.
 	for _, name in names do
 		const source = `{directory}/content/images/badges/{name}.svg`
-		widths[name] = badgeWidth(source, height)
+		sourceDigests[name] = Hash.sha256(Fs.readFileToString(source))
 		refresh(name, source, badgeZoom)
 	end
 
@@ -252,10 +251,13 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	record.uploads = uploads
 	record.fingerprints = fingerprints
 	record.badgeSources = badgeSources
-	record.badgeWidths = widths
+	record.badgeWidths = nil
+	record.badgeSourceFingerprints = sourceDigests
+	record.render = settings
 	Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })
 	Fs.writeStringToFile(`{directory}/{MANIFEST}`, Json.encode(record) .. "\n")
 	Fs.writeStringToFile(`{directory}/README.devforum.md`, ForumReadme.Render(record))
+	print(`DevForum badge sources: {sourceReused} reused, {fetched} fetched`)
 	print(`DevForum assets: {reused} reused, {uploaded} uploaded`)
 end
 
