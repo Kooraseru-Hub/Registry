@@ -5,3 +5,4 @@ inputs = ["build/artifacts/branches/**", "config/targets.toml", "config/branches
 outputs = []
 events = ["push"]
 boundary = "privileged"
+credentials = ["devforum_api_key", "devforum_client_id"]

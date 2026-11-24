@@ -346,6 +346,45 @@
           }
         }
       }
+    },
+    "tools.resvg": {
+      "provider": "github-release",
+      "fingerprint": "7db7fc8aac8fd96ebf40e2c48dcac45771f2acab18f20e5c143550a2f30f4e25",
+      "resolution": {
+        "version": "v0.50.0",
+        "platforms": {
+          "linux-x64": {
+            "asset": "resvg-linux-x86_64.tar.gz",
+            "url": "https://github.com/linebender/resvg/releases/download/v0.50.0/resvg-linux-x86_64.tar.gz",
+            "digest": "sha256:5d1c9ffd43c82fb802d92cef8100055c612cd3e248d5a787c20079293a456e21"
+          },
+          "linux-arm64": {
+            "asset": "resvg-linux-aarch64.tar.gz",
+            "url": "https://github.com/linebender/resvg/releases/download/v0.50.0/resvg-linux-aarch64.tar.gz",
+            "digest": "sha256:b197bf704c9da5d572ae565c799727da3067dffacaf32a2476c8143af90e2f9c"
+          },
+          "darwin-x64": {
+            "asset": "resvg-macos-x86_64.zip",
+            "url": "https://github.com/linebender/resvg/releases/download/v0.50.0/resvg-macos-x86_64.zip",
+            "digest": "sha256:f47150b41b41842c629ea9c397ce0f3373451549f47ea1c44f950866a992363f"
+          },
+          "darwin-arm64": {
+            "asset": "resvg-macos-aarch64.zip",
+            "url": "https://github.com/linebender/resvg/releases/download/v0.50.0/resvg-macos-aarch64.zip",
+            "digest": "sha256:8155b569f2b93723ba3645b53536eead3b591c8faf62bdaafd3033ba37838837"
+          },
+          "win32-x64": {
+            "asset": "resvg-win-x86_64.zip",
+            "url": "https://github.com/linebender/resvg/releases/download/v0.50.0/resvg-win-x86_64.zip",
+            "digest": "sha256:e4817e40ac63d3eb5c9e5762526cf6cc91f0cc108de38cd09dd60be765184efd"
+          },
+          "win32-arm64": {
+            "asset": "resvg-win-aarch64.zip",
+            "url": "https://github.com/linebender/resvg/releases/download/v0.50.0/resvg-win-aarch64.zip",
+            "digest": "sha256:f3a6e7b8f07c9e6253fb18d45034e144baccbe203a5f3ab294d6f730807f22ed"
+          }
+        }
+      }
     }
   }
 }

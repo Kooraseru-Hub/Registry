@@ -219,6 +219,41 @@
           }
         }
       }
+    },
+    "tools.resvg": {
+      "provider": "github-release",
+      "options": {
+        "repository": "linebender/resvg",
+        "version": "v0.50.0",
+        "packagePath": "packages/resvg",
+        "binaryPath": "bin/resvg",
+        "platforms": {
+          "linux-x64": {
+            "asset": "resvg-linux-x86_64.tar.gz",
+            "executable": "resvg"
+          },
+          "linux-arm64": {
+            "asset": "resvg-linux-aarch64.tar.gz",
+            "executable": "resvg"
+          },
+          "darwin-x64": {
+            "asset": "resvg-macos-x86_64.zip",
+            "executable": "resvg"
+          },
+          "darwin-arm64": {
+            "asset": "resvg-macos-aarch64.zip",
+            "executable": "resvg"
+          },
+          "win32-x64": {
+            "asset": "resvg-win-x86_64.zip",
+            "executable": "resvg.exe"
+          },
+          "win32-arm64": {
+            "asset": "resvg-win-aarch64.zip",
+            "executable": "resvg.exe"
+          }
+        }
+      }
     }
   }
 }

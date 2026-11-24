@@ -8,10 +8,10 @@ The sanitizer rejects executable SVG content and external references. The GitHub
 
 When updating the DevForum benchmark snapshot, upload the four new charts together and update their references, measurement and benchmark revision together. CI must not label an old upload with a new measurement. No forum credentials are required for rendering. The shared `content/readme/measurement.html` controls cloud measurement formatting on both platforms.
 
-## DevForum publication credentials (proposed)
+## DevForum publication
 
-The dedicated GitHub Actions environment is `ci-devforum`. Its only reserved credential is the environment secret `DEVFORUM_USER_API_KEY` (catalog role `devforum_api_key`). Obtain it through Discourse's explicit user authorization flow, not a Roblox Open Cloud key or session cookie. The `write` scope must be permitted by the forum and must authorize `POST /uploads.json`. Do not put the actual key in Git or in a configuration file.
+Set `DEVFORUM_USER_API_KEY` (secret) and `DEVFORUM_USER_API_CLIENT_ID` (variable, default `discourse-mcp`) in the `ci-devforum` GitHub Actions environment. Restrict deployments to the trusted source branch. The existing contents publication job receives only these named credential bindings and uses its job-scoped GitHub token to publish both the README and upload cache together. Review, build and rehearsal jobs never upload.
 
-The catalog entry is preparatory only: no publisher consumes it yet. Before enabling a publisher, verify the key against the forum, isolate the external publication lane to trusted source builds, and respect upload rate limits. Do not pass credentials to review jobs or use them to edit forum posts.
+The native renderer is pinned through the existing dependency loader. The Luau publisher compares the sanitized SVG Git blob IDs with the last published manifest, reuses matching uploads, and uploads changed images using the normal Discourse API. HTTP 429 cooldowns are honored. It does not publish or edit any forum posts. Unattached forum uploads may expire; attach the generated references to a real forum post promptly.
 
-The replacement Robloxian patriots badge deliberately uses text until its new PNG has been uploaded and `uploads.patriots` is added to `content/readme/devforum.json`. The old American patriots upload is no longer valid for this artwork.
+The source manifest seeds the verified manual uploads. The generated manifest in main records subsequent updates, including the measurement associated with the four uploaded charts. If credentials are missing the authored snapshot remains available. The new badge is rendered as text until an upload exists.

@@ -157,12 +157,28 @@ test("DevForum uses native uploads with pinned measurement provenance", () => {
   const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
   const cloud = fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8");
   assert.doesNotMatch(helper + builder + publisher, /EmbedReadme|function SvgAssets\.DataUri/);
-  assert.match(builder, /content\/readme\/devforum\.json/);
-  assert.match(builder, /\[grid mode="carousel"\]/);
+  const forumRenderer = fs.readFileSync(path.join(directory, "build/forumReadme.luau"), "utf8");
+  assert.match(forumRenderer, /content\/readme\/devforum\.json/);
+  assert.match(forumRenderer, /\[grid mode="carousel"\]/);
   assert.doesNotMatch(cloud, /README\.devforum\.md/);
-  assert.match(builder, /content\/readme\/measurement\.html/);
+  assert.match(forumRenderer, /content\/readme\/measurement\.html/);
   assert.match(cloud, /content\/readme\/measurement\.html/);
   const template = fs.readFileSync(path.join(root, "content/readme/measurement.html"), "utf8");
   assert.equal((template.match(/<p>/g) || []).length, 4);
   assert.doesNotMatch(template, /<br\b/);
+});
+
+test("DevForum publisher uses named credentials, native uploads and content fingerprints", () => {
+  const directory = path.join(root, ".github/components/governance/branches");
+  const publisher = fs.readFileSync(path.join(directory, "publish/forumPublisher.luau"), "utf8");
+  const component = fs.readFileSync(path.join(directory, "publish/component.toml"), "utf8");
+  assert.match(component, /credentials = \["devforum_api_key", "devforum_client_id"\]/);
+  assert.match(publisher, /git", "hash-object"/);
+  assert.match(publisher, /status == "429"/);
+  assert.match(publisher, /https:\/\/devforum\.roblox\.com\/uploads\.json/);
+  assert.doesNotMatch(publisher, /--location|\.ROBLOSECURITY|csrf-token/);
+  assert.match(publisher, /ForumReadme\.Render\(record\)/);
+  const spec = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.json"), "utf8"));
+  const lock = JSON.parse(fs.readFileSync(path.join(root, "dependencies/dependencies.lock"), "utf8"));
+  assert.equal(spec.dependencies["tools.resvg"].options.version, lock.entries["tools.resvg"].resolution.version);
 });

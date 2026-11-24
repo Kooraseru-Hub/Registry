@@ -1,0 +1,6 @@
+# Publish the resolved README and its upload manifest atomically with the branch.
+steps = []
+
+[permissions]
+contents = "write"
+actions = "read"

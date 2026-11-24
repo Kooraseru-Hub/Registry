@@ -53,6 +53,7 @@ try {
         version,
         commit,
     };
+    fs.writeFileSync(path.join(directory, "measurement.json"), JSON.stringify(metadata, null, 2) + "\n");
     const measurement = fs.readFileSync("content/readme/measurement.html", "utf8").trim()
         .replace(/{{([a-z]+)}}/g, (_, key) => {
             if (!Object.hasOwn(metadata, key)) throw new Error("Unknown measurement field: " + key);
