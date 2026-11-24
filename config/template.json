@@ -2,7 +2,7 @@
   "schema": 1,
   "upstream": "Kooraseru/Template",
   "installed": "0.0.0",
-  "revision": "ee8bfe256944345d3408bc0ee87eb18e555b2f1c",
+  "revision": "6479214481ae0eae80967481a1e46b96ba83adcd",
   "channel": "stable",
   "managed": [
     ".github/**",
