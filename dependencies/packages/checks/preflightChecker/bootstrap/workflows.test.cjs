@@ -29,11 +29,13 @@ test("native delivery plan covers each real publication component with its own l
     "distribution/releases/publish": "contents",
     "documentation/pages/publish": "pages",
     "governance/branches/publish": "contents",
-    "governance/rulesets/sync": "credential",
     "work/labels/sync": "issues",
     "work/milestones/sync": "issues",
-    "work/projects/sync": "credential",
   });
+  for (const disabled of ["governance/rulesets/sync", "work/projects/plan", "work/projects/sync"]) {
+    assert.ok(!tasks.some(task => task.identity === disabled), disabled + " must not be scheduled");
+  }
+  assert.ok(tasks.some(task => task.identity === "governance/rulesets/plan" && task.boundary === "read"));
   assert.equal(plan.artifact,plan.destination);
   assert.match(plan.artifact,/^build\/run\/[^/]+\/transport\/bundles$/);
   const {normalize}=require("../../../../../dependencies/managed/packages/ci-engine/src/adapters/github/delivery.cjs");

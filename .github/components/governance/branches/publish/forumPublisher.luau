@@ -1,3 +1,4 @@
+-- .github/components/governance/branches/publish/forumPublisher.luau
 --!strict
 
 const Fs = require("@std/fs")
@@ -8,8 +9,6 @@ const ForumReadme = require("@components/governance/branches/build/forumReadme")
 
 const Publisher = {}
 const MANIFEST = "content/readme/devforum.json"
-const BADGES = { "sponsor", "stars", "forks", "patriots", "documentation", "benchmark", "contribute", "license" }
-const CHARTS = { "require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix" }
 
 --- Read an existing generated branch manifest without sending any credentials to the child.
 local function previousManifest(directory: string): { [string]: unknown }?
@@ -44,6 +43,8 @@ printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEV
     --form "file=@$1;filename=$2.png;type=image/png" --form upload_type=composer \
     --form synchronous=true --write-out '\n%{http_code}' https://devforum.roblox.com/uploads.json
 ]]
+
+	-- Retry only explicit rate-limit responses, respecting the returned cooldown.
 	for attempt = 1, 4 do
 		const response = Process.run({ "bash", "-c", command, "devforum", file, name }, {
 			env = environment,
@@ -56,6 +57,7 @@ printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEV
 		if not body or not status then
 			error("Invalid DevForum upload response", 0)
 		end
+
 		if status == "429" then
 			const details = Json.record(Json.decode(body))
 			const cooldown = if type(details.extras) == "table"
@@ -67,6 +69,7 @@ printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEV
 			Task.wait(cooldown + 1)
 			continue
 		end
+
 		if status ~= "200" and status ~= "201" then
 			error(`DevForum rejected {name} (HTTP {status})`, 0)
 		end
@@ -77,6 +80,8 @@ printf 'User-Api-Key: %s\nUser-Api-Client-Id: %s\n' "$DEVFORUM_UPLOAD_KEY" "$DEV
 		end
 		return url
 	end
+
+	-- Exhausting the bounded retry loop is a publication failure.
 	error("DevForum upload attempts exhausted", 0)
 end
 
@@ -93,7 +98,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const temporary = "build/devforum-upload"
 	Fs.createDirectory(temporary, { makeParents = true })
 
-	-- The Git blob ID identifies the exact source bytes, including the original seeded uploads.
+	--- Reuse the exact SVG blob's upload or upload its rasterized replacement.
 	local function refresh(name: string, source: string, scale: number): ()
 		const hash = Process.run({ "git", "hash-object", source })
 		const fingerprint = hash.stdout:gsub("%s+$", "")
@@ -103,6 +108,8 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		if fingerprints[name] == fingerprint and type(uploads[name]) == "string" then
 			return
 		end
+
+		-- Prefer seeded references when the exact original artwork is still current.
 		if seedFingerprints[name] == fingerprint and type(seedUploads[name]) == "string" then
 			uploads[name] = seedUploads[name]
 		else
@@ -112,21 +119,42 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			Fs.remove(png)
 			Task.wait(2)
 		end
+
+		-- Record the fingerprint only after the matching upload has been resolved.
 		fingerprints[name] = fingerprint
 	end
 
-	for _, name in BADGES do
+	-- The existing badge source manifest owns the badge inventory.
+	const badges = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
+	const names: { string } = {}
+
+	for name in badges do
+		assert(name:match("^[a-z]+$"), "Invalid badge name")
+		table.insert(names, name)
+	end
+
+	table.sort(names)
+
+	for _, name in names do
 		refresh(name, `{directory}/content/images/badges/{name}.svg`, 3)
 	end
 	const metadata = `{directory}/benchmarks/measurement.json`
+
+	-- A benchmark snapshot advances only when its full measurement is present.
 	if Fs.exists(metadata) then
-		for _, name in CHARTS do
+		const charts = seed.charts
+		assert(type(charts) == "table", "Missing benchmark chart inventory")
+
+		for _, name in charts do
+			assert(type(name) == "string" and name:match("^[a-z%-]+%-matrix$"), "Invalid chart name")
 			refresh(name, `{directory}/benchmarks/devforum/{name}.svg`, 2)
 		end
 		record.measurement = Json.decode(Fs.readFileToString(metadata))
 		const measurement = Json.record(record.measurement)
 		record.benchmarkRevision = measurement.commit
 	end
+
+	-- Publish references and measurement together after all uploads succeed.
 	record.uploads = uploads
 	record.fingerprints = fingerprints
 	Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })

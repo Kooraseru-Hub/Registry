@@ -190,3 +190,12 @@ test("new DevForum helpers use supported component aliases", () => {
   assert.match(init, /require\("@components\/governance\/branches\/publish\/forumPublisher"\)/);
   assert.match(builder, /require\("@components\/governance\/branches\/build\/forumReadme"\)/);
 });
+
+test("DevForum inventories are authored data and Starlight has its native 404 and UI dictionary", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "content/readme/devforum.json"), "utf8"));
+  assert.deepEqual(manifest.charts, ["require-cold-matrix", "require-warm-matrix", "registry-cold-matrix", "registry-warm-matrix"]);
+  const site = path.join(root, ".github/components/documentation/pages/build/starlight");
+  assert.match(fs.readFileSync(path.join(site, "src/content.config.mjs"), "utf8"), /i18nLoader\(\)/);
+  assert.ok(JSON.parse(fs.readFileSync(path.join(site, "src/content/i18n/en.json"), "utf8"))["404.text"]);
+  assert.ok(fs.existsSync(path.join(root, "content/docs/404.md")));
+});

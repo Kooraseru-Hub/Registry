@@ -109,6 +109,9 @@ function prepareRuntime() {
   }
   if (fs.existsSync(components)) fs.cpSync(components, stagedComponents, { recursive: true });
   prepareSite();
+  // Stage the English UI dictionary used by Starlight's native i18n loader.
+  fs.mkdirSync(path.join(site, 'src/content/i18n'), { recursive: true });
+  fs.copyFileSync(path.join(__dirname, 'src/content/i18n/en.json'), path.join(site, 'src/content/i18n/en.json'));
   // Astro/MDX needs documentation icons available before it compiles pages.
   copyAssets(images, path.join(site, 'public/images'));
 }

@@ -145,12 +145,14 @@ local function renderTemplate(content: string, source: string, branchName: strin
 ]]):gsub("%.png", "." .. imageExtension) .. measurement else "benchmark image would be here",
 	}
 
+	-- DevForum uses the pinned uploaded charts rather than the local benchmark grid.
 	if devforum then
 		for key, value in ForumReadme.Values(ForumReadme.Read()) do
 			values[key] = value
 		end
 	end
 
+	-- Resolve the complete placeholder set only after all variants have been selected.
 	local rendered = content:gsub("{{([%w_.-]+)}}", function(key: string): string
 		return values[key] or error(`{source}: unknown repository placeholder {key}`, 0)
 	end)

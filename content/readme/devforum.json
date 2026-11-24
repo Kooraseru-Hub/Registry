@@ -32,5 +32,11 @@
     "license": "0e1df41026267e0864a18ec935d5810a30b88bbc",
     "sponsor": "f23442cbb66a5fa178c79b7edbbef304052444f1",
     "stars": "458932edb1aa15083ff3ba9be0fdfb586a8ce847"
-  }
+  },
+  "charts": [
+    "require-cold-matrix",
+    "require-warm-matrix",
+    "registry-cold-matrix",
+    "registry-warm-matrix"
+  ]
 }

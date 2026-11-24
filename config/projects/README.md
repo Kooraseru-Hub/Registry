@@ -1,5 +1,9 @@
 # Source-managed GitHub Projects
 
+Registry disables both `work/projects/plan` and `work/projects/sync` in
+`config/ci/components.toml`. Project management is manual; this retained
+blueprint is optional and requires no CI credentials while disabled.
+
 Each project folder contains `project.json` and `README.md`. The folder name is
 the stable source identity. The `project` object defines its owner, title,
 visibility, description, and README filename. `fields` defines custom fields and
