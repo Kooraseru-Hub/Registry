@@ -6,6 +6,7 @@ const Json = require("@formats/json")
 
 const ForumReadme = {}
 
+--- Read the authored seed and display policy.
 function ForumReadme.Read(): { [string]: unknown }
 	return Json.record(Json.decode(Fs.readFileToString("content/readme/devforum.json")))
 end

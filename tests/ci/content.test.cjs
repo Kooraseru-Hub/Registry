@@ -220,3 +220,20 @@ test("DevForum uses compact badges and a single rasterization policy", () => {
   assert.match(workflow, /DEVFORUM_USER_API_KEY: \$\{\{ secrets\.DEVFORUM_USER_API_KEY \}\}/);
   assert.doesNotMatch(workflow, /secrets: inherit/);
 });
+
+test("the real Luau forum renderer applies compact badge and carousel sizes", t => {
+  const { spawnSync } = require("node:child_process");
+  const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/forum-render-test-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const script = path.join(temporary, "test.luau");
+  fs.writeFileSync(script, 'local F=require("@components/governance/branches/build/forumReadme")\nlocal r=F.Read()\nr.uploads.patriots="upload://TestPatriots.png"\nprint(F.Render(r))');
+  const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal((result.stdout.match(/height="24"/g) || []).length, 8);
+  assert.equal((result.stdout.match(/\|690x690\]\(upload:\/\//g) || []).length, 4);
+  assert.match(result.stdout, /this project has been fact checked by TRUE robloxian patriots/);
+  assert.doesNotMatch(result.stdout, /{{[\w.-]+}}/);
+});

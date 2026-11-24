@@ -118,7 +118,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const record = if previous and type(previous.fingerprints) == "table" then previous else seed
 	const uploads = Json.record(record.uploads)
 	const fingerprints = Json.record(record.fingerprints)
-	const oldSources = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
+	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
 	const widths = Json.record(seed.badgeWidths)
 	const settings = Json.record(seed.render)
@@ -207,20 +207,29 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			SvgAssets.StageCharts(`{directory}/benchmarks`, `{directory}/benchmarks/devforum`)
 			const readme = `{directory}/README.md`
 			const body = Fs.readFileToString(readme)
-			const previousReadme = assert(previousFile(directory, "README.md"))
-			const first = previousReadme:find('<img width="49%" src="benchmarks/require-cold-matrix.svg"', 1, true)
-			const finish = previousReadme:find("Workloads and measurement details", 1, true)
+			-- Render the stored measurement, not the previous README's surrounding prose.
+			const saved = Json.record(Json.decode(prior))
+			const measurement = Fs.readFileToString("content/readme/measurement.html"):gsub("{{([%a]+)}}", function(field: string): string
+				const value = saved[field]
+				assert(type(value) == "string" and value:match("^[%w .:%%-]+$"), "Invalid cached benchmark metadata")
 
-			-- Keep GitHub's existing benchmark section until new measurement data arrives.
-			if first and finish and body:find("benchmark image would be here", 1, true) then
-				const section = previousReadme:match("## Benchmarks\n(.-)\n<details>")
-				assert(section, "Missing published benchmark section")
-				const updated, count = body:gsub("## Benchmarks\n.-\n<details>", function(): string
-					return "## Benchmarks\n" .. section .. "\n<details>"
-				end)
-				assert(count == 1, "Missing benchmark README placeholder")
-				Fs.writeStringToFile(readme, updated)
-			end
+				return value
+			end)
+			const grid = [[<div align="center">
+<p align="center">
+  <img width="49%" src="benchmarks/require-cold-matrix.svg" alt="Direct require first loads">
+  <img width="49%" src="benchmarks/require-warm-matrix.svg" alt="Direct require cached lookups">
+</p>
+<p align="center">
+  <img width="49%" src="benchmarks/registry-cold-matrix.svg" alt="Registry first loads">
+  <img width="49%" src="benchmarks/registry-warm-matrix.svg" alt="Registry cached lookups">
+</p>
+</div>]]
+			const updated, count = body:gsub("benchmark image would be here", function(): string
+				return grid .. "\n\n" .. measurement
+			end)
+			assert(count == 1, "Missing benchmark README placeholder")
+			Fs.writeStringToFile(readme, updated)
 		end
 	end
 
