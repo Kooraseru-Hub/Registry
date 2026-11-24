@@ -3,6 +3,7 @@
 
 const Fs = require("@std/fs")
 const Net = require("@std/net")
+const Process = require("@lute/process")
 const Json = require("@formats/json")
 
 const MAX_BYTES = 8 * 1024 * 1024
@@ -168,6 +169,44 @@ function SvgAssets.StageCharts(source: string, destination: string): ()
 			const name = `{method}-{phase}-matrix.svg`
 			Fs.writeStringToFile(`{destination}/{name}`, SvgAssets.Sanitize(Fs.readFileToString(`{source}/{name}`)))
 		end
+	end
+end
+
+--- Choose an installed sans-serif family instead of resvg's Windows-centric defaults.
+function SvgAssets.ChartFont(renderer: string): string
+	const result = Process.run({ renderer, "--list-fonts" }, { timeout = 60 })
+	assert(result.ok, "Could not enumerate rasterizer fonts")
+
+	for _, family in { "Liberation Sans", "DejaVu Sans", "Arial", "Helvetica" } do
+		if result.stdout:find("'" .. family .. " (", 1, true) then
+			return family
+		end
+	end
+
+	error("Benchmark rasterization requires an installed sans-serif font", 0)
+end
+
+--- Rasterize sanitized artwork; chart rendering must never silently discard text.
+function SvgAssets.Rasterize(renderer: string, source: string, destination: string, scale: number, font: string?): ()
+	const command = { renderer, "--zoom", tostring(scale) }
+
+	if font then
+		for _, option in { "--font-family", "--sans-serif-family", "--serif-family" } do
+			table.insert(command, option)
+			table.insert(command, font)
+		end
+	end
+
+	table.insert(command, source)
+	table.insert(command, destination)
+	const result = Process.run(command, { timeout = 60 })
+
+	if not result.ok or not Fs.exists(destination) then
+		error("DevForum image rasterization failed: " .. source .. "\n" .. result.stderr, 0)
+	end
+
+	if font and result.stderr:find("%S") then
+		error("Benchmark rasterization reported diagnostics: " .. source .. "\n" .. result.stderr, 0)
 	end
 end
 

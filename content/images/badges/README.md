@@ -9,3 +9,5 @@ The generated `content/readme/devforum.json` on main contains upload references,
 ## Credentials
 
 Keep `DEVFORUM_USER_API_KEY` (secret) and `DEVFORUM_USER_API_CLIENT_ID` (variable) in the `ci-devforum` environment restricted to source. The generated CI controller resolves these names directly from that protected environment. CI-Engine does not declare any DevForum-specific credentials. Missing authentication fails publication rather than silently publishing the stale seed. Review and rehearsal jobs never upload. No forum posts are created or edited automatically.
+
+Benchmark chart rasterization explicitly maps generic SVG font families to an installed sans-serif family (Liberation Sans, DejaVu Sans, Arial or Helvetica, in that order). Missing fonts or renderer diagnostics fail publication rather than silently dropping labels. Badge rasterization is unchanged. The PNG content hash remains the upload cache key; a different installed font may change chart bytes.

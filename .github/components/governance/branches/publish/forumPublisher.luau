@@ -13,6 +13,7 @@ const SvgAssets = require("@components/governance/branches/build/svgAssets")
 const Publisher = {}
 const MANIFEST = "content/readme/devforum.json"
 const PNG_ROOT = "content/images/devforum"
+const RENDERER = "dependencies/managed/bin/resvg/resvg"
 
 --- Read a file from the already fetched published main tree; no network request.
 local function previousFile(directory: string, path: string): string?
@@ -34,16 +35,6 @@ local function previousManifest(directory: string): { [string]: unknown }?
 	const data = previousFile(directory, MANIFEST)
 
 	return if data then Json.record(Json.decode(data)) else nil
-end
-
---- Convert a trusted, sanitized SVG with the pinned native renderer.
-local function rasterize(source: string, destination: string, scale: number): ()
-	const result = Process.run({
-		"dependencies/managed/bin/resvg/resvg", "--zoom", tostring(scale), source, destination,
-	}, { timeout = 60 })
-	if not result.ok or not Fs.exists(destination) then
-		error("DevForum image rasterization failed: " .. source, 0)
-	end
 end
 
 --- Upload a PNG via the authorized Discourse API. Do not follow redirects or log credentials.
@@ -134,7 +125,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	local uploaded = 0
 
 	--- Compare the newly generated PNG with the exact previously published upload bytes.
-	local function refresh(name: string, source: string, scale: number?): ()
+	local function refresh(name: string, source: string, scale: number?, font: string?): ()
 		assert(name:match("^[a-z%-]+$"), "Invalid asset name")
 		const path = `{PNG_ROOT}/{name}.png`
 		const png = `{directory}/{path}`
@@ -145,7 +136,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		end
 
 		if scale then
-			rasterize(source, png, scale)
+			SvgAssets.Rasterize(RENDERER, source, png, scale, font)
 		else
 			Fs.copy(source, png)
 		end
@@ -256,12 +247,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	-- A complete chart inventory must accompany the published upload cache.
 	assert(Fs.exists(metadata), "Missing benchmark snapshot for DevForum publication")
 	if Fs.exists(metadata) then
+		const font = SvgAssets.ChartFont(RENDERER)
+		print("DevForum benchmark font: " .. font)
 		const charts = seed.charts
 		assert(type(charts) == "table", "Missing benchmark chart inventory")
 
 		for _, name in charts do
 			assert(type(name) == "string" and name:match("^[a-z%-]+%-matrix$"), "Invalid chart name")
-			refresh(name, `{directory}/benchmarks/devforum/{name}.svg`, chartZoom)
+			refresh(name, `{directory}/benchmarks/devforum/{name}.svg`, chartZoom, font)
 		end
 
 		record.measurement = Json.decode(Fs.readFileToString(metadata))

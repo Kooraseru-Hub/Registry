@@ -314,3 +314,37 @@ test("equivalent SVG sources generate identical PNGs using the pinned renderer",
   assert.equal(blobs[0], blobs[1]);
   assert.notEqual(blobs[0], blobs[2]);
 });
+
+test("benchmark rasterization retains ordinary and bold text using the real publication renderer", t => {
+  const { spawnSync } = require("node:child_process");
+  const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+  const renderer = path.join(root, "dependencies/managed/bin/resvg", process.platform === "win32" ? "resvg.exe" : "resvg");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/chart-font-test-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const fixture = path.relative(root, temporary).split(path.sep).join("/");
+  const svg = body => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><g font-family="sans-serif" fill="white">' + body + '</g></svg>';
+  const fixtures = {
+    blank: "",
+    regular: '<text x="45" y="95" font-size="18">Direct require – µs</text>',
+    bold: '<text x="45" y="65" font-size="36" font-weight="bold">First loads</text>'
+  };
+  for (const [name, body] of Object.entries(fixtures)) fs.writeFileSync(path.join(temporary, name + ".svg"), svg(body));
+  const script = path.join(temporary, "test.luau");
+  fs.writeFileSync(script, [
+    'local A = require("@components/governance/branches/build/svgAssets")',
+    'local renderer = ' + JSON.stringify(path.relative(root, renderer).split(path.sep).join("/")),
+    'local root = ' + JSON.stringify(fixture),
+    'local font = A.ChartFont(renderer)',
+    'for _, name in {"blank", "regular", "bold"} do',
+    '  A.Rasterize(renderer, root .. "/" .. name .. ".svg", root .. "/" .. name .. ".png", 2, font)',
+    'end'
+  ].join("\n"));
+  const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 60000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const blank = fs.readFileSync(path.join(temporary, "blank.png"));
+  for (const name of ["regular", "bold"]) {
+    assert.notDeepEqual(fs.readFileSync(path.join(temporary, name + ".png")), blank, name + " text disappeared");
+  }
+});
