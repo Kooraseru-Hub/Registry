@@ -7,6 +7,7 @@ const Task = require("@lute/task")
 const Json = require("@formats/json")
 const Hash = require("@formats/hash")
 const AssetCache = require("./assetCache")
+const PublicCache = require("./publicCache")
 const ForumReadme = require("@components/governance/branches/build/forumReadme")
 const SvgAssets = require("@components/governance/branches/build/svgAssets")
 
@@ -109,6 +110,11 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const previous = if hasParent then previousManifest(directory) else nil
 	const record = if previous and type(previous.uploads) == "table" then previous else seed
 	const uploads = Json.record(record.uploads)
+	const destination = Json.record(seed.destination)
+	const publicImages = PublicCache.Read(destination)
+	const previousReadme = if hasParent then previousFile(directory, "README.devforum.md") else nil
+	const labels = PublicCache.References(previousReadme or "")
+	const confirmed: { [string]: string } = {}
 	const oldSources: { [string]: unknown } = if type(record.badgeSources) == "table" then Json.record(record.badgeSources) else {}
 	const badgeSources = Json.record(Json.decode(Fs.readFileToString("content/images/badges/sources.json")))
 	const settings = Json.record(seed.render)
@@ -155,9 +161,31 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 		pngs[name] = { path = path, blob = blob }
 
+		-- Resolve the authored asset slot from the preceding generated README.
+		-- A private or unconfirmed upload never qualifies as a public cache hit.
+		local publicImage: PublicCache.Image? = nil
+		for label, reference in labels do
+			if reference == uploads[name] then
+				publicImage = publicImages[label]
+				break
+			end
+		end
+
+		if publicImage and PublicCache.Available(publicImage) then
+			if existing == publicImage.reference or PublicCache.Matches(publicImage.reference, png, blob) then
+					existing = publicImage.reference
+				confirmed[name] = publicImage.reference
+				uploads[name] = publicImage.reference
+			else
+				existing = nil
+			end
+		else
+			existing = nil
+		end
+
 		if existing then
 			reused += 1
-			print(`DevForum asset {name}: cached (identical PNG)`)
+			print(`DevForum asset {name}: cached (identical public PNG)`)
 			return
 		end
 
@@ -266,6 +294,8 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	record.uploads = uploads
 	record.fingerprints = nil
 	record.pngs = pngs
+	record.destination = destination
+	record.publicUploads = confirmed
 	record.badgeSources = badgeSources
 	record.badgeWidths = nil
 	record.badgeSourceFingerprints = sourceDigests
@@ -276,6 +306,9 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	Fs.writeStringToFile(`{directory}/README.devforum.md`, ForumReadme.Render(record, directory))
 	print(`DevForum badge sources: {sourceReused} reused, {fetched} fetched`)
 	print(`DevForum assets: {reused} reused, {uploaded} uploaded`)
+	if uploaded > 0 then
+		print("Attach the generated README to the configured public topic, not a private test message.")
+	end
 end
 
 return table.freeze(Publisher)

@@ -348,3 +348,32 @@ test("benchmark rasterization retains ordinary and bold text using the real publ
     assert.notDeepEqual(fs.readFileSync(path.join(temporary, name + ".png")), blank, name + " text disappeared");
   }
 });
+
+test("public cache pairs authored upload references with public cooked images only", t => {
+  const { spawnSync } = require("node:child_process");
+  const lute = path.join(root, "dependencies/managed/bin/lute", process.platform === "win32" ? "lute.exe" : "lute");
+  fs.mkdirSync(path.join(root, "build"), { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(root, "build/public-cache-"));
+  t.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
+  const script = path.join(temporary, "test.luau");
+  fs.writeFileSync(script, `
+local C = require("@components/governance/branches/publish/publicCache")
+local raw = '<img src="upload://NewBanner.png" alt="Registry">\\n![Cached lookups|690x690](upload://Chart.png)'
+local host = "//devforum-uploads.s3.dualstack.us-east-2.amazonaws.com/uploads/"
+local cooked = '<img alt="Registry" src="' .. host .. 'original/5X/a.png">\\n<img alt="Cached lookups" src="' .. host .. 'optimized/5X/b_2_500x500.png" srcset="' .. host .. 'optimized/5X/b_2_500x500.png 1x, ' .. host .. 'optimized/5X/b_2_1000x1000.png 2x">'
+local refs = C.References(raw)
+assert(refs.Registry == "upload://NewBanner.png")
+assert(refs["Cached lookups"] == "upload://Chart.png")
+local images = C.Images(raw, cooked)
+assert(images.Registry.reference == refs.Registry)
+assert(#images["Cached lookups"].sources == 2)
+assert(C.Images(raw, '<img alt="Registry" src="/secure-uploads/a.png">').Registry == nil)
+assert(C.Images(raw, '<img alt="Registry" src="https://example.com/uploads/a.png">').Registry == nil)
+assert(C.Images(raw, '<img alt="Unrelated" src="' .. host .. 'original/5X/a.png">').Unrelated == nil)
+print("public cache fixtures passed")
+`);
+  const result = spawnSync(lute, ["run", script], { cwd: root, encoding: "utf8", timeout: 20000, windowsHide: true });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /public cache fixtures passed/);
+});

@@ -46,5 +46,9 @@
     "chartZoom": 2,
     "chartDisplay": 690,
     "policy": "resvg-0.50.0-v2"
+  },
+  "destination": {
+    "topic": 4313867,
+    "slug": "v200-registry-a-lightweight-type-safe-module-management-system-for-roblox"
   }
 }

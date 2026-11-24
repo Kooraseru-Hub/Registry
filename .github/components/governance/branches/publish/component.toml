@@ -1,7 +1,7 @@
 phase = "publish"
 provides = ["branches.published"]
 requires = ["build.completed", "branches.generated"]
-inputs = ["build/artifacts/branches/**", "config/targets.toml", "config/branches/**", "content/readme/**", "content/docs/repository/README.md", "content/images/**", ".github/components/governance/branches/build/svgAssets.luau", ".github/components/governance/branches/build/readmeTemplate.luau", ".github/components/governance/branches/build/forumReadme.luau", ".github/components/governance/branches/publish/assetCache.luau", ".github/components/governance/branches/publish/forumPublisher.luau"]
+inputs = ["build/artifacts/branches/**", "config/targets.toml", "config/branches/**", "content/readme/**", "content/docs/repository/README.md", "content/images/**", ".github/components/governance/branches/build/svgAssets.luau", ".github/components/governance/branches/build/readmeTemplate.luau", ".github/components/governance/branches/build/forumReadme.luau", ".github/components/governance/branches/publish/assetCache.luau", ".github/components/governance/branches/publish/publicCache.luau", ".github/components/governance/branches/publish/forumPublisher.luau"]
 outputs = []
 events = ["push"]
 boundary = "privileged"
