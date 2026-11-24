@@ -10,8 +10,8 @@
   <a href="https://github.com/kooraseru-hub/registry"><img alt="validate my ego" src="upload://tfj1WInxDsySdCQ9EdQaK3qqoSm.png"></a>
   <!-- Forks -->
   <a href="https://github.com/Kooraseru-Hub/registry/forks"><img alt="steal mah source code" src="upload://r9Ucqqicj5qDSDQi9j94SBDlkSR.png"></a>
-  <!-- USA! USA! USA! -->
-  <img alt="Fact checked by true American patriots" src="upload://5dNUIGmLIvoAW6l4Uk76DW2YMNd.png">
+  <!-- Robloxian patriots -->
+  this repo has been fact checked by TRUE robloxian patriots
 </div>
 
 ---
