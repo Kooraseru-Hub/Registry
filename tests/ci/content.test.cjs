@@ -81,7 +81,18 @@ test("README variants share content and DevForum uses portable links", () => {
   assert.equal(body.split("{{registry.benchmarks}}").length, 2);
   assert.match(body, /Registry\.rbxm/);
   assert.match(body, /ReplicatedFirst/);
-  assert.doesNotMatch(forum + body, /<img\b|shieldcn\.dev|href="(?!https?:)/);
+  assert.doesNotMatch(forum + body, /shieldcn\.dev|href="(?!https?:)/);
+  assert.match(body, /releases\/latest\)/);
+  assert.match(forum, /upload:\/\/pdAjfEfxUeuNxokg1w2Bows46kC\.png/);
+  const assets = JSON.parse(fs.readFileSync(path.join(root, "content/images/badges/sources.json"), "utf8"));
+  assert.equal(Object.keys(assets).length, 8);
+  assert.match(assets.stars, /badge\/validate%20my%20ego\.svg/);
+  assert.match(assets.forks, /badge\/steal%20mah%20source%20code\.svg/);
+  for (const name of Object.keys(assets)) assert.ok(forum.includes("/content/images/badges/" + name + ".svg"));
+  assert.equal((github.match(/<img\b/g) || []).length, (forum.match(/<img\b/g) || []).length);
+  for (const file of [".github/components/governance/branches/build/branchBuilder.luau", ".github/components/governance/branches/publish/benchmark-readme.cjs"]) {
+    assert.doesNotMatch(fs.readFileSync(path.join(root, file), "utf8"), /<br\s*\/?\s*>/i);
+  }
 });
 test("release records preserve historical sources and publish both assets", () => {
   const directory = path.join(root, "config/publishing/releases");

@@ -114,8 +114,8 @@ local function renderTemplate(content: string, source: string, branchName: strin
 			const changes = if checkout == "dirty" then "uncommitted changes present" else "clean checkout"
 			const studioLabel = if digest then "Roblox Studio executable" else "Roblox Studio version"
 			measurement = string.format(
-				'Measured <relative-time datetime="%s">%s</relative-time><br>\n%s <code>%s</code> on Windows<br>\nSource commit <code>%s</code> (%s)',
-				started, started, studioLabel, studio, commit, changes
+				'Measured %s\n%s `%s` on Windows\nSource commit `%s` (%s)',
+				started, studioLabel, studio, commit, changes
 			)
 		elseif Fs.exists(timestampPath) and Fs.type(timestampPath) == "file" then
 			const timestamp = Fs.readFileToString(timestampPath):match("^(%d+)%s*$")
@@ -129,7 +129,18 @@ local function renderTemplate(content: string, source: string, branchName: strin
 		["project.name"] = projectName,
 		["branch.name"] = branchName,
 		["branch.source"] = "source",
-		["registry.benchmarks"] = if results and devforum then "Local benchmark charts are staged in benchmarks/. Upload the charts to DevForum and place the uploaded image references in a carousel.\n\n" .. measurement:gsub("<[^>]+>", "") elseif results then ([[
+		["registry.benchmarks"] = if results and devforum then ([[
+
+[grid mode="carousel"]
+![Direct require – first loads](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-cold-matrix.svg)
+![Direct require – cached lookups](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/require-warm-matrix.svg)
+![Registry – first loads](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-cold-matrix.svg)
+![Registry – cached lookups](https://raw.githubusercontent.com/Kooraseru-Hub/Registry/main/benchmarks/devforum/registry-warm-matrix.svg)
+[/grid]
+
+]]):gsub("devforum/([^\n]+)%.svg", function(name: string): string
+			return if imageExtension == "svg" then "devforum/" .. name .. ".svg" else name .. ".png"
+		end) .. measurement elseif results then ([[
 <p align="center">
   <img width="49%" src="benchmarks/require-cold-matrix.png" alt="Direct require first load">
   <img width="49%" src="benchmarks/require-warm-matrix.png" alt="Direct require repeated lookup">
@@ -266,6 +277,19 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 		end
 
 		copied += overlayTemplates(CONTENT_ROOT, branchRoot, name)
+		if name == "main" then
+			const preparation = ".github/components/governance/branches/build/prepare-images.py"
+			const badgeResult = Process.run({ "python3", preparation, "badges", `{branchRoot}/content/images/badges` })
+			if not badgeResult.ok then
+				error(`Unable to prepare README badges: {badgeResult.stderr}`, 0)
+			end
+			if benchmarkResults and Fs.exists(`{benchmarkResults}/require-cold-matrix.svg`) then
+				const chartResult = Process.run({ "python3", preparation, "charts", benchmarkResults, `{branchRoot}/benchmarks/devforum` })
+				if not chartResult.ok then
+					error(`Unable to prepare DevForum charts: {chartResult.stderr}`, 0)
+				end
+			end
+		end
 		if copied == 0 then
 			error(`branch {name} has no source files or templates`, 0)
 		end

@@ -10,7 +10,7 @@ sidebar:
 
 Choose one installation method:
 
-1. **Studio model (recommended):** download `Registry.rbxm` from the [2.0.0 release](https://github.com/Kooraseru-Hub/Registry/releases/tag/2.0.0). Import the model into Studio and place the resulting `Registry` ModuleScript under `ReplicatedFirst`.
+1. **Studio model (recommended):** download `Registry.rbxm` from the [latest release](https://github.com/Kooraseru-Hub/Registry/releases/latest). Import the model into Studio and place the resulting `Registry` ModuleScript under `ReplicatedFirst`.
 2. **Source:** copy [`source/Registry.luau`](https://github.com/Kooraseru-Hub/Registry/blob/main/source/Registry.luau) (also included in `Registry.zip`) into a ModuleScript named `Registry` under `ReplicatedFirst`.
 
 Use `ReplicatedFirst` for early client bootstrappers, or `ReplicatedStorage` for ordinary shared code; adjust the require path accordingly. Early replication of Registry does not make its registered dependencies replicate earlier. Wait for any dependencies outside ReplicatedFirst when necessary.
