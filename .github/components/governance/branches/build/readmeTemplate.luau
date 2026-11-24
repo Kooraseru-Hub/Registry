@@ -33,7 +33,9 @@ function ReadmeTemplate.PngWidth(path: string, height: number): number
 	Fs.close(file)
 	assert(count == 33 and buffer.readstring(header, 0, 8) == "\137PNG\r\n\26\n", "Invalid PNG signature or truncated header")
 	assert(buffer.readstring(header, 8, 8) == "\0\0\0\13IHDR", "Invalid PNG IHDR")
-	const width, intrinsicHeight = string.unpack(">I4I4", buffer.readstring(header, 16, 8))
+	-- PNG stores unsigned dimensions in network byte order; buffer reads are little-endian.
+	const width = bit32.byteswap(buffer.readu32(header, 16))
+	const intrinsicHeight = bit32.byteswap(buffer.readu32(header, 20))
 	assert(width > 0 and width <= 2147483647 and intrinsicHeight > 0 and intrinsicHeight <= 2147483647, "Invalid PNG dimensions")
 	assert(height > 0 and height % 1 == 0, "Invalid badge display height")
 
