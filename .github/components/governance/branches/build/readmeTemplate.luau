@@ -26,7 +26,7 @@ function ReadmeTemplate.Github(): { [string]: string }
 end
 
 --- Render explicitly named images; use intrinsic aspect ratio at the selected height.
-function ReadmeTemplate.Images(source: string, images: { [string]: unknown }, height: number?, missing: string?): string
+function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, height: number?, missing: string?): string
 	return (source:gsub("<img%s+[^>]+>", function(tag: string): string
 		const name = tag:match('src="{{readme%.image%.([%w%-]+)}}"')
 		if not name then

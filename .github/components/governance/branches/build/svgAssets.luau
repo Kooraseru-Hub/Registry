@@ -156,7 +156,7 @@ function SvgAssets.StageBadges(destination: string, cached: ((string, string) ->
 			data = response.body
 		end
 
-		Fs.writeStringToFile(`{destination}/{name}.svg`, SvgAssets.Sanitize(data))
+		Fs.writeStringToFile(`{destination}/{name}.svg`, SvgAssets.Sanitize(assert(data, "Missing badge response body")))
 	end
 end
 
