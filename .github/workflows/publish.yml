@@ -36,6 +36,8 @@ jobs:
     uses: ./.github/workflows/ci.yml
   releases:
     needs: build
+    outputs:
+      tags: ${{ steps.release-publisher.outputs.published-tags }}
     if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'releases'
     runs-on: ubuntu-latest
     environment: ci-publication
@@ -49,13 +51,44 @@ jobs:
         with:
           name: releases
           path: build/github/releases
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@c361be8a3a1a345d69a0da53ca2585ef9d130502
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@00e16b1187b849ec91a124d2f2bc586d287da367
+        id: release-publisher
         with:
           index: build/github/releases/index.json
           repository: ${{ github.repository }}
           confirm: 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+  release-drafts:
+    needs: releases
+    if: needs.releases.result == 'success' && needs.releases.outputs.tags != '' && needs.releases.outputs.tags != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.releases.outputs.tags) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/announcement@00e16b1187b849ec91a124d2f2bc586d287da367
+        with:
+          repository: ${{ github.repository }}
+          tag: ${{ matrix.tag }}
+          config: content/readme/devforum.json
+          output: build/devforum-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: devforum-release-draft-${{ strategy.job-index }}
+          path: build/devforum-release
+          if-no-files-found: error
   forum-draft:
     needs: build
     if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'branches' && inputs.devforum_mode == 'draft')
@@ -75,7 +108,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: c361be8a3a1a345d69a0da53ca2585ef9d130502
+          ref: 00e16b1187b849ec91a124d2f2bc586d287da367
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
@@ -108,10 +141,13 @@ jobs:
           if-no-files-found: error
   branches:
     needs: build
-    if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'branches' && inputs.devforum_mode == 'post' && inputs.approved_draft != ''
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'branches' && inputs.devforum_mode == 'post'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: ci-devforum
+    concurrency:
+      group: devforum-${{ github.repository }}
+      cancel-in-progress: false
     permissions:
       contents: write
       actions: read
@@ -126,7 +162,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: c361be8a3a1a345d69a0da53ca2585ef9d130502
+          ref: 00e16b1187b849ec91a124d2f2bc586d287da367
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
@@ -141,10 +177,17 @@ jobs:
           CI_ORIGIN_SHA: ${{ github.sha }}
           CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: node .github/components/governance/branches/publish/benchmark-readme.cjs build/github/branches/main
-      - name: Fetch previous published cache
+      - name: Fetch previous published cache and preserve durable release receipts
+        id: prior
         run: |
           git -C build/github/branches/main init --quiet
           git -C build/github/branches/main fetch --quiet --no-tags "https://github.com/$GITHUB_REPOSITORY.git" refs/heads/main
+          head=$(git -C build/github/branches/main rev-parse FETCH_HEAD)
+          printf 'head=%s\n' "$head" >> "$GITHUB_OUTPUT"
+          # Receipt files are independent of the topic artwork and survive every regeneration.
+          if git -C build/github/branches/main cat-file -e FETCH_HEAD:content/readme/devforum-receipts; then
+            git -C build/github/branches/main archive FETCH_HEAD content/readme/devforum-receipts | tar -x -C build/github/branches/main
+          fi
       - name: Deliver approved DevForum topic and cached artwork
         env:
           DEVFORUM_MODE: post
@@ -155,11 +198,12 @@ jobs:
         run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/publish/run.luau
       - name: Remove temporary Git metadata
         run: rm -rf build/github/branches/main/.git
-      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@c361be8a3a1a345d69a0da53ca2585ef9d130502
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@00e16b1187b849ec91a124d2f2bc586d287da367
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}
           default-branch: ${{ github.event.repository.default_branch }}
+          expected-heads: '{"main":"${{ steps.prior.outputs.head }}"}'
           confirm: 'true'
         env:
           GH_TOKEN: ${{ github.token }}
