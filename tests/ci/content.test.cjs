@@ -93,6 +93,8 @@ test("release records preserve historical sources and publish both assets", () =
   assert.equal(record("1.0.0").source, "a0cdd83dc558daae263b0d8cf1c7f8266faf3180");
   assert.equal(record("1.1.0").source, "dd2ed7645fde9985ce9637666461af697fab6edd");
   assert.equal(record("2.0.0").sequence, 3);
+  assert.equal(record("2.0.0").source, "9526ea1ea7b290800d6784af3fcb68f01fb6354b");
+  for (const version of ["1.0.0", "1.1.0", "2.0.0"]) assert.equal(record(version).on_existing, undefined);
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, "config/publishing/releases/settings.json"), "utf8")).release.assets,
     ["build/artifacts/source/Registry.zip", "build/artifacts/source/Registry.rbxm"]);
 });
