@@ -4,7 +4,7 @@
 const Fs = require("@std/fs")
 const Process = require("@lute/process")
 const Hash = require("@formats/hash")
-const Glob = require("@ci/bootstrap/discovery/glob")
+const Glob = require("@formats/glob")
 
 local ReleaseAssets = {}
 export type Asset = { name: string, path: string, digest: string }

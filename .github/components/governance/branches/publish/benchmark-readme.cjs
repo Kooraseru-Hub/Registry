@@ -16,7 +16,7 @@ if (![run, attempt].every(value => typeof value === "string" && /^[1-9]\d*$/.tes
 
 const workflow = JSON.parse(execFileSync("gh", ["api", `repos/${repo}/actions/runs/${run}`], { encoding: "utf8" }));
 if (workflow.head_sha !== commit || workflow.head_branch !== branch || workflow.head_repository?.full_name !== repo ||
-    workflow.path !== ".github/workflows/manual.yml" || workflow.event !== "workflow_dispatch") {
+    workflow.path !== ".github/workflows/benchmark.yml" || workflow.event !== "workflow_dispatch" || workflow.conclusion !== "success") {
     throw new Error("Benchmark artifact does not belong to the trusted source revision");
 }
 

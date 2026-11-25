@@ -7,13 +7,19 @@ Use the `source` branch to propose changes. The `main` branch is generated from 
 - [Registry documentation](content/docs/index.md) is the source for GitHub Pages.
 - [Studio tests](tests/registry/Studio/README.md) and [benchmarks](tests/registry/benchmarks/README.md) describe how to reproduce results.
 
+## Native CI
+
+CI validates pushes and pull requests, builds historical release assets, generates documentation and stages the distribution branch. Publish defaults to rehearsal. On the default branch, select releases, branches (including verified DevForum synchronization), or pages. The optional Benchmark workflow runs Roblox Open Cloud measurements in its protected environment; provide its successful run ID and attempt to Publish to refresh the benchmark snapshot. Without a new benchmark the existing published snapshot is reused.
+
+Local archive builds use the standalone CI-Packages CLI: clone the package repository at the pinned workflow revision into `build/ci-packages` (or set `CI_PACKAGES_DIR`), then run `bash .github/components/source/build/archive.sh`. Local Studio tests remain opt-in.
+
 ## Verify changes
 
 From the repository root, set up the pinned tools and run Preflight.
 
 ```sh
 node dependencies/packages/core/dependencyLoader/index.ts
-node dependencies/packages/checks/preflightChecker/index.ts --ci
+node dependencies/packages/checks/preflightChecker/index.ts
 node dependencies/packages/checks/preflightChecker/index.ts --rules
 ```
 

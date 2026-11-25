@@ -1,8 +1,0 @@
-{
-  "version": "1.0.0",
-  "sequence": 1,
-  "prerelease": false,
-  "source": "a0cdd83dc558daae263b0d8cf1c7f8266faf3180",
-  "on_existing": "replace",
-  "notes": "notes.md"
-}

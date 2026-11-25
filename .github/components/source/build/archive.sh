@@ -19,4 +19,4 @@ else
 fi
 
 git archive --format=zip --output="$output/Registry.zip" "$commit" "$model_source" LICENSE
-node .github/components/source/build/model.cjs "$commit" "$model_source" "$output/Registry.rbxm"
+node "${CI_PACKAGES_DIR:-build/ci-packages}/packages/roblox/model.cjs" "$commit" "$model_source" "$output/Registry.rbxm" Registry

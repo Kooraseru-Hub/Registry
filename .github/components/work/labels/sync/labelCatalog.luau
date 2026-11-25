@@ -1,11 +1,11 @@
 -- .github/components/work/labels/sync/labelCatalog.luau
 --!strict
 
-const Fs = require("@std/fs")
-const Toml = require("@formats/toml")
-const Yaml = require("@formats/yaml")
-const Glob = require("@ci/bootstrap/discovery/glob")
-const Publication = require("@ci/github/publication")
+local Fs = require("@std/fs")
+local Toml = require("@formats/toml")
+local Yaml = require("@formats/yaml")
+local Glob = require("@formats/glob")
+local Publication = require("@formats/github")
 
 const CONFIG_PATH = "config/issues/labels.toml"
 const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
@@ -13,18 +13,16 @@ const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
 local LabelCatalog = {}
 export type Label = { name: string, color: string, description: string }
 
---- Parse and validate the repository label catalog.
+--- Validate the label catalog and normalize colors and ordering.
 function LabelCatalog.Parse(source: string): { Label }
 	local root = Publication.Record(Toml.decode(source))
 
-	-- Reject unknown fields before reading the catalog entries.
 	for field in root do
 		if field ~= "labels" then
 			error(`{CONFIG_PATH}: unknown field {field}`, 0)
 		end
 	end
 
-	-- Decode the label entries after validating the top-level fields.
 	local entries = root.labels
 	if type(entries) ~= "table" then
 		error(`{CONFIG_PATH}: expected [[labels]] entries`, 0)
@@ -32,7 +30,6 @@ function LabelCatalog.Parse(source: string): { Label }
 	local result: { Label } = {}
 	local seen: { [string]: boolean } = {}
 
-	-- Validate each catalog item before adding it to the normalized list.
 	for index, entry in entries do
 		if type(index) ~= "number" then
 			error(`{CONFIG_PATH}: labels must be an array`, 0)
@@ -75,20 +72,18 @@ function LabelCatalog.Parse(source: string): { Label }
 		table.insert(result, { name = name, color = color:lower(), description = description })
 	end
 
-	-- Return a stable ordering for comparison and reporting.
 	table.sort(result, function(left: Label, right: Label): boolean
 		return left.name < right.name
 	end)
 	return result
 end
 
---- Validate that issue forms refer to labels declared in the catalog.
+--- Ensure issue forms reference only declared labels.
 function LabelCatalog.ValidateForms(labels: { Label }): ()
 	local declared: { [string]: boolean } = {}
 	for _, label in labels do
 		declared[label.name:lower()] = true
 	end
-	-- Check labels in each issue form against the known catalog entries.
 	for _, path in Glob.Find(FORM_PATTERN) do
 		if not path:match("%.ya?ml$") or not (Fs.exists(path) and Fs.type(path) == "file") then
 			continue
@@ -123,7 +118,7 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 	end
 end
 
---- Read the configured labels and validate issue-form references.
+--- Read the configured label catalog and validate its issue form references.
 function LabelCatalog.Read(): { Label }
 	local labels = LabelCatalog.Parse(Fs.readFileToString(CONFIG_PATH))
 	LabelCatalog.ValidateForms(labels)

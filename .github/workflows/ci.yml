@@ -1,0 +1,141 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: ['**', '!main', '!ci/**', '!run/**']
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Kooraseru-Hub/CI-Packages
+          ref: 1339cccda7451615ea5309a55995611068b9364f
+          path: build/ci-packages
+          persist-credentials: false
+      - run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Verify workflow dependency lock
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.actionsLock --verify-local
+      - name: Independent tooling tests
+        run: |
+          node --test dependencies/packages/core/dependencyLoader/*.test.ts
+          node --test dependencies/packages/editor/editorIntegration/*.test.cjs dependencies/packages/editor/mcpServer/*.test.cjs
+          node --test dependencies/packages/checks/ruleLinter/policy.test.cjs
+          node --test .github/components/quality/setup/readiness.test.cjs .github/components/quality/code-review/review.test.cjs .github/components/quality/rules-audit/audit.test.cjs
+          node dependencies/packages/checks/testSuites/run.cjs
+          node tests/registry/benchmarks/cloud.cjs --check
+      - name: Repository configuration
+        run: |
+          node .github/components/quality/setup/readiness.cjs
+          dependencies/managed/bin/lute/lute run .github/components/work/maintenance.luau
+      - name: Code review
+        run: node .github/components/quality/code-review/review.cjs
+      - name: Rules audit
+        if: ${{ !cancelled() }}
+        run: node .github/components/quality/rules-audit/audit.cjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: code-review-findings
+          path: build/code-review
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: ${{ !cancelled() }}
+        with:
+          name: rules-audit-findings
+          path: build/rules-audit
+  releases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Kooraseru-Hub/CI-Packages
+          ref: 1339cccda7451615ea5309a55995611068b9364f
+          path: build/ci-packages
+          persist-credentials: false
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - name: Build current model and archive
+        run: bash .github/components/source/build/archive.sh
+      - name: Stage current and historical release assets
+        run: dependencies/managed/bin/lute/lute run .github/components/distribution/releases/build/run.luau
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/verify@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          index: build/github/releases/index.json
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          index: build/github/releases/index.json
+          repository: ${{ github.repository }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: releases
+          path: build/github/releases
+          if-no-files-found: error
+  documentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node --test .github/components/documentation/pages/build/starlight/build.test.cjs
+      - run: node .github/components/documentation/pages/build/starlight/build.cjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: documentation
+          path: build/github/pages
+          if-no-files-found: error
+  branches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
+      - run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/build/run.luau
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          directory: build/github/branches
+          repository: ${{ github.repository }}
+          default-branch: ${{ github.event.repository.default_branch }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: generated-branches
+          path: build/github/branches
+          if-no-files-found: error
+  required:
+    name: CI Required
+    if: ${{ always() }}
+    needs: [validate, releases, documentation, branches]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: jq -e 'all(.[]; .result == "success")' <<< "$RESULTS"

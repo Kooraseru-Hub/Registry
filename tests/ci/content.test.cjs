@@ -61,16 +61,13 @@ test("source content is top-level and legacy docs directories are gone", () => {
 });
 
 test("builders stage the authored docs into branch and Pages outputs", () => {
-  const site = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/siteBuilder.luau"), "utf8");
+  const site = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/starlight/build.cjs"), "utf8");
   const branches = fs.readFileSync(path.join(root, ".github/components/governance/branches/build/branchBuilder.luau"), "utf8");
   assert.match(site, /Starlight/);
-  assert.match(site, /starlight\/build\.cjs/);
-  const contract = fs.readFileSync(path.join(root, ".github/components/documentation/pages/build/component.toml"), "utf8");
-  assert.ok(contract.includes('"content/theme.css"'));
   assert.ok(fs.existsSync(path.join(root, "content/theme.css")));
   assert.match(branches, /CONTENT_ROOT = "content\/docs\/repository"/);
   assert.doesNotMatch(branches, /TagRenderer|overlayTranslations/);
-  assert.match(branches, /OUTPUT_ROOT = "build\/artifacts\/branches"/);
+  assert.match(branches, /OUTPUT_ROOT = "build\/github\/branches"/);
 });
 
 test("README variants derive from one authored source and declared asset inventory", () => {
@@ -91,16 +88,18 @@ test("README variants derive from one authored source and declared asset invento
   assert.doesNotMatch(github, /\b(?:width|height)="/);
 });
 test("release records preserve historical sources and publish both assets", () => {
-  const directory = path.join(root, "config/publishing/releases");
+  const directory = path.join(root, "releases");
   const record = v => JSON.parse(fs.readFileSync(path.join(directory, v, "release.json"), "utf8"));
   assert.equal(record("1.0.0").source, "a0cdd83dc558daae263b0d8cf1c7f8266faf3180");
   assert.equal(record("1.1.0").source, "dd2ed7645fde9985ce9637666461af697fab6edd");
   assert.equal(record("2.0.0").sequence, 3);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, "settings.json"), "utf8")).release.assets,
+  assert.equal(record("2.0.0").source, "9526ea1ea7b290800d6784af3fcb68f01fb6354b");
+  for (const version of ["1.0.0", "1.1.0", "2.0.0"]) assert.equal(record(version).on_existing, undefined);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, "config/publishing/releases/settings.json"), "utf8")).release.assets,
     ["build/artifacts/source/Registry.zip", "build/artifacts/source/Registry.rbxm"]);
 });
 test("binary model writes a root ModuleScript with exact source bytes", () => {
-  const { encode } = require(path.join(root, ".github/components/source/build/model.cjs"));
+  const { encode } = require(path.resolve(root, process.env.CI_PACKAGES_DIR || "build/ci-packages", "packages/roblox/model.cjs"));
   const source = Buffer.from("return { example = 'é' }\n");
   const model = encode({ name: "Registry", children: new Map(), source });
   assert.equal(model.subarray(0, 8).toString(), "<roblox!");
@@ -129,7 +128,7 @@ test("README image processing uses the existing Luau branch components", () => {
   assert.match(helper, /require\("@std\/fs"\)/);
   assert.ok(!fs.existsSync(path.join(directory, "build/prepare-images.py")));
   assert.match(fs.readFileSync(path.join(directory, "publish/forumPublisher.luau"), "utf8"), /SvgAssets\.StageBadges/);
-  const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  const publisher = fs.readFileSync(path.join(directory, "publish/run.luau"), "utf8");
   assert.match(publisher, /SvgAssets\.StageCharts/);
   assert.match(publisher, /require\("@components\/governance\/branches\/build\/svgAssets"\)/);
   assert.doesNotMatch(fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8"), /python/);
@@ -148,7 +147,7 @@ test("DevForum uses native uploads with pinned measurement provenance", () => {
   const directory = path.join(root, ".github/components/governance/branches");
   const helper = fs.readFileSync(path.join(directory, "build/svgAssets.luau"), "utf8");
   const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
-  const publisher = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  const publisher = fs.readFileSync(path.join(directory, "publish/run.luau"), "utf8");
   const cloud = fs.readFileSync(path.join(directory, "publish/benchmark-readme.cjs"), "utf8");
   assert.doesNotMatch(helper + builder + publisher, /EmbedReadme|function SvgAssets\.DataUri/);
   const forumRenderer = fs.readFileSync(path.join(directory, "build/forumReadme.luau"), "utf8");
@@ -165,8 +164,7 @@ test("DevForum uses native uploads with pinned measurement provenance", () => {
 test("DevForum publisher uses named credentials, native uploads and content fingerprints", () => {
   const directory = path.join(root, ".github/components/governance/branches");
   const publisher = fs.readFileSync(path.join(directory, "publish/forumPublisher.luau"), "utf8");
-  const component = fs.readFileSync(path.join(directory, "publish/component.toml"), "utf8");
-  assert.match(component, /credentials = \["devforum_api_key", "devforum_client_id"\]/);
+  assert.match(publisher, /packages\/devforum\/post\.cjs/);
   assert.match(publisher, /git", "hash-object"/);
   assert.match(publisher, /PNG_ROOT = "content\/images\/devforum"/);
   assert.match(publisher, /record\.pngs = pngs/);
@@ -190,9 +188,9 @@ test("DevForum publisher uses named credentials, native uploads and content fing
 
 test("new DevForum helpers use supported component aliases", () => {
   const directory = path.join(root, ".github/components/governance/branches");
-  const init = fs.readFileSync(path.join(directory, "publish/init.luau"), "utf8");
+  const init = fs.readFileSync(path.join(directory, "publish/run.luau"), "utf8");
   const builder = fs.readFileSync(path.join(directory, "build/branchBuilder.luau"), "utf8");
-  assert.match(init, /require\("@components\/governance\/branches\/publish\/forumPublisher"\)/);
+  assert.match(init, /require\("\.\/forumPublisher"\)/);
   assert.match(builder, /require\("@components\/governance\/branches\/build\/readmeTemplate"\)/);
 });
 
@@ -214,8 +212,8 @@ test("DevForum uses compact badges and declared environment bindings", () => {
   assert.equal(manifest.render.chartDisplay, 690);
   assert.equal(manifest.render.chartZoom, 2);
   assert.equal(manifest.badgeWidths, undefined);
-  const workflow = fs.readFileSync(path.join(root, ".github/workflows/bootstrap.yml"), "utf8");
-  assert.match(workflow, /CI_BIND_SECRET_DEVFORUM_USER_API_KEY: .*matrix\.environment == 'ci-devforum'.*secrets\.DEVFORUM_USER_API_KEY/);
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/publish.yml"), "utf8");
+  assert.ok(workflow.includes("DEVFORUM_UPLOAD_KEY: ${{ secrets.DEVFORUM_USER_API_KEY }}"));
   assert.doesNotMatch(workflow, /secrets: inherit|CI_SLOT_|CLOUDFLARE_API_TOKEN/);
 });
 

@@ -1,7 +1,0 @@
-phase = "publish"
-provides = ["github.milestones.synced"]
-requires = ["github.milestones.planned"]
-inputs = ["config/issues/milestones/records/**", "config/targets.toml", "build/artifacts/milestones/plans/**"]
-outputs = ["build/artifacts/milestones/receipts/**"]
-events = ["push"]
-boundary = "privileged"
