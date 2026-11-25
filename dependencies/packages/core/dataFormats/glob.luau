@@ -23,6 +23,7 @@ const expressions: { [string]: string } = {}
 --- Match a single segment using a cached wildcard expression.
 local function matchSegment(name: string, pattern: string): boolean
 	local expression = expressions[pattern]
+	-- Compile the glob once and cache its matching expression.
 	if not expression then
 		local fragments: { string } = { "^" }
 
@@ -79,12 +80,14 @@ function Glob.Find(pattern: string, root: string?): { string }
 	if pattern:sub(1, 1) == "/" or pattern:find("\\", 1, true) or #parts == 0 then
 		error(`invalid glob: {pattern}`, 0)
 	end
+	-- Reject path segments that could escape the glob root.
 	for _, part in parts do
 		if part == "." or part == ".." or part == "" or part:find(":", 1, true) then
 			error(`invalid glob segment: {pattern}`, 0)
 		end
 	end
 
+	-- Resolve the literal prefix before enumerating wildcard matches.
 	local prefix: { string } = {}
 	for _, part in parts do
 		if part:find("*", 1, true) or part:find("?", 1, true) then

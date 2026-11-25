@@ -1,10 +1,10 @@
 -- .github/components/work/milestones/milestoneSync.luau
 --!strict
 
-local Net = require("@lute/net/client")
-local Json = require("@formats/json")
-local Publication = require("@formats/github")
-local Catalog = require("./milestoneCatalog")
+const Net = require("@lute/net/client")
+const Json = require("@formats/json")
+const Publication = require("@formats/github")
+const Catalog = require("./milestoneCatalog")
 
 local MilestoneSync = {}
 export type Receipt = { version: string, id: number, state: string }
@@ -56,6 +56,7 @@ function MilestoneSync.Sync(
 	local existing: { { [string]: unknown } } = {}
 	local page = 1
 
+	-- Enumerate open and closed milestones before deciding what to synchronize.
 	while true do
 		local _, records = request(token, "GET", `{prefix}?state=all&per_page=100&page={page}`)
 		if type(records) ~= "table" then
@@ -70,6 +71,7 @@ function MilestoneSync.Sync(
 		page += 1
 	end
 
+	-- Index existing milestones by title so updates retain their identities.
 	local byTitle: { [string]: { [string]: unknown } } = {}
 
 	for _, entry in existing do

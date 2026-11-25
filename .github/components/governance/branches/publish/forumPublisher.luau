@@ -197,12 +197,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			Fs.remove(png)
 		end
 
+		-- Rasterize SVG input or copy the original PNG without changing its bytes.
 		if scale then
 			SvgAssets.Rasterize(RENDERER, source, png, scale, font)
 		else
 			Fs.copy(source, png)
 		end
 
+		-- Compare the staged PNG fingerprint with the last verified publication.
 		const blob = fingerprint(png)
 		const prior = oldPngs[name]
 		const published = if hasParent then previousBlob(directory, path) else nil
@@ -291,6 +293,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		refresh(name, source, badgeZoom)
 	end
 
+	-- Stage the banner alongside the fingerprinted badge inventory.
 	refresh("banner", "content/images/banner.png", nil)
 	const metadata = `{directory}/benchmarks/measurement.json`
 
@@ -342,6 +345,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 	-- A complete chart inventory must accompany the published upload cache.
 	assert(Fs.exists(metadata), "Missing benchmark snapshot for DevForum publication")
+	-- Rasterize every chart against the same complete measurement snapshot.
 	if Fs.exists(metadata) then
 		const font = SvgAssets.ChartFont(RENDERER)
 		print("DevForum benchmark font: " .. font)

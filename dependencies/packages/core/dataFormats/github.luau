@@ -1,9 +1,9 @@
 -- dependencies/packages/core/dataFormats/github.luau
 --!strict
 
-local Json = require("@formats/json")
-local Net = require("@lute/net/client")
-local Process = require("@lute/process")
+const Json = require("@formats/json")
+const Net = require("@lute/net/client")
+const Process = require("@lute/process")
 
 local Publication = {}
 

@@ -1,9 +1,9 @@
 -- .github/components/work/labels/sync/labelSync.luau
 --!strict
 
-local Json = require("@formats/json")
-local Publication = require("@formats/github")
-local LabelCatalog = require("./labelCatalog")
+const Json = require("@formats/json")
+const Publication = require("@formats/github")
+const LabelCatalog = require("./labelCatalog")
 
 local LabelSync = {}
 
@@ -18,6 +18,7 @@ function LabelSync.Sync(
 	local remote: { string } = {}
 	local page = 1
 
+	-- Enumerate every remote label page before planning changes.
 	while true do
 		local items = read(`repos/{repository}/labels?per_page=100&page={page}`)
 		for _, value in items do
@@ -29,6 +30,7 @@ function LabelSync.Sync(
 		page += 1
 	end
 
+	-- Index declared labels case-insensitively for remote reconciliation.
 	local declared: { [string]: boolean } = {}
 	for _, label in labels do
 		declared[label.name:lower()] = true

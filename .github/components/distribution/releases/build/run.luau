@@ -1,5 +1,5 @@
 -- .github/components/distribution/releases/build/run.luau
 --!strict
 
-local ReleaseBuilder = require("./releaseBuilder")
+const ReleaseBuilder = require("./releaseBuilder")
 ReleaseBuilder.new():Run()

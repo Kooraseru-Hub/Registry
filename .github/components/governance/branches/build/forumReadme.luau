@@ -32,6 +32,7 @@ function ForumReadme.Values(record: { [string]: unknown }): { [string]: string }
 		values["devforum." .. name] = url
 	end
 
+	-- Validate each benchmark provenance field before substituting it into HTML.
 	const measurement = template:gsub("{{([%a]+)}}", function(key: string): string
 		const value = metadata[key]
 		if type(value) ~= "string" or not value:match("^[%w .:%%-]+$") then
@@ -71,6 +72,7 @@ function ForumReadme.Render(record: { [string]: unknown }, directory: string): s
 		widths[name] = ReadmeTemplate.PngWidth(`{directory}/content/images/devforum/{name}.png`, height)
 	end
 
+	-- Assemble the portable forum shell before inserting the body and benchmark content.
 	const shell = ReadmeTemplate.Portable(ReadmeTemplate.Images(source, uploads, height, "patriots", widths))
 	values["registry.body"] = body
 	const content = shell:gsub("{{registry%.body}}", function(): string

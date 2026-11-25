@@ -2,23 +2,23 @@
 --!strict
 
 -- Validate configured records before any authorized write.
-local Process = require("@lute/process")
-local Publication = require("@formats/github")
-local Labels = require("./labels/sync/labelCatalog")
-local LabelSync = require("./labels/sync/labelSync")
-local Milestones = require("./milestones/milestoneCatalog")
-local MilestoneSync = require("./milestones/milestoneSync")
+const Process = require("@lute/process")
+const Publication = require("@formats/github")
+const Labels = require("./labels/sync/labelCatalog")
+const LabelSync = require("./labels/sync/labelSync")
+const Milestones = require("./milestones/milestoneCatalog")
+const MilestoneSync = require("./milestones/milestoneSync")
 
-local labels = Labels.Read()
-local milestones = Milestones.Read()
+const labels = Labels.Read()
+const milestones = Milestones.Read()
 print(`Validated {#labels} labels and {#milestones} milestones`)
-local mode = Process.env.MAINTENANCE_TARGET
+const mode = Process.env.MAINTENANCE_TARGET
 if mode == nil or mode == "rehearse" then
 	return
 end
-local repo = Process.env.GITHUB_REPOSITORY
-local branch = Process.env.CI_DEFAULT_BRANCH
-local token = Process.env.GH_TOKEN
+const repo = Process.env.GITHUB_REPOSITORY
+const branch = Process.env.CI_DEFAULT_BRANCH
+const token = Process.env.GH_TOKEN
 
 if Process.env.GITHUB_ACTIONS ~= "true" or Process.env.GITHUB_EVENT_NAME ~= "workflow_dispatch"
 	or Process.env.ACT == "true" or not repo or not branch or not token

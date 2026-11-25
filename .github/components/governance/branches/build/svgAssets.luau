@@ -190,6 +190,7 @@ end
 function SvgAssets.Rasterize(renderer: string, source: string, destination: string, scale: number, font: string?): ()
 	const command = { renderer, "--zoom", tostring(scale) }
 
+	-- Pin the renderer font families when producing text-bearing artwork.
 	if font then
 		for _, option in { "--font-family", "--sans-serif-family", "--serif-family" } do
 			table.insert(command, option)
@@ -197,6 +198,7 @@ function SvgAssets.Rasterize(renderer: string, source: string, destination: stri
 		end
 	end
 
+	-- Render the validated source into the requested output file.
 	table.insert(command, source)
 	table.insert(command, destination)
 	const result = Process.run(command, { timeout = 60 })

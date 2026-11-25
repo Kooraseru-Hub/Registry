@@ -55,12 +55,14 @@ function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, heigh
 		end
 		assert(type(url) == "string", "Missing README image: " .. name)
 
+		-- Require native uploads for the forum and HTTPS references for GitHub.
 		if height then
 			assert(url:match("^upload://[%w]+%.png$"), "Invalid uploaded image")
 		else
 			assert(url:match("^https://") and not url:find('[<>"%c]'), "Invalid GitHub image")
 		end
 
+		-- Escape URL attributes and calculate the display dimensions.
 		const escaped = url:gsub("&", "&amp;")
 		local dimensions = ""
 

@@ -1,10 +1,10 @@
 -- .github/components/work/milestones/milestoneCatalog.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Json = require("@formats/json")
-local Glob = require("@formats/glob")
-local Publication = require("@formats/github")
+const Fs = require("@std/fs")
+const Json = require("@formats/json")
+const Glob = require("@formats/glob")
+const Publication = require("@formats/github")
 
 const CONFIG_PATH = "config/issues/milestones/records"
 
@@ -26,6 +26,7 @@ end
 function MilestoneCatalog.Read(): { Milestone }
 	local result: { Milestone } = {}
 	local versions: { [string]: boolean } = {}
+	-- Read only regular milestone record files and validate their versions.
 	for _, path in Glob.Find(`{CONFIG_PATH}/*.json`) do
 		if not Fs.exists(path) or Fs.type(path) ~= "file" then
 			continue
