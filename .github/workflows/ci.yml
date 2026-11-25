@@ -26,6 +26,8 @@ jobs:
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
+      - name: Verify workflow dependency lock
+        run: node dependencies/packages/core/dependencyLoader/index.ts --exec tools.actionsLock --verify-local
       - name: Independent tooling tests
         run: |
           node --test dependencies/packages/core/dependencyLoader/*.test.ts
