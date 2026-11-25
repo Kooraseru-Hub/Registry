@@ -45,6 +45,9 @@ jobs:
       - name: Rules audit
         if: ${{ !cancelled() }}
         run: node .github/components/quality/rules-audit/audit.cjs
+      - name: Print non-fixture rule findings for cleanup
+        if: ${{ !cancelled() }}
+        run: node -e 'for(const x of require("./build/rules-audit/diagnostics.json").diagnostics)if(!x.fixture)console.log(JSON.stringify(x))'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ !cancelled() }}
         with:
