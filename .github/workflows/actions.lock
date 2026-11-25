@@ -69,7 +69,7 @@ dependencies:
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
     'kooraseru-hub/ci-packages@41ff5a092a080c3121fe6f6e66ea529534963544':
-        ref: 'feat/editable-announcements'
+        ref: 'main'
         commit: 'sha1-41ff5a092a080c3121fe6f6e66ea529534963544'
         owner_id: 255195713
         repo_id: 1458028693
