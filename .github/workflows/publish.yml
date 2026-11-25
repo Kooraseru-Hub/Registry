@@ -1,0 +1,128 @@
+name: Publish
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Publication target (rehearse makes no external changes)
+        type: choice
+        options: [rehearse, releases, branches, pages]
+        default: rehearse
+      benchmark_run:
+        description: Optional successful Benchmark workflow run ID
+        type: string
+        default: ''
+      benchmark_attempt:
+        description: Benchmark run attempt
+        type: string
+        default: '1'
+  pull_request:
+    paths: ['.github/workflows/publish.yml']
+permissions:
+  contents: read
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    uses: ./.github/workflows/ci.yml
+  releases:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'releases'
+    runs-on: ubuntu-latest
+    environment: ci-publication
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: releases
+          path: build/github/releases
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          index: build/github/releases/index.json
+          repository: ${{ github.repository }}
+          confirm: 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+  branches:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'branches'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: ci-devforum
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Kooraseru-Hub/CI-Packages
+          ref: 1339cccda7451615ea5309a55995611068b9364f
+          path: build/ci-packages
+          persist-credentials: false
+      - run: node dependencies/packages/core/dependencyLoader/index.ts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: generated-branches
+          path: build/github/branches
+      - name: Attach optional benchmark artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_ORIGIN_INPUTS: ${{ toJSON(inputs) }}
+          CI_ORIGIN_SHA: ${{ github.sha }}
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: node .github/components/governance/branches/publish/benchmark-readme.cjs build/github/branches/main
+      - name: Fetch previous published cache
+        run: |
+          git -C build/github/branches/main init --quiet
+          git -C build/github/branches/main fetch --quiet --no-tags "https://github.com/$GITHUB_REPOSITORY.git" refs/heads/main
+      - name: Refresh verified DevForum post and cached artwork
+        env:
+          DEVFORUM_UPLOAD_KEY: ${{ secrets.DEVFORUM_USER_API_KEY }}
+          DEVFORUM_UPLOAD_CLIENT: ${{ vars.DEVFORUM_USER_API_CLIENT_ID || 'discourse-mcp' }}
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/publish/run.luau
+      - name: Remove temporary Git metadata
+        run: rm -rf build/github/branches/main/.git
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@1339cccda7451615ea5309a55995611068b9364f
+        with:
+          directory: build/github/branches
+          repository: ${{ github.repository }}
+          default-branch: ${{ github.event.repository.default_branch }}
+          confirm: 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+  pages-artifact:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: documentation
+          path: build/github/pages
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+        with:
+          path: build/github/pages
+  pages:
+    needs: pages-artifact
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.target == 'pages'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+        id: deploy
