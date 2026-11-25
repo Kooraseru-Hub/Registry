@@ -142,12 +142,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const knownUploads: { [string]: boolean } = {}
 	local needsRecovery = false
 
+	-- Inventory references already recorded in the published cache.
 	for _, reference in uploads do
 		if type(reference) == "string" then
 			knownUploads[reference] = true
 		end
 	end
 
+	-- Recover only when the public post contains an accessible reference absent from the cache.
 	for reference, available in validUploads do
 		if available == true and not knownUploads[reference] then
 			needsRecovery = true

@@ -63,7 +63,7 @@ dependencies:
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
     'kooraseru-hub/ci-packages@db22d79846855ce8c58c76133d5b4c56edff6326':
-        ref: 'fix/devforum-cooking-verification'
+        ref: 'main'
         commit: 'sha1-db22d79846855ce8c58c76133d5b4c56edff6326'
         owner_id: 255195713
         repo_id: 1458028693
