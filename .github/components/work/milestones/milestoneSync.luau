@@ -87,6 +87,7 @@ function MilestoneSync.Sync(
 	local receipts: { Receipt } = {}
 	local changed = false
 
+	-- Reconcile each declared milestone against its existing remote identity.
 	for _, milestone in milestones do
 		local desired = body(milestone)
 		local current = byTitle[milestone.version]

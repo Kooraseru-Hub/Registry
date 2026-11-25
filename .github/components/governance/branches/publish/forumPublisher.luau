@@ -253,6 +253,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 
 		pngs[name] = { path = path, blob = blob }
 
+		-- Reuse the verified reference without uploading another copy.
 		if existing then
 			uploads[name] = existing
 			reused += 1
@@ -429,6 +430,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		end
 	end
 
+	-- Render the final post with real upload references after all uploads succeed.
 	const final = ForumReadme.Render(record, directory)
 	assert(not final:find("upload://DRAFT", 1, true), "Unresolved draft upload")
 	Fs.writeStringToFile(readme, final)
