@@ -1,5 +1,7 @@
 name: DevForum release
 on:
+  pull_request:
+    paths: ['.github/workflows/devforum.yml', 'releases/2.0.0/devforum.md', 'content/readme/devforum.json']
   release:
     types: [published, edited]
   workflow_dispatch:
@@ -17,25 +19,26 @@ on:
         description: Exact already-published release tag
         type: string
         required: true
+        default: '2.0.0'
 permissions:
   contents: read
 jobs:
   draft:
-    if: github.event_name == 'release' && !github.event.release.draft && !github.event.release.prerelease || github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.mode == 'draft'
+    if: github.event_name == 'pull_request' || github.event_name == 'release' && !github.event.release.draft && !github.event.release.prerelease || github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch && inputs.mode == 'draft'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.repository.default_branch }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
-      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/announcement@00e16b1187b849ec91a124d2f2bc586d287da367
+      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/announcement@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           repository: ${{ github.repository }}
-          tag: ${{ github.event.release.tag_name || inputs.tag }}
+          tag: ${{ github.event.release.tag_name || inputs.tag || '2.0.0' }}
           config: content/readme/devforum.json
           output: build/devforum-release
         env:
@@ -62,7 +65,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
-      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/deliver@00e16b1187b849ec91a124d2f2bc586d287da367
+      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/deliver@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           repository: ${{ github.repository }}
           tag: ${{ inputs.tag }}

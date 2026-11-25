@@ -51,7 +51,7 @@ jobs:
         with:
           name: releases
           path: build/github/releases
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@00e16b1187b849ec91a124d2f2bc586d287da367
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@41ff5a092a080c3121fe6f6e66ea529534963544
         id: release-publisher
         with:
           index: build/github/releases/index.json
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '24'
-      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/announcement@00e16b1187b849ec91a124d2f2bc586d287da367
+      - uses: Kooraseru-Hub/CI-Packages/packages/devforum/announcement@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           repository: ${{ github.repository }}
           tag: ${{ matrix.tag }}
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: 00e16b1187b849ec91a124d2f2bc586d287da367
+          ref: 41ff5a092a080c3121fe6f6e66ea529534963544
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
@@ -162,7 +162,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: 00e16b1187b849ec91a124d2f2bc586d287da367
+          ref: 41ff5a092a080c3121fe6f6e66ea529534963544
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
@@ -198,7 +198,7 @@ jobs:
         run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/publish/run.luau
       - name: Remove temporary Git metadata
         run: rm -rf build/github/branches/main/.git
-      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@00e16b1187b849ec91a124d2f2bc586d287da367
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}

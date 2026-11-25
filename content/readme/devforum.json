@@ -61,5 +61,8 @@
   "delivery": {
     "receiptBranch": "main",
     "receiptDirectory": "content/readme/devforum-receipts"
+  },
+  "announcementFiles": {
+    "2.0.0": "releases/2.0.0/devforum.md"
   }
 }
