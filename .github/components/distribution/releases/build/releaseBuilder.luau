@@ -4,13 +4,13 @@
 const Fs = require("@std/fs")
 const Process = require("@lute/process")
 const Json = require("@formats/json")
-const Glob = require("@ci/bootstrap/discovery/glob")
-const ConflictPolicy = require("@ci/github/publication/conflictPolicy")
+const Glob = require("@formats/glob")
+const ConflictPolicy = require("./conflictPolicy")
 const ReleaseAssets = require("./releaseAssets")
 
 const CONFIG_PATH = "config/publishing/releases/settings.json"
-const RECORD_ROOT = "config/publishing/releases"
-const OUTPUT_ROOT = "build/artifacts/releases"
+const RECORD_ROOT = "releases"
+const OUTPUT_ROOT = "build/github/releases"
 
 type ReleaseRecord = {
 	onExisting: ConflictPolicy.Policy?,
@@ -335,7 +335,7 @@ function ReleaseBuilder.Run(_: ReleaseBuilder): string?
 		return "skipped"
 	end
 	ensureDirectory("build")
-	ensureDirectory("build/artifacts")
+	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
 	local index: { ReleaseIndexEntry } = {}

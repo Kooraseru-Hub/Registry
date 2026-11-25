@@ -14,7 +14,8 @@ const Publisher = {}
 const MANIFEST = "content/readme/devforum.json"
 const PNG_ROOT = "content/images/devforum"
 const RENDERER = "dependencies/managed/bin/resvg/resvg"
-const POST_PUBLISHER = ".github/components/governance/branches/publish/forum-post.cjs"
+const PACKAGE_ROOT = Process.env.CI_PACKAGES_DIR or "build/ci-packages"
+const POST_PUBLISHER = `{PACKAGE_ROOT}/packages/devforum/post.cjs`
 
 --- Read a file from the already fetched published main tree; no network request.
 local function previousFile(directory: string, path: string): string?
@@ -105,9 +106,9 @@ end
 
 --- Invoke the destination verifier without exposing credentials in command arguments.
 local function postCommand(arguments: { string }, key: string, client: string): string
-	const command = { "node", POST_PUBLISHER }
-	for _, argument in arguments do
-		table.insert(command, argument)
+	const command = { "node", POST_PUBLISHER, arguments[1], MANIFEST }
+	for index = 2, #arguments do
+		table.insert(command, arguments[index])
 	end
 	const result = Process.run(command, {
 		env = {

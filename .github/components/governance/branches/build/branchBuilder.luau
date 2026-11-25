@@ -4,13 +4,13 @@
 const Fs = require("@std/fs")
 const Toml = require("@formats/toml")
 const ReadmeTemplate = require("@components/governance/branches/build/readmeTemplate")
-const Glob = require("@ci/bootstrap/discovery/glob")
+const Glob = require("@formats/glob")
 const Process = require("@lute/process")
 const SvgAssets = require("./svgAssets")
 
 const CONFIG_ROOT = "config/branches"
 const CONTENT_ROOT = "content/docs/repository"
-const OUTPUT_ROOT = "build/artifacts/branches"
+const OUTPUT_ROOT = "build/github/branches"
 const LOCAL_RESULTS = Process.env.REGISTRY_BENCHMARK_RESULTS
 
 local BranchBuilder = {}
@@ -221,7 +221,7 @@ function BranchBuilder.Run(_: BranchBuilder): ()
 
 	-- Create the output directories before staging branch content.
 	ensureDirectory("build")
-	ensureDirectory("build/artifacts")
+	ensureDirectory("build/github")
 	ensureDirectory(OUTPUT_ROOT)
 
 	local branchCount = 0
