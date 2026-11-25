@@ -40,7 +40,7 @@ jobs:
         with:
           name: releases
           path: build/github/releases
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@1339cccda7451615ea5309a55995611068b9364f
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@db22d79846855ce8c58c76133d5b4c56edff6326
         with:
           index: build/github/releases/index.json
           repository: ${{ github.repository }}
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: 1339cccda7451615ea5309a55995611068b9364f
+          ref: db22d79846855ce8c58c76133d5b4c56edff6326
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
@@ -94,7 +94,7 @@ jobs:
         run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/publish/run.luau
       - name: Remove temporary Git metadata
         run: rm -rf build/github/branches/main/.git
-      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@1339cccda7451615ea5309a55995611068b9364f
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@db22d79846855ce8c58c76133d5b4c56edff6326
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}
