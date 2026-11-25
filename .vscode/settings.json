@@ -1,7 +1,7 @@
 {
 	"task.autoDetect": "off",
 	// Generic Workbench Bridge external workspace client.
-	"githubLocalActions.actCommand": "node .vscode/config/act/run.cjs",
+	"githubLocalActions.actCommand": "act",
 	"workbenchBridge.workspaceCommands": [
 		["node", "dependencies/packages/editor/editorIntegration/client.cjs"]
 	],

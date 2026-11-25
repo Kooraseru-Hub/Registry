@@ -33,6 +33,5 @@ The export root `managed` resolves inside `dependencies/managed/`. Legacy provid
 
 Workspace setup also generates the ignored root `.actrc` from `.vscode/config/act/actrc` so standard act and editor workflow buttons share the same local options.
 
-## Delegated workflow dependencies
 
-The `github-workflow` provider acquires the exact reusable workflow commit declared in an authored workflow. Its version is already locked by that SHA, so it is deliberately excluded from `dependencies.lock`. A changed workflow pin invalidates the derived installation fingerprint. `tools.ciEngine` is installed into `dependencies/managed/packages/ci-engine` and exports its CLI. Use `node dependencies/packages/core/dependencyLoader/index.ts --only tools.ciEngine --exec tools.ciEngine run validation`.
+Standalone CI-Packages actions are pinned in native workflows. The workspace loader no longer installs CI-Engine.

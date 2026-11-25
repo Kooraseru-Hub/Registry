@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { rawImages, cookedImages, publicImageURL, createPublisher } =
-  require("../../.github/components/governance/branches/publish/forum-post.cjs");
+  require(require("node:path").resolve(process.env.CI_PACKAGES_DIR || "build/ci-packages", "packages/devforum/post.cjs"));
 
 const origin = "https://devforum.roblox.com";
 const storage = "https://devforum-uploads.s3.dualstack.us-east-2.amazonaws.com";

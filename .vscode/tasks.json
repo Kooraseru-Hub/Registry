@@ -6,10 +6,19 @@
       "detail": "Run the Studio benchmark and build the README with its heatmaps.",
       "type": "process",
       "command": "bash",
-      "windows": { "command": "C:/msys64/usr/bin/bash.exe" },
-      "args": ["tests/registry/Studio/benchmark-build.sh"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "group": { "kind": "build", "isDefault": true },
+      "windows": {
+        "command": "C:/msys64/usr/bin/bash.exe"
+      },
+      "args": [
+        "tests/registry/Studio/benchmark-build.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
@@ -17,28 +26,31 @@
       "detail": "Run the Registry API smoke test on Windows.",
       "type": "process",
       "command": "bash",
-      "windows": { "command": "C:/msys64/usr/bin/bash.exe" },
-      "args": ["tests/registry/Studio/run.sh", "Lookup"],
-      "options": { "cwd": "${workspaceFolder}" },
-      "problemMatcher": []
-    },
-    {
-      "label": "Registry: Validate in Docker",
-      "detail": "Build and run tests in one temporary container.",
-      "type": "process",
-      "command": "bash",
-      "windows": { "command": "C:/msys64/usr/bin/bash.exe" },
-      "args": [".vscode/config/act/validate.sh"],
-      "options": { "cwd": "${workspaceFolder}" },
+      "windows": {
+        "command": "C:/msys64/usr/bin/bash.exe"
+      },
+      "args": [
+        "tests/registry/Studio/run.sh",
+        "Lookup"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "problemMatcher": []
     },
     {
       "label": "Registry: Emulate GitHub Actions",
       "detail": "Run the workflow with act and retain the artifact ZIP.",
       "type": "process",
-      "command": "node",
-      "args": ["${workspaceFolder}/.vscode/config/act/run.cjs"],
-      "options": { "cwd": "${workspaceFolder}" },
+      "command": "act",
+      "args": [
+        "-W",
+        ".github/workflows/ci.yml",
+        "push"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "problemMatcher": []
     }
   ]
