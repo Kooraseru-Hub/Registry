@@ -11,7 +11,12 @@ workflows:
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
         - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
         - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
-        - 'kooraseru-hub/ci-packages@db22d79846855ce8c58c76133d5b4c56edff6326'
+        - 'kooraseru-hub/ci-packages@41ff5a092a080c3121fe6f6e66ea529534963544'
+    '.github/workflows/devforum.yml':
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
+        - 'kooraseru-hub/ci-packages@41ff5a092a080c3121fe6f6e66ea529534963544'
     '.github/workflows/maintenance.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
         - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
@@ -20,8 +25,9 @@ workflows:
         - 'actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346'
         - 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333'
         - 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
+        - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         - 'actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9'
-        - 'kooraseru-hub/ci-packages@db22d79846855ce8c58c76133d5b4c56edff6326'
+        - 'kooraseru-hub/ci-packages@41ff5a092a080c3121fe6f6e66ea529534963544'
     '.github/workflows/review.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
 dependencies:
@@ -62,8 +68,8 @@ dependencies:
         repo_id: 496012378
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
-    'kooraseru-hub/ci-packages@db22d79846855ce8c58c76133d5b4c56edff6326':
+    'kooraseru-hub/ci-packages@41ff5a092a080c3121fe6f6e66ea529534963544':
         ref: 'main'
-        commit: 'sha1-db22d79846855ce8c58c76133d5b4c56edff6326'
+        commit: 'sha1-41ff5a092a080c3121fe6f6e66ea529534963544'
         owner_id: 255195713
         repo_id: 1458028693

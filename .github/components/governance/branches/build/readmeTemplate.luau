@@ -55,21 +55,25 @@ function ReadmeTemplate.Images<T>(source: string, images: { [string]: T }, heigh
 		end
 		assert(type(url) == "string", "Missing README image: " .. name)
 
+		-- Require native uploads for the forum and HTTPS references for GitHub.
 		if height then
 			assert(url:match("^upload://[%w]+%.png$"), "Invalid uploaded image")
 		else
 			assert(url:match("^https://") and not url:find('[<>"%c]'), "Invalid GitHub image")
 		end
 
+		-- Escape URL attributes and calculate the display dimensions.
 		const escaped = url:gsub("&", "&amp;")
 		local dimensions = ""
 
+		-- Apply the explicit display dimensions only to badges, not the banner.
 		if height and name ~= "banner" then
 			const width = assert(assert(widths, "Missing DevForum PNG dimensions")[name], "Missing DevForum PNG width: " .. name)
 			assert(width > 0 and width % 1 == 0, "Invalid badge display width")
 			dimensions = string.format('width="%d" height="%d" ', width, height)
 		end
 
+		-- Construct the final escaped image attribute substitution.
 		const replacement = dimensions .. 'src="' .. escaped .. '"'
 
 		return (tag:gsub('src="{{readme%.image%.[%w%-]+}}"', function(): string

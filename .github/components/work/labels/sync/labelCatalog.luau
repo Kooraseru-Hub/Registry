@@ -1,11 +1,11 @@
 -- .github/components/work/labels/sync/labelCatalog.luau
 --!strict
 
-local Fs = require("@std/fs")
-local Toml = require("@formats/toml")
-local Yaml = require("@formats/yaml")
-local Glob = require("@formats/glob")
-local Publication = require("@formats/github")
+const Fs = require("@std/fs")
+const Toml = require("@formats/toml")
+const Yaml = require("@formats/yaml")
+const Glob = require("@formats/glob")
+const Publication = require("@formats/github")
 
 const CONFIG_PATH = "config/issues/labels.toml"
 const FORM_PATTERN = ".github/ISSUE_TEMPLATE/*"
@@ -17,12 +17,14 @@ export type Label = { name: string, color: string, description: string }
 function LabelCatalog.Parse(source: string): { Label }
 	local root = Publication.Record(Toml.decode(source))
 
+	-- Reject unknown catalog fields before interpreting label records.
 	for field in root do
 		if field ~= "labels" then
 			error(`{CONFIG_PATH}: unknown field {field}`, 0)
 		end
 	end
 
+	-- Require the declared label collection before processing entries.
 	local entries = root.labels
 	if type(entries) ~= "table" then
 		error(`{CONFIG_PATH}: expected [[labels]] entries`, 0)
@@ -30,6 +32,7 @@ function LabelCatalog.Parse(source: string): { Label }
 	local result: { Label } = {}
 	local seen: { [string]: boolean } = {}
 
+	-- Validate each array entry before accepting its label definition.
 	for index, entry in entries do
 		if type(index) ~= "number" then
 			error(`{CONFIG_PATH}: labels must be an array`, 0)
@@ -72,6 +75,7 @@ function LabelCatalog.Parse(source: string): { Label }
 		table.insert(result, { name = name, color = color:lower(), description = description })
 	end
 
+	-- Sort validated records by name for reproducible synchronization.
 	table.sort(result, function(left: Label, right: Label): boolean
 		return left.name < right.name
 	end)
@@ -84,6 +88,7 @@ function LabelCatalog.ValidateForms(labels: { Label }): ()
 	for _, label in labels do
 		declared[label.name:lower()] = true
 	end
+	-- Check issue-form labels against the declared catalog.
 	for _, path in Glob.Find(FORM_PATTERN) do
 		if not path:match("%.ya?ml$") or not (Fs.exists(path) and Fs.type(path) == "file") then
 			continue

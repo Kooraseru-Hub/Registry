@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: db22d79846855ce8c58c76133d5b4c56edff6326
+          ref: 41ff5a092a080c3121fe6f6e66ea529534963544
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts
@@ -45,6 +45,9 @@ jobs:
       - name: Rules audit
         if: ${{ !cancelled() }}
         run: node .github/components/quality/rules-audit/audit.cjs
+      - name: Print non-fixture rule findings for cleanup
+        if: ${{ !cancelled() }}
+        run: node -e 'for(const x of require("./build/rules-audit/diagnostics.json").diagnostics)if(!x.fixture)console.log(JSON.stringify(x))'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: ${{ !cancelled() }}
         with:
@@ -69,7 +72,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: Kooraseru-Hub/CI-Packages
-          ref: db22d79846855ce8c58c76133d5b4c56edff6326
+          ref: 41ff5a092a080c3121fe6f6e66ea529534963544
           path: build/ci-packages
           persist-credentials: false
       - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
@@ -77,10 +80,10 @@ jobs:
         run: bash .github/components/source/build/archive.sh
       - name: Stage current and historical release assets
         run: dependencies/managed/bin/lute/lute run .github/components/distribution/releases/build/run.luau
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/verify@db22d79846855ce8c58c76133d5b4c56edff6326
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/verify@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           index: build/github/releases/index.json
-      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@db22d79846855ce8c58c76133d5b4c56edff6326
+      - uses: Kooraseru-Hub/CI-Packages/packages/releases/publish@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           index: build/github/releases/index.json
           repository: ${{ github.repository }}
@@ -120,7 +123,7 @@ jobs:
           node-version: '24'
       - run: node dependencies/packages/core/dependencyLoader/index.ts --only luau.lute --exec luau.lute --version
       - run: dependencies/managed/bin/lute/lute run .github/components/governance/branches/build/run.luau
-      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@db22d79846855ce8c58c76133d5b4c56edff6326
+      - uses: Kooraseru-Hub/CI-Packages/packages/repository/branches@41ff5a092a080c3121fe6f6e66ea529534963544
         with:
           directory: build/github/branches
           repository: ${{ github.repository }}

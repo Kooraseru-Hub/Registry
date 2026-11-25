@@ -57,5 +57,12 @@
       "from": "upload://3qQFpBATdhtQHHbg6m0gPzPUvaJ.png",
       "reference": "upload://nKvllyZ8UNElvosqVrI8ux99sWo.png"
     }
+  },
+  "delivery": {
+    "receiptBranch": "main",
+    "receiptDirectory": "content/readme/devforum-receipts"
+  },
+  "announcementFiles": {
+    "2.0.0": "releases/2.0.0/devforum.md"
   }
 }
