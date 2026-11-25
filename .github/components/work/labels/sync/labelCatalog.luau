@@ -32,6 +32,7 @@ function LabelCatalog.Parse(source: string): { Label }
 	local result: { Label } = {}
 	local seen: { [string]: boolean } = {}
 
+	-- Validate each array entry before accepting its label definition.
 	for index, entry in entries do
 		if type(index) ~= "number" then
 			error(`{CONFIG_PATH}: labels must be an array`, 0)
@@ -74,6 +75,7 @@ function LabelCatalog.Parse(source: string): { Label }
 		table.insert(result, { name = name, color = color:lower(), description = description })
 	end
 
+	-- Sort validated records by name for reproducible synchronization.
 	table.sort(result, function(left: Label, right: Label): boolean
 		return left.name < right.name
 	end)

@@ -37,6 +37,7 @@ function LabelSync.Sync(
 	end
 	local changed = false
 
+	-- Create missing labels and update only differing remote definitions.
 	for _, label in labels do
 		local path = `repos/{repository}/labels/{Publication.Encode(label.name)}`
 		local status, current = request("GET", path, nil)

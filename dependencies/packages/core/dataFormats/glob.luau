@@ -89,6 +89,7 @@ function Glob.Find(pattern: string, root: string?): { string }
 
 	-- Resolve the literal prefix before enumerating wildcard matches.
 	local prefix: { string } = {}
+	-- Find the leading literal segments without crossing the first wildcard.
 	for _, part in parts do
 		if part:find("*", 1, true) or part:find("?", 1, true) then
 			break
@@ -96,6 +97,7 @@ function Glob.Find(pattern: string, root: string?): { string }
 		table.insert(prefix, part)
 	end
 
+	-- Set traversal bounds from the resolved prefix and recursive wildcard.
 	local base = root or "."
 	local results: { string } = {}
 	local start = table.concat(prefix, "/")

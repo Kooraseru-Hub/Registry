@@ -74,6 +74,7 @@ function MilestoneSync.Sync(
 	-- Index existing milestones by title so updates retain their identities.
 	local byTitle: { [string]: { [string]: unknown } } = {}
 
+	-- Reject ambiguous titles before using existing milestone identities.
 	for _, entry in existing do
 		local title = Publication.Text(entry.title)
 		if byTitle[title] then
@@ -82,6 +83,7 @@ function MilestoneSync.Sync(
 		byTitle[title] = entry
 	end
 
+	-- Collect publication receipts while reconciling each declared milestone.
 	local receipts: { Receipt } = {}
 	local changed = false
 

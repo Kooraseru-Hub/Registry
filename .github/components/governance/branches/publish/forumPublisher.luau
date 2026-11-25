@@ -210,6 +210,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 		const published = if hasParent then previousBlob(directory, path) else nil
 		local existing: string? = nil
 
+		-- Reuse a prior upload only when its destination, path and content agree.
 		if type(prior) == "table" then
 			const entry = Json.record(prior)
 			if sameDestination and entry.path == path and entry.blob == published then
@@ -245,6 +246,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			end
 		end
 
+		-- Mark recovered references as claimed so they are never assigned twice.
 		if existing then
 			claimedUploads[existing] = true
 		end
@@ -386,12 +388,14 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	end
 
 	table.sort(assetNames)
+	-- Hash each staged asset in sorted order so approval is deterministic.
 	for _, name in assetNames do
 		const entry = Json.record(pngs[name])
 		const file = `{directory}/{entry.path}`
 		table.insert(lines, name .. ":" .. Hash.sha256(Fs.readFileToString(file)))
 	end
 
+	-- Save the reviewable Markdown, approval digest and asset inventory.
 	const approval = Hash.sha256(table.concat(lines, "\n"))
 	Fs.createDirectory("build/devforum-draft", { makeParents = true })
 	Fs.writeStringToFile("build/devforum-draft/topic.md", draft)
