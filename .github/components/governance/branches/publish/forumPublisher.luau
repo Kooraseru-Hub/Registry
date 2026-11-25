@@ -126,7 +126,8 @@ local function postCommand(arguments: { string }, key: string, client: string): 
 end
 
 --- Refresh changed artwork and persist its provenance alongside the generated branch.
-function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string): ()
+function Publisher.Run(directory: string, hasParent: boolean, key: string, client: string, mode: string, approved: string?): ()
+	assert(mode == "draft" or mode == "post", "Invalid DevForum mode")
 	assert(not key:find("[%c]") and not client:find("[%c]"), "Invalid DevForum credential format")
 	const seed = ForumReadme.Read()
 	const previous = if hasParent then previousManifest(directory) else nil
@@ -135,7 +136,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	const destination = Json.record(seed.destination)
 	const priorDestination = if type(record.destination) == "table" then Json.record(record.destination) else nil
 	const sameDestination = not priorDestination or (priorDestination.topicId == destination.topicId and priorDestination.postId == destination.postId)
-	const preflight = Json.record(Json.decode(postCommand({ "prepare" }, key, client)))
+	const preflight = Json.record(Json.decode(postCommand({ if mode == "post" then "prepare" else "inspect" }, key, client)))
 	const validUploads = Json.record(preflight.validUploads)
 	const digest = preflight.digest
 	assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"), "Invalid DevForum post snapshot")
@@ -183,6 +184,7 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	Fs.createDirectory(`{directory}/{PNG_ROOT}`, { makeParents = true })
 	local reused = 0
 	local uploaded = 0
+	const pending: { [string]: string } = {}
 
 	--- Compare the newly generated PNG with the exact previously published upload bytes.
 	local function refresh(name: string, source: string, scale: number?, font: string?): ()
@@ -254,10 +256,11 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 			return
 		end
 
-		uploads[name] = upload(png, name, key, client)
-		uploaded += 1
-		print(`DevForum asset {name}: uploaded`)
-		Task.wait(2)
+		-- Use a deliberately unresolved native-reference placeholder until delivery is approved.
+		const placeholder = `upload://DRAFT{name:gsub("%-", "")}{blob}.png`
+		uploads[name] = placeholder
+		pending[name] = png
+		print(`DevForum asset {name}: pending upload`)
 	end
 
 	-- Fetch ShieldCN only for a new source URL or absent cached SVG.
@@ -368,7 +371,59 @@ function Publisher.Run(directory: string, hasParent: boolean, key: string, clien
 	record.charts = seed.charts
 	Fs.createDirectory(`{directory}/content/readme`, { makeParents = true })
 	const readme = `{directory}/README.devforum.md`
-	Fs.writeStringToFile(readme, ForumReadme.Render(record, directory))
+	const draft = ForumReadme.Render(record, directory)
+	const revision = assert(Process.env.GITHUB_SHA, "Missing draft source revision")
+	const lines: { string } = { "topic-draft-v1", revision, tostring(destination.topicId), tostring(destination.postId), digest, Hash.sha256(draft) }
+	const assetNames: { string } = {}
+
+	-- Bind approval to the source, public post snapshot, complete Markdown and exact artwork bytes.
+	for name in pngs do
+		table.insert(assetNames, name)
+	end
+
+	table.sort(assetNames)
+	for _, name in assetNames do
+		const entry = Json.record(pngs[name])
+		const file = `{directory}/{entry.path}`
+		table.insert(lines, name .. ":" .. Hash.sha256(Fs.readFileToString(file)))
+	end
+
+	const approval = Hash.sha256(table.concat(lines, "\n"))
+	Fs.createDirectory("build/devforum-draft", { makeParents = true })
+	Fs.writeStringToFile("build/devforum-draft/topic.md", draft)
+	Fs.writeStringToFile("build/devforum-draft/approval.txt", approval .. "\n")
+	Fs.writeStringToFile("build/devforum-draft/topic.json", Json.encode({
+		kind = "topic",
+		revision = revision,
+		destination = destination,
+		previous = digest,
+		approval = approval,
+		assets = pngs,
+		pending = pending,
+	}) .. "\n")
+	print(`DevForum topic draft approval: {approval}`)
+
+	if mode == "draft" then
+		print("Draft only: no uploads, post edits or cache publication")
+		return
+	end
+
+	assert(approved == approval, "Draft changed or approval missing; generate and review a new draft before posting")
+
+	-- No irreversible call occurs before the full draft is rendered and approved.
+	for _, name in assetNames do
+		const file = pending[name]
+		if file then
+			uploads[name] = upload(file, name, key, client)
+			uploaded += 1
+			print(`DevForum asset {name}: uploaded`)
+			Task.wait(2)
+		end
+	end
+
+	const final = ForumReadme.Render(record, directory)
+	assert(not final:find("upload://DRAFT", 1, true), "Unresolved draft upload")
+	Fs.writeStringToFile(readme, final)
 	-- A generated reference is not a valid cache entry until the saved public post renders it.
 	print(postCommand({ "publish", readme, digest }, key, client))
 	Fs.writeStringToFile(`{directory}/{MANIFEST}`, Json.encode(record) .. "\n")

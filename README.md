@@ -9,7 +9,7 @@ Use the `source` branch to propose changes. The `main` branch is generated from 
 
 ## Native CI
 
-CI validates pushes and pull requests, builds historical release assets, generates documentation and stages the distribution branch. Publish defaults to rehearsal. On the default branch, select releases, branches (including verified DevForum synchronization), or pages. The optional Benchmark workflow runs Roblox Open Cloud measurements in its protected environment; provide its successful run ID and attempt to Publish to refresh the benchmark snapshot. Without a new benchmark the existing published snapshot is reused.
+CI validates pushes and pull requests, builds historical release assets, generates documentation and stages the distribution branch. Publish defaults to rehearsal. On the default branch, select releases, branches (DevForum topic draft by default; explicit approved delivery publishes the branch), or pages. The optional Benchmark workflow runs Roblox Open Cloud measurements in its protected environment; provide its successful run ID and attempt to Publish to refresh the benchmark snapshot. Without a new benchmark the existing published snapshot is reused.
 
 Local archive builds use the standalone CI-Packages CLI: clone the package repository at the pinned workflow revision into `build/ci-packages` (or set `CI_PACKAGES_DIR`), then run `bash .github/components/source/build/archive.sh`. Local Studio tests remain opt-in.
 
@@ -26,3 +26,9 @@ node dependencies/packages/checks/preflightChecker/index.ts --rules
 For Luau editor completion, generate the ignored root sourcemap with `node .vscode/config/luau/generate-sourcemap.cjs`. Run it again after changing the test hierarchy.
 
 For Registry behavior changes, run `bash tests/registry/Studio/run.sh Lookup` with Node.js and Windows Roblox Studio installed. The launcher supports MSYS2, Git Bash, and WSL with Windows interop. Include the checks you ran in the pull request.
+
+### DevForum drafts
+
+Publish → branches → draft produces a credential-free topic draft and generated artwork. Review the artifact's `topic.md`, PNGs, and `approval.txt`; pending upload references are intentionally unresolved. To deliver the topic, choose `post` and supply the exact approval digest. Changed source, forum content or artwork invalidates approval. Only successful public verification permits generated `main` and cache publication. `disabled` skips this coupled publication target without changing the cache.
+
+The separate DevForum release draft workflow accepts a published release tag or a GitHub release event and prepares a reply artifact. It cannot send release replies. Live release delivery and durable receipt integration remain disabled until validated.
